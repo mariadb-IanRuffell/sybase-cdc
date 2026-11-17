@@ -6,10 +6,12 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import poc.api.model.Dto.Address;
 import poc.api.model.Dto.AddressInput;
 
 @Repository
+@Transactional   // read-write transactions: a GridGain 9 autocommit read is a snapshot about 1.5 s old and would miss what was just written
 public class AddressRepository {
     private static final String COLS = "address_id, customer_id, addr_type, line1, city, postcode, country, is_primary";
 

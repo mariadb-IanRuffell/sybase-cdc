@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import poc.api.model.Dto.Page;
 import poc.api.model.TravelDto.Airport;
 import poc.api.model.TravelDto.Booking;
@@ -22,6 +23,7 @@ import poc.api.model.TravelDto.InventoryInput;
 
 /** Reads and the few direct writes on the travel tables. Bookings and cancellations go through the compute jobs, never raw SQL. */
 @Repository
+@Transactional   // read-write transactions: a GridGain 9 autocommit read is a snapshot about 1.5 s old and would miss what was just written
 public class TravelRepository {
     private static final String FLIGHT_COLS = "flight_id, flight_no, origin, destination, dep_time, arr_time, distance_km, aircraft, status, delay_minutes";
     private static final String BOOKING_COLS = "booking_id, customer_id, booking_ref, status, booked_at, channel, total_fare, refunded, currency";

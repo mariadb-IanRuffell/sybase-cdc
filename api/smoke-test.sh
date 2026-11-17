@@ -3,7 +3,7 @@
 # compute-job operations.   ./smoke-test.sh [base-url]
 # It creates rows (customers/products/an order, a flight with bookings) that stay in GridGain; `../cdc/run.sh init` resets GridGain to Sybase.
 set -uo pipefail
-BASE="${1:-http://localhost:8080}/api/v1"
+BASE="${1:-http://localhost:${API_PORT:-8081}}/api/v1"
 PASS=0; FAIL=0; TMP="$(mktemp)"; trap 'rm -f "$TMP"' EXIT
 RUN="$(date +%s)"
 

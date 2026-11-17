@@ -19,7 +19,7 @@ def schema_columns():
     cols = {}
     for res in ("gridgain-schema-sybase.sql", "gridgain-schema-oracle.sql"):
         sql = "\n".join(l for l in read("cdc/src/main/resources/" + res).splitlines() if not l.strip().startswith("--"))
-        for m in re.finditer(r"CREATE TABLE IF NOT EXISTS (\w+) \((.*?)\n?\) WITH", sql, re.S):
+        for m in re.finditer(r"CREATE TABLE IF NOT EXISTS (\w+) \((.*?)\n?\) (?:COLOCATE BY \(\w+\) )?ZONE", sql, re.S):
             names = set()
             depth, item = 0, ""
             for ch in m.group(2) + ",":

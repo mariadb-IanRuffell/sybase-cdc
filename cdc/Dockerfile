@@ -1,5 +1,5 @@
 # CDC reader as a long-running service. Build the jar and libs on the host first (see build.sh).
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY target/classes classes
 COPY target/lib lib

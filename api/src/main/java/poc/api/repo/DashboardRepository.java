@@ -5,6 +5,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import org.apache.ignite.client.IgniteClient;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
 
@@ -33,9 +34,11 @@ public class DashboardRepository {
     public record SourceCount(long rows, Instant countedAt) {}
 
     private final JdbcClient jdbc;
+    private final IgniteClient client;
 
-    DashboardRepository(JdbcClient jdbc) {
+    DashboardRepository(JdbcClient jdbc, IgniteClient client) {
         this.jdbc = jdbc;
+        this.client = client;
     }
 
     public Map<String, Long> gridGainRows() {
@@ -46,7 +49,7 @@ public class DashboardRepository {
 
     public Map<String, SourceCount> sourceRows() {
         Map<String, SourceCount> out = new LinkedHashMap<>();
-        jdbc.sql("SELECT table_name, sybase_rows, updated_at FROM cdc_table_counts").query((rs, n) -> {
+        jdbc.sql("SELECT table_name, source_rows, updated_at FROM cdc_table_counts").query((rs, n) -> {
             Cols c = new Cols(rs);
             out.put(c.string(), new SourceCount(rs.getLong(2), rs.getTimestamp(3).toInstant()));
             return null;
@@ -62,8 +65,8 @@ public class DashboardRepository {
                 rs.getTimestamp(11).toInstant())).optional();
     }
 
+    /** Names of the server nodes in the cluster, from the client's view of the topology. */
     public List<String> serverNodes() {
-        return jdbc.sql("SELECT consistent_id FROM sys.nodes WHERE is_client = FALSE ORDER BY consistent_id")
-            .query(String.class).list();
+        return client.cluster().nodes().stream().map(n -> n.name()).sorted().toList();
     }
 }

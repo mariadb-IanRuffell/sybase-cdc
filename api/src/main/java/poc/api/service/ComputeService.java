@@ -5,9 +5,14 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.IgniteException;
-import org.apache.ignite.client.ClientException;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.ignite.client.IgniteClient;
+import org.apache.ignite.compute.JobDescriptor;
+import org.apache.ignite.compute.JobTarget;
+import org.apache.ignite.deployment.DeploymentUnit;
+import org.apache.ignite.table.Tuple;
 import org.springframework.stereotype.Service;
 import poc.api.model.Dto.PlaceOrderRequest;
 import poc.api.model.Dto.PlaceOrderResult;
@@ -23,13 +28,23 @@ import poc.api.web.ApiExceptions.NotFound;
 import poc.api.web.ApiExceptions.Unavailable;
 
 /**
- * Calls the GridGain compute jobs (poc.compute.jobs.*, deployed on every node) that replaced the Sybase
- * stored procedures. Jobs report business errors as {rc, error_no, error}, using the same numbers the
- * stored procedures raised (20002 not found, 20003 insufficient stock, ...); those are mapped to HTTP here.
+ * Calls the GridGain compute jobs (deployed as the unit customer360-jobs) that replaced the stored procedures. A job takes a JSON object and
+ * returns JSON; per-customer jobs run on the node that holds the customer's partition. Jobs report business errors as {rc, error_no, error},
+ * using the same numbers the stored procedures raised (20002 not found, 20003 insufficient stock, ...); those are mapped to HTTP here.
  */
 @Service
 public class ComputeService {
     private static final String PKG = "poc.compute.jobs.";
+    static final DeploymentUnit UNIT = new DeploymentUnit("customer360-jobs", "latest");
+    private static final ObjectMapper JSON = new ObjectMapper().enable(DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+
+    /** The job behind each operation (the operations keep the names of the stored procedures they replaced). */
+    private static final Map<String, String> JOBS = Map.ofEntries(
+        Map.entry("Customer360Task", "Customer360Job"), Map.entry("RecalcLoyaltyTierTask", "RecalcLoyaltyTierJob"),
+        Map.entry("ScoreCustomersTask", "ScoreCustomersJob"), Map.entry("PlaceOrderTask", "PlaceOrderJob"), Map.entry("TripsTask", "TripsJob"),
+        Map.entry("BookFlightTask", "BookFlightJob"), Map.entry("CancelBookingTask", "CancelBookingJob"), Map.entry("RecordDelayTask", "RecordDelayJob"),
+        Map.entry("ProcessDisruptionsTask", "ProcessDisruptionsJob"), Map.entry("CustomerHubTask", "CustomerHubJob"),
+        Map.entry("DisruptionImpactTask", "DisruptionImpactJob"));
 
     private final IgniteClient client;
 
@@ -37,14 +52,47 @@ public class ComputeService {
         this.client = client;
     }
 
+    /** JSON numbers arrive as Integer, Long or BigDecimal depending on their digits: normalise. */
+    private static BigDecimal dec(Object v) {
+        return v == null ? null : v instanceof BigDecimal b ? b : new BigDecimal(v.toString());
+    }
+
+    private static Integer integer(Object v) {
+        return v == null ? null : ((Number) v).intValue();
+    }
+
+    /** A bare id argument becomes the JSON object the job expects. */
+    private static Map<String, Object> arguments(String task, Object arg) {
+        if (arg instanceof Map<?, ?> m) {
+            @SuppressWarnings("unchecked") Map<String, Object> out = (Map<String, Object>) m;
+            return out;
+        }
+        Map<String, Object> out = new HashMap<>();
+        if (arg == null) return out;
+        switch (task) {
+            case "CancelBookingTask" -> out.put("booking_id", arg);
+            case "DisruptionImpactTask" -> out.put("flight_id", arg);
+            case "ScoreCustomersTask" -> out.put("as_of", arg);
+            default -> out.put("customer_id", arg);
+        }
+        return out;
+    }
+
     @SuppressWarnings("unchecked")
     private <R> R run(String task, Object arg) {
+        String job = JOBS.get(task);
+        Map<String, Object> args = arguments(task, arg);
+        Object customer = args.get("customer_id");
+        JobTarget target = customer instanceof Number n
+            ? JobTarget.colocated("CUSTOMER", Tuple.create().set("CUSTOMER_ID", n.intValue()))
+            : JobTarget.anyNode(client.cluster().nodes());
+        JobDescriptor<String, String> descriptor = JobDescriptor.<String, String>builder(PKG + job).units(UNIT).build();
         try {
-            return (R) client.compute().withTimeout(60_000).execute(PKG + task, arg);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new Unavailable("Interrupted while waiting for GridGain compute", e);
-        } catch (ClientException | IgniteException e) {
+            String result = client.compute().execute(target, descriptor, JSON.writeValueAsString(args));
+            return (R) JSON.readValue(result, Object.class);
+        } catch (JsonProcessingException e) {
+            throw new Unavailable("Unreadable result from GridGain job " + job + ": " + e.getMessage(), e);
+        } catch (RuntimeException e) {
             throw new Unavailable("GridGain compute call failed: " + e.getMessage(), e);
         }
     }
@@ -100,9 +148,9 @@ public class ComputeService {
 
         Map<String, Object> r = run("PlaceOrderTask", arg);
         checked(r, "Customer", req.customerId());
-        return new PlaceOrderResult((Integer) r.get("order_id"), (Integer) r.get("customer_id"),
-            (BigDecimal) r.get("total_amount"), (Integer) r.get("points"), (String) r.get("tier_before"),
-            (String) r.get("tier_after"), (Integer) r.get("loyalty_points"));
+        return new PlaceOrderResult(integer(r.get("order_id")), integer(r.get("customer_id")),
+            dec(r.get("total_amount")), integer(r.get("points")), (String) r.get("tier_before"),
+            (String) r.get("tier_after"), integer(r.get("loyalty_points")));
     }
 
     // ------------------------------------------------------------------ travel (Oracle) jobs
@@ -123,14 +171,14 @@ public class ComputeService {
         arg.put("passenger", req.passenger());
         arg.put("channel", req.channel() == null ? "WEB" : req.channel());
         Map<String, Object> r = checked(run("BookFlightTask", arg), "Flight", req.flightId());
-        return new BookFlightResult((Integer) r.get("booking_id"), (String) r.get("booking_ref"), (Integer) r.get("customer_id"),
-            (Integer) r.get("flight_id"), (String) r.get("cabin"), (String) r.get("seat_no"), (BigDecimal) r.get("fare"), (Integer) r.get("miles_earned"));
+        return new BookFlightResult(integer(r.get("booking_id")), (String) r.get("booking_ref"), integer(r.get("customer_id")),
+            integer(r.get("flight_id")), (String) r.get("cabin"), (String) r.get("seat_no"), dec(r.get("fare")), integer(r.get("miles_earned")));
     }
 
     /** Replaces sp_cancel_booking: cancels future segments, releases seats, returns the refund. */
     public CancelBookingResult cancelBooking(int bookingId) {
         Map<String, Object> r = checked(run("CancelBookingTask", bookingId), "Booking", bookingId);
-        return new CancelBookingResult((Integer) r.get("booking_id"), (BigDecimal) r.get("refund"), (Integer) r.get("segments_cancelled"),
+        return new CancelBookingResult(integer(r.get("booking_id")), dec(r.get("refund")), integer(r.get("segments_cancelled")),
             (String) r.get("booking_status"));
     }
 
@@ -154,7 +202,7 @@ public class ComputeService {
     }
 
     private static FlightOpResult flightOp(Map<String, Object> r) {
-        return new FlightOpResult((Integer) r.get("flight_id"), (String) r.get("status"), ((Number) r.get("affected_bookings")).longValue());
+        return new FlightOpResult(integer(r.get("flight_id")), (String) r.get("status"), ((Number) r.get("affected_bookings")).longValue());
     }
 
     /** Replaces sp_process_disruptions: one job per node computes compensation for the segments it owns. */

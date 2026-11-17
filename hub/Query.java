@@ -6,7 +6,7 @@ import java.util.*;
 public class Query {
     public static void main(String[] a) throws Exception {
         String file = a.length > 0 ? a[0] : "queries.sql";
-        String url = System.getenv().getOrDefault("GG_JDBC", "jdbc:ignite:thin://127.0.0.1:10800,127.0.0.1:10801,127.0.0.1:10802");
+        String url = System.getenv().getOrDefault("GG_JDBC", "jdbc:ignite:thin://127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802");
         StringBuilder cur = new StringBuilder(), title = new StringBuilder();
         List<String[]> stmts = new ArrayList<>();
         for (String line : Files.readAllLines(Path.of(file))) {

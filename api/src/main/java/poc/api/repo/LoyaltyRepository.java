@@ -4,6 +4,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import poc.api.model.Dto.CustomerScore;
 import poc.api.model.Dto.LoyaltyTier;
 import poc.api.model.Dto.LoyaltyTransaction;
@@ -11,6 +12,7 @@ import poc.api.model.Dto.Page;
 
 /** Read-only loyalty data. Points and tiers are changed by the place-order and recalculate jobs, not directly. */
 @Repository
+@Transactional   // read-write transactions: a GridGain 9 autocommit read is a snapshot about 1.5 s old and would miss what was just written
 public class LoyaltyRepository {
     private final JdbcClient jdbc;
 

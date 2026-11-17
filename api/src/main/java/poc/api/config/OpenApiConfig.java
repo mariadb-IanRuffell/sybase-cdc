@@ -30,7 +30,7 @@ public class OpenApiConfig {
                     Note: while Sybase is still the system of record, rows written through this API exist only in
                     GridGain (CDC is one-way, Sybase to GridGain).
                     """))
-            .servers(List.of(new Server().url("http://localhost:8080").description("Local Docker")))
+            .servers(List.of(new Server().url("http://localhost:8081").description("Local Docker")))
             .tags(List.of(
                 new Tag().name("Customers").description("Customer master data"),
                 new Tag().name("Addresses").description("Customer addresses (nested under a customer)"),

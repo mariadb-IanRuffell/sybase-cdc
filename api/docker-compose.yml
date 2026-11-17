@@ -6,7 +6,7 @@ services:
     image: gg-customer360-api:1.0
     container_name: gg-api
     ports:
-      - "8080:8080"
+      - "${API_PORT:-8081}:8080"       # 8081 on the host: 8080 is often taken; override with API_PORT
     environment:
       GG_JDBC_URL: jdbc:ignite:thin://gridgain1:10800,gridgain2:10800,gridgain3:10800
       GG_ADDRESSES: gridgain1:10800,gridgain2:10800,gridgain3:10800

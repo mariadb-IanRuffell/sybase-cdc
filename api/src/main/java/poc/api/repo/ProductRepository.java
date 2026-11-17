@@ -7,11 +7,13 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import poc.api.model.Dto.Page;
 import poc.api.model.Dto.Product;
 import poc.api.model.Dto.ProductInput;
 
 @Repository
+@Transactional   // read-write transactions: a GridGain 9 autocommit read is a snapshot about 1.5 s old and would miss what was just written
 public class ProductRepository {
     private static final String COLS = "product_id, sku, name, category, unit_price, stock_qty, active";
 

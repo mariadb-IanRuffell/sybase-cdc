@@ -8,11 +8,13 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import poc.api.model.Dto.Interaction;
 import poc.api.model.Dto.InteractionInput;
 import poc.api.model.Dto.Page;
 
 @Repository
+@Transactional   // read-write transactions: a GridGain 9 autocommit read is a snapshot about 1.5 s old and would miss what was just written
 public class InteractionRepository {
     private static final String COLS = "interaction_id, customer_id, channel, type, subject, sentiment, status, opened_at, closed_at";
 

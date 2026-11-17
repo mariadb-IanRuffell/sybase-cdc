@@ -1,5 +1,5 @@
 # Runtime image only: the jar is built on the host with `mvn package` (see build.sh).
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 COPY target/gg-api.jar app.jar
 EXPOSE 8080

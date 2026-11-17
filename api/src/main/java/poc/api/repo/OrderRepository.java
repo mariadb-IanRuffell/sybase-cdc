@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import poc.api.model.Dto.Order;
 import poc.api.model.Dto.OrderItem;
 import poc.api.model.Dto.Page;
@@ -14,6 +15,7 @@ import poc.api.model.Dto.Payment;
 
 /** Read access plus the few direct writes allowed on orders. New orders are created by the place-order job. */
 @Repository
+@Transactional   // read-write transactions: a GridGain 9 autocommit read is a snapshot about 1.5 s old and would miss what was just written
 public class OrderRepository {
     private static final String COLS = "order_id, customer_id, order_date, status, channel, total_amount, currency";
 

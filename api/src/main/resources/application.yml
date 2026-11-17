@@ -6,8 +6,8 @@ spring:
     name: customer360-api
   datasource:
     # Thin JDBC over all three GridGain nodes (host defaults; the container overrides these via env)
-    url: ${GG_JDBC_URL:jdbc:ignite:thin://127.0.0.1:10800,127.0.0.1:10801,127.0.0.1:10802}
-    driver-class-name: org.apache.ignite.IgniteJdbcThinDriver
+    url: ${GG_JDBC_URL:jdbc:ignite:thin://127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802}
+    driver-class-name: org.apache.ignite.jdbc.IgniteJdbcDriver
     hikari:
       maximum-pool-size: 10
       minimum-idle: 2
@@ -17,8 +17,8 @@ spring:
       write-dates-as-timestamps: false
 
 gridgain:
-  # Thin client: used for compute jobs and id sequences
-  addresses: ${GG_ADDRESSES:127.0.0.1:10800,127.0.0.1:10801,127.0.0.1:10802}
+  # Thin client: used for compute jobs
+  addresses: ${GG_ADDRESSES:127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802}
 
 springdoc:
   api-docs:
