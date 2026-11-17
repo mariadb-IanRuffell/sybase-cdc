@@ -1,5 +1,7 @@
 # Demo video
 
+> **Not yet updated on the `gridgain-9.2.0` branch.** The video, its scenes and `make.py` assume GridGain 8.9 (API on port 8080, nodes restarted with `docker kill`, the 8.9 dashboard). Re-record after the Sybase source is back; the narration also still describes the 8.9 job model.
+
 `customer360-demo.mp4` (about 4.5 min, 1080p, narrated) shows both sources end to end. Almost everything on screen is real:
 the dashboard scenes are recorded from the running system while real load runs, and the terminal scenes replay output captured
 from real runs (`data/parity.txt`, `data/parity-oracle.txt`, `data/hub-sql*.txt`, `data/api2.json`). The architecture, source,
