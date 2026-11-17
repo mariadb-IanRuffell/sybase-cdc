@@ -18,3 +18,4 @@ demo/frames/
 demo/data/ev-*.json
 demo/tts/
 __pycache__/
+gridgain-license.json
