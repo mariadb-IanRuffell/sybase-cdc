@@ -35,21 +35,8 @@ class TableSpecTest {
     void generatedSql() {
         TableSpec t = TableSpec.plain("product", "product_id", "product_id", "sku", "name");
         assertEquals("select t.product_id, t.sku, t.name from product t", t.selectSql());
-        assertEquals("MERGE INTO product (product_id, sku, name) VALUES (?, ?, ?)", t.mergeSql());
         assertEquals("DELETE FROM product WHERE product_id = ?", t.deleteSql());
         assertEquals("SELECT product_id, sku, name FROM product", t.gridSelectSql());
     }
 
-    @Test
-    void mergePlaceholderCountMatchesColumns() {
-        for (TableSpec t : Tables.ALL) {
-            long marks = t.mergeSql().chars().filter(c -> c == '?').count();
-            assertEquals(t.columns.size(), marks, t.name);
-        }
-    }
-
-    @Test
-    void singleColumnMergeHasOnePlaceholder() {
-        assertEquals("MERGE INTO x (a) VALUES (?)", TableSpec.plain("x", "a", "a").mergeSql());
-    }
 }

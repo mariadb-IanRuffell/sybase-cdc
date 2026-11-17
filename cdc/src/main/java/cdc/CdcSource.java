@@ -7,7 +7,8 @@ import java.util.List;
 /** One replication source (Sybase or Oracle) feeding GridGain. The CLI and the stats publisher work against this. */
 interface CdcSource extends AutoCloseable {
     String consumer();                                  // label used in cdc_status / the source's own offset table
-    Connection gg();
+    Connection gg();                                    // JDBC to GridGain (DDL, deletes, counts, verify)
+    GridGainSink sink();                                // key-value upserts into GridGain
     void connect() throws SQLException;                 // (re)connect after a failure
     void init() throws Exception;                       // create the GridGain tables, copy a snapshot, set the offset
     Result applyOnce(int limit) throws SQLException;    // apply pending changes; events == 0 means caught up

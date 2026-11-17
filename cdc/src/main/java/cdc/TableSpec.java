@@ -45,11 +45,6 @@ final class TableSpec {
         return "select " + String.join(", ", sourceExprs) + " from " + sourceFrom;
     }
 
-    String mergeSql() {
-        return "MERGE INTO " + name + " (" + String.join(", ", columns) + ") VALUES ("
-                + "?, ".repeat(columns.size() - 1) + "?)";
-    }
-
     String deleteSql() {
         return "DELETE FROM " + name + " WHERE " + pk + " = ?";
     }

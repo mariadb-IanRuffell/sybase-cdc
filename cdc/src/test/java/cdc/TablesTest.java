@@ -34,11 +34,11 @@ class TablesTest {
     void customerOwnedTablesAreColocatedOnCustomerId() throws IOException {
         Ddl ddl = Ddl.load("/gridgain-schema-sybase.sql");
         for (String t : Set.of("address", "orders", "order_item", "payment", "interaction", "loyalty_txn")) {
-            assertTrue(ddl.options.get(t).contains("affinity_key=customer_id"), t);
+            assertTrue(ddl.options.get(t).contains("COLOCATE BY (customer_id)"), t);
             assertTrue(ddl.columns.get(t).contains("customer_id"), t);
         }
         for (String t : Set.of("product", "loyalty_tier_rule"))
-            assertTrue(ddl.options.get(t).contains("template=replicated"), t);
+            assertTrue(ddl.options.get(t).contains("ZONE c360_ref"), t);
     }
 
     @Test

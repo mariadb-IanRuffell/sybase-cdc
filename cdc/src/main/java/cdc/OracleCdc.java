@@ -52,7 +52,6 @@ final class OracleCdc implements CdcSource {
         }
 
         String selectSql() { return "select " + String.join(", ", exprs) + " from " + from; }
-        String mergeSql() { return "MERGE INTO " + name + " (" + String.join(", ", cols) + ") VALUES (" + "?, ".repeat(cols.size() - 1) + "?)"; }
         String deleteSql() {
             StringBuilder b = new StringBuilder("DELETE FROM " + name + " WHERE ");
             for (int i = 0; i < pk.length; i++) b.append(i > 0 ? " AND " : "").append(pk[i]).append(" = ?");
@@ -80,7 +79,8 @@ final class OracleCdc implements CdcSource {
     static { ALL.forEach(t -> BY_NAME.put(t.name, t)); }
 
     private final String url, user, pass, ggUrl;
-    private Connection ora, gg;
+    private Connection ora;
+    private GridGainSink sink;
     private long lastIdleAdvance, lastPurge = System.currentTimeMillis();
 
     OracleCdc(String url, String user, String pass, String ggUrl) throws SQLException {
@@ -91,14 +91,16 @@ final class OracleCdc implements CdcSource {
     @Override public void connect() throws SQLException {
         close();
         ora = DriverManager.getConnection(url, user, pass);
-        gg = DriverManager.getConnection(ggUrl);
+        sink = new GridGainSink(ggUrl);
     }
 
     @Override public void close() {
-        for (Connection c : new Connection[] {ora, gg}) { try { if (c != null) c.close(); } catch (SQLException ignored) { } }
+        try { if (ora != null) ora.close(); } catch (SQLException ignored) { }
+        if (sink != null) sink.close();
     }
 
-    @Override public Connection gg() { return gg; }
+    @Override public Connection gg() { return sink.jdbc(); }
+    @Override public GridGainSink sink() { return sink; }
     @Override public String consumer() { return CONSUMER; }
     @Override public List<String> tableNames() { return ALL.stream().map(t -> t.name).toList(); }
     @Override public long countRows(String table) throws SQLException { return queryLong(ora, "select count(*) from " + table); }
@@ -110,12 +112,13 @@ final class OracleCdc implements CdcSource {
     // ------------------------------------------------------------------ init (snapshot)
 
     @Override public void init() throws Exception {
-        try (Statement st = gg.createStatement()) {
+        try (Statement st = gg().createStatement()) {
             for (Tbl t : ALL) st.execute("DROP TABLE IF EXISTS " + t.name);
-            for (String ddl : readResource("/gridgain-schema-oracle.sql").split(";")) {
-                if (!stripComments(ddl).isBlank()) st.execute(ddl);
+            for (String ddl : stripComments(readResource("/gridgain-schema-oracle.sql")).split(";")) {
+                if (!ddl.isBlank()) st.execute(ddl);
             }
         }
+        sink.forgetSchema();
         long snap = currentScn();   // watermark first: changes made during the copy are replayed afterwards (idempotent)
         System.out.println("snapshot SCN=" + snap);
         for (Tbl t : ALL) System.out.printf("  %-18s %6d rows%n", t.name, copyAll(t));
@@ -125,16 +128,13 @@ final class OracleCdc implements CdcSource {
 
     private long copyAll(Tbl t) throws SQLException {
         long total = 0;
-        try (Statement s = ora.createStatement(); ResultSet rs = s.executeQuery(t.selectSql());
-             PreparedStatement merge = gg.prepareStatement(t.mergeSql())) {
-            int pending = 0;
+        GridGainSink.Upserter up = sink.upserter(t.name, t.cols, BATCH);
+        try (Statement s = ora.createStatement(); ResultSet rs = s.executeQuery(t.selectSql())) {
             while (rs.next()) {
-                bind(merge, rs, t);
-                merge.addBatch();
+                up.add(rs);
                 total++;
-                if (++pending == BATCH) { merge.executeBatch(); pending = 0; }
             }
-            if (pending > 0) merge.executeBatch();
+            up.flush();
         }
         return total;
     }
@@ -175,7 +175,8 @@ final class OracleCdc implements CdcSource {
             if (t == null) throw new IllegalStateException("No mapping for table " + e.getKey());
             List<String> pks = new ArrayList<>(e.getValue());
             Set<String> found = new LinkedHashSet<>();
-            try (PreparedStatement merge = gg.prepareStatement(t.mergeSql())) {
+            {
+                GridGainSink.Upserter up = sink.upserter(t.name, t.cols, BATCH);
                 for (int i = 0; i < pks.size(); i += IN_CHUNK) {
                     List<String> chunk = pks.subList(i, Math.min(i + IN_CHUNK, pks.size()));
                     try (PreparedStatement q = ora.prepareStatement(t.selectSql() + " where " + pkPredicate(t, chunk.size()))) {
@@ -187,16 +188,15 @@ final class OracleCdc implements CdcSource {
                         try (ResultSet rs = q.executeQuery()) {
                             while (rs.next()) {
                                 found.add(keyOf(rs, t));
-                                bind(merge, rs, t);
-                                merge.addBatch();
+                                up.add(rs);
                                 upserts++;
                             }
                         }
                     }
                 }
-                merge.executeBatch();
+                up.flush();
             }
-            try (PreparedStatement del = gg.prepareStatement(t.deleteSql())) {
+            try (PreparedStatement del = gg().prepareStatement(t.deleteSql())) {
                 boolean any = false;
                 for (String pk : pks) {
                     if (found.contains(pk)) continue;
@@ -245,14 +245,14 @@ final class OracleCdc implements CdcSource {
         long off = getOffset();
         System.out.printf("consumer=%s offset_scn=%d current_scn=%d pending_events=%d%n", CONSUMER, off, currentScn(), pending());
         System.out.printf("%-18s %8s %8s%n", "table", "oracle", "gridgain");
-        for (Tbl t : ALL) System.out.printf("%-18s %8d %8d%n", t.name, countRows(t.name), queryLong(gg, "select count(*) from " + t.name));
+        for (Tbl t : ALL) System.out.printf("%-18s %8d %8d%n", t.name, countRows(t.name), queryLong(gg(), "select count(*) from " + t.name));
     }
 
     @Override public boolean verify() throws SQLException {
         boolean ok = true;
         System.out.printf("%-18s %8s %8s %8s %8s %8s%n", "table", "oracle", "gridgain", "missing", "extra", "differ");
         for (Tbl t : ALL) {
-            Map<String, String> src = hashes(ora, t.selectSql(), t), dst = hashes(gg, t.gridSelectSql(), t);
+            Map<String, String> src = hashes(ora, t.selectSql(), t), dst = hashes(gg(), t.gridSelectSql(), t);
             int missing = 0, extra = 0, differ = 0;
             List<String> samples = new ArrayList<>();
             for (Map.Entry<String, String> e : src.entrySet()) {
@@ -295,23 +295,14 @@ final class OracleCdc implements CdcSource {
         if (o == null) return "~";
         if (o instanceof BigDecimal b) return b.signum() == 0 ? "0" : b.stripTrailingZeros().toPlainString();
         if (o instanceof Timestamp ts) return Long.toString(ts.getTime());
+        if (o instanceof java.time.LocalDateTime ldt) return Long.toString(ldt.toInstant(java.time.ZoneOffset.UTC).toEpochMilli());   // GridGain 9 JDBC returns java.time types
+        if (o instanceof java.time.LocalDate ld) return ld.toString();
         if (o instanceof java.sql.Date d) return d.toString();
         if (o instanceof String s) return s.stripTrailing();
         return o.toString();
     }
 
     // ------------------------------------------------------------------ helpers
-
-    static void bind(PreparedStatement ps, ResultSet rs, Tbl t) throws SQLException {
-        for (int i = 1; i <= t.cols.size(); i++) {
-            switch (t.types.get(i - 1)) {
-                case 'I' -> { int v = rs.getInt(i); ps.setObject(i, rs.wasNull() ? null : (Object) v); }
-                case 'D' -> ps.setObject(i, rs.getBigDecimal(i));
-                case 'T' -> ps.setObject(i, rs.getTimestamp(i));
-                default -> { String s = rs.getString(i); ps.setObject(i, s == null ? null : s.stripTrailing()); }
-            }
-        }
-    }
 
     static void setTyped(PreparedStatement ps, int idx, char type, String v) throws SQLException {
         if (type == 'I') ps.setLong(idx, Long.parseLong(v)); else ps.setString(idx, v);

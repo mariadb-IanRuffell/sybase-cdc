@@ -10,7 +10,7 @@
   <properties>
     <maven.compiler.release>17</maven.compiler.release>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <gridgain.version>8.9.38</gridgain.version>
+    <gridgain.version>9.2.0-b1</gridgain.version>
       <junit.version>5.10.3</junit.version>
     <mockito.version>5.12.0</mockito.version>
   </properties>
@@ -24,10 +24,15 @@
   </repositories>
 
   <dependencies>
-    <!-- Thin JDBC driver (org.apache.ignite.IgniteJdbcThinDriver) ships in ignite-core. -->
+    <!-- GridGain 9: thin client (key-value upserts) and the JDBC driver -->
     <dependency>
       <groupId>org.gridgain</groupId>
-      <artifactId>ignite-core</artifactId>
+      <artifactId>ignite-client</artifactId>
+      <version>${gridgain.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.gridgain</groupId>
+      <artifactId>ignite-jdbc</artifactId>
       <version>${gridgain.version}</version>
     </dependency>
     <dependency>

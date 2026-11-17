@@ -15,7 +15,7 @@ public final class Main {
 
     public static void main(String[] args) throws Exception {
         String cmd = args.length > 0 ? args[0] : "help";
-        String ggUrl = env("GG_URL", "jdbc:ignite:thin://127.0.0.1:10800,127.0.0.1:10801,127.0.0.1:10802");
+        String ggUrl = env("GG_URL", "jdbc:ignite:thin://127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802");
         long intervalMs = Long.parseLong(env("CDC_POLL_MS", "1000"));
         int batch = Integer.parseInt(env("CDC_BATCH", "5000"));
 

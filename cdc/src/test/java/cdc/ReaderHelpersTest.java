@@ -24,6 +24,8 @@ class ReaderHelpersTest {
             assertEquals("42", norm.apply(42));
             assertEquals("1700000000000", norm.apply(new Timestamp(1_700_000_000_000L)));
             assertEquals("2026-10-15", norm.apply(Date.valueOf("2026-10-15")));
+            assertEquals("1700000000000", norm.apply(java.time.LocalDateTime.of(2023, 11, 14, 22, 13, 20)));   // GridGain 9 JDBC returns java.time values
+            assertEquals("2026-10-15", norm.apply(java.time.LocalDate.of(2026, 10, 15)));
         }
     }
 
@@ -38,18 +40,6 @@ class ReaderHelpersTest {
     void schemaResourcesAreOnTheClasspath() throws Exception {
         assertTrue(SybaseCdc.readResource("/gridgain-schema-sybase.sql").contains("CREATE TABLE IF NOT EXISTS customer"));
         assertTrue(OracleCdc.readResource("/gridgain-schema-oracle.sql").contains("CREATE TABLE IF NOT EXISTS flight_inventory"));
-    }
-
-    @Test
-    void sybaseBindCopiesPositionalColumns() throws Exception {
-        ResultSet rs = mock(ResultSet.class);
-        PreparedStatement ps = mock(PreparedStatement.class);
-        when(rs.getObject(1)).thenReturn(7);
-        when(rs.getObject(2)).thenReturn("x");
-        SybaseCdc.bind(ps, rs, 2);
-        verify(ps).setObject(1, 7);
-        verify(ps).setObject(2, "x");
-        verifyNoMoreInteractions(ps);
     }
 
     @Test
@@ -91,23 +81,4 @@ class ReaderHelpersTest {
         assertThrows(NumberFormatException.class, () -> OracleCdc.setTyped(ps, 3, 'I', "abc"));
     }
 
-    @Test
-    void oracleBindUsesTheColumnTypes() throws Exception {
-        OracleCdc.Tbl t = new OracleCdc.Tbl("t", "t t", new String[] {"a"}, new char[] {'I'}, "a:I", "b:D", "c:T", "d:S", "e:I");
-        ResultSet rs = mock(ResultSet.class);
-        PreparedStatement ps = mock(PreparedStatement.class);
-        Timestamp ts = new Timestamp(5);
-        when(rs.getInt(1)).thenReturn(3);
-        when(rs.getBigDecimal(2)).thenReturn(new BigDecimal("1.5"));
-        when(rs.getTimestamp(3)).thenReturn(ts);
-        when(rs.getString(4)).thenReturn("pad  ");
-        when(rs.getInt(5)).thenReturn(0);
-        when(rs.wasNull()).thenReturn(false, true);   // only the integer columns ask: col1 then col5
-        OracleCdc.bind(ps, rs, t);
-        verify(ps).setObject(1, 3);
-        verify(ps).setObject(2, new BigDecimal("1.5"));
-        verify(ps).setObject(3, ts);
-        verify(ps).setObject(4, "pad");
-        verify(ps).setObject(5, null);
-    }
 }

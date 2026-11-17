@@ -5,6 +5,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Publishes a reader's throughput into two small GridGain tables so the API's dashboard can read them:
@@ -30,13 +33,14 @@ final class Metrics {
 
     void ensureTables() throws SQLException {
         try (Statement st = src.gg().createStatement()) {
+            st.execute("CREATE ZONE IF NOT EXISTS c360 (PARTITIONS 25, REPLICAS 3) STORAGE PROFILES ['default']");
             st.execute("CREATE TABLE IF NOT EXISTS cdc_status (consumer VARCHAR(30) PRIMARY KEY, last_change_id BIGINT, "
                 + "pending_events BIGINT, total_events BIGINT, total_upserts BIGINT, total_deletes BIGINT, batches BIGINT, "
-                + "last_batch_events INT, last_batch_ms BIGINT, last_latency_ms BIGINT, started_at TIMESTAMP, updated_at TIMESTAMP) "
-                + "WITH \"template=partitioned,backups=1,cache_name=cdc_status\"");
+                + "last_batch_events INT, last_batch_ms BIGINT, last_latency_ms BIGINT, started_at TIMESTAMP, updated_at TIMESTAMP) ZONE c360");
             st.execute("CREATE TABLE IF NOT EXISTS cdc_table_counts (table_name VARCHAR(30) PRIMARY KEY, "
-                + "sybase_rows BIGINT, updated_at TIMESTAMP) WITH \"template=partitioned,backups=1,cache_name=cdc_table_counts\"");
+                + "source_rows BIGINT, updated_at TIMESTAMP) ZONE c360");
         }
+        src.sink().forgetSchema();
         try (PreparedStatement ps = src.gg().prepareStatement(
                 "SELECT total_events, total_upserts, total_deletes, batches FROM cdc_status WHERE consumer = ?")) {
             ps.setString(1, src.consumer());
@@ -71,40 +75,28 @@ final class Metrics {
     private void flush(long now) throws SQLException {
         long position = src.position();
         long pending = src.pending();
-        try (PreparedStatement ps = src.gg().prepareStatement(
-                "MERGE INTO cdc_status (consumer, last_change_id, pending_events, total_events, total_upserts, total_deletes, "
-                    + "batches, last_batch_events, last_batch_ms, last_latency_ms, started_at, updated_at) "
-                    + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)")) {
-            int i = 0;
-            ps.setString(++i, src.consumer());
-            ps.setLong(++i, position);
-            ps.setLong(++i, pending);
-            ps.setLong(++i, events);
-            ps.setLong(++i, upserts);
-            ps.setLong(++i, deletes);
-            ps.setLong(++i, batches);
-            ps.setInt(++i, lastBatchEvents);
-            ps.setLong(++i, lastBatchMs);
-            ps.setLong(++i, lastLatencyMs);
-            ps.setTimestamp(++i, startedAt);
-            ps.setTimestamp(++i, new Timestamp(now));
-            ps.executeUpdate();
-        }
+        Map<String, Object> row = new LinkedHashMap<>();
+        row.put("consumer", src.consumer());
+        row.put("last_change_id", position);
+        row.put("pending_events", pending);
+        row.put("total_events", events);
+        row.put("total_upserts", upserts);
+        row.put("total_deletes", deletes);
+        row.put("batches", batches);
+        row.put("last_batch_events", lastBatchEvents);
+        row.put("last_batch_ms", lastBatchMs);
+        row.put("last_latency_ms", lastLatencyMs);
+        row.put("started_at", startedAt);
+        row.put("updated_at", new Timestamp(now));
+        src.sink().upsertRow("cdc_status", row);
         dirty = false;
         lastFlush = now;
     }
 
     private void counts(long now) throws SQLException {
-        try (PreparedStatement ps = src.gg().prepareStatement(
-                "MERGE INTO cdc_table_counts (table_name, sybase_rows, updated_at) VALUES (?, ?, ?)")) {
-            for (String t : src.tableNames()) {
-                ps.setString(1, t);
-                ps.setLong(2, src.countRows(t));
-                ps.setTimestamp(3, new Timestamp(now));
-                ps.addBatch();
-            }
-            ps.executeBatch();
-        }
+        GridGainSink.Upserter up = src.sink().upserter("cdc_table_counts", List.of("table_name", "source_rows", "updated_at"), 100);
+        for (String t : src.tableNames()) up.add(t, src.countRows(t), new Timestamp(now));
+        up.flush();
         lastCounts = now;
     }
 }

@@ -19,7 +19,7 @@ final class Ddl {
     static Ddl load(String resource) throws IOException {
         String sql = SybaseCdc.stripComments(SybaseCdc.readResource(resource));
         Ddl d = new Ddl();
-        Matcher m = Pattern.compile("CREATE TABLE IF NOT EXISTS (\\w+) \\((.*?)\\n?\\) WITH \"([^\"]*)\"", Pattern.DOTALL).matcher(sql);
+        Matcher m = Pattern.compile("CREATE TABLE IF NOT EXISTS (\\w+) \\((.*?)\\n?\\) ((?:COLOCATE BY \\(\\w+\\) )?ZONE \\w+)", Pattern.DOTALL).matcher(sql);
         while (m.find()) {
             String table = m.group(1);
             Set<String> cols = new LinkedHashSet<>();

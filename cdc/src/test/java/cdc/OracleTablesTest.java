@@ -22,8 +22,6 @@ class OracleTablesTest {
     void generatedSql() {
         OracleCdc.Tbl t = OracleCdc.BY_NAME.get("flight_inventory");
         assertEquals("DELETE FROM flight_inventory WHERE flight_id = ? AND cabin = ?", t.deleteSql());
-        assertTrue(t.mergeSql().startsWith("MERGE INTO flight_inventory (flight_id, cabin, "));
-        assertEquals(t.cols.size(), t.mergeSql().chars().filter(c -> c == '?').count());
         assertEquals("select t.flight_id, t.cabin, t.seats_total, t.seats_available, t.next_seat, t.base_fare from flight_inventory t",
             t.selectSql());
         assertTrue(t.gridSelectSql().endsWith(" FROM flight_inventory"));
@@ -55,9 +53,9 @@ class OracleTablesTest {
     void customerOwnedTablesAreColocatedOnCustomerId() throws IOException {
         Ddl ddl = Ddl.load("/gridgain-schema-oracle.sql");
         for (String t : List.of("booking", "booking_segment", "compensation"))
-            assertTrue(ddl.options.get(t).contains("affinity_key=customer_id"), t);
+            assertTrue(ddl.options.get(t).contains("COLOCATE BY (customer_id)"), t);
         for (String t : List.of("airport", "flight", "flight_inventory", "flight_event"))
-            assertTrue(ddl.options.get(t).contains("template=replicated"), t);
+            assertTrue(ddl.options.get(t).contains("ZONE c360_ref"), t);
     }
 
     @Test

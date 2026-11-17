@@ -32,7 +32,8 @@ final class SybaseCdc implements CdcSource {
     private static final int BATCH = 1000;
 
     private final String aseUrl, aseUser, asePass, ggUrl;
-    private Connection ase, gg;
+    private Connection ase;
+    private GridGainSink sink;
 
     SybaseCdc(String aseUrl, String aseUser, String asePass, String ggUrl) throws SQLException {
         this.aseUrl = aseUrl; this.aseUser = aseUser; this.asePass = asePass; this.ggUrl = ggUrl;
@@ -41,7 +42,9 @@ final class SybaseCdc implements CdcSource {
 
     Connection ase() { return ase; }
 
-    @Override public Connection gg() { return gg; }
+    @Override public Connection gg() { return sink.jdbc(); }
+
+    @Override public GridGainSink sink() { return sink; }
 
     @Override public String consumer() { return CONSUMER; }
 
@@ -59,14 +62,13 @@ final class SybaseCdc implements CdcSource {
     public void connect() throws SQLException {
         close();
         ase = DriverManager.getConnection(aseUrl, aseUser, asePass);
-        gg = DriverManager.getConnection(ggUrl);
+        sink = new GridGainSink(ggUrl);
     }
 
     @Override
     public void close() {
-        for (Connection c : new Connection[] {ase, gg}) {
-            try { if (c != null) c.close(); } catch (SQLException ignored) { }
-        }
+        try { if (ase != null) ase.close(); } catch (SQLException ignored) { }
+        if (sink != null) sink.close();
     }
 
     // ------------------------------------------------------------------ init (snapshot)
@@ -74,12 +76,13 @@ final class SybaseCdc implements CdcSource {
     /** Recreate the GridGain tables, copy a full snapshot, and position the offset at the pre-copy watermark. */
     @Override
     public void init() throws Exception {
-        try (Statement st = gg.createStatement()) {
+        try (Statement st = gg().createStatement()) {
             for (TableSpec t : Tables.ALL) st.execute("DROP TABLE IF EXISTS " + t.name);
-            for (String ddl : readResource("/gridgain-schema-sybase.sql").split(";")) {
-                if (!stripComments(ddl).isBlank()) st.execute(ddl);
+            for (String ddl : stripComments(readResource("/gridgain-schema-sybase.sql")).split(";")) {
+                if (!ddl.isBlank()) st.execute(ddl);
             }
         }
+        sink.forgetSchema();
         // Watermark first: changes made while the copy runs are replayed afterwards (idempotent).
         long watermark = queryLong("select isnull(max(change_id), 0) from cdc_change_log");
         System.out.println("snapshot watermark change_id=" + watermark);
@@ -93,16 +96,13 @@ final class SybaseCdc implements CdcSource {
 
     private long copyAll(TableSpec t) throws SQLException {
         long total = 0;
-        try (Statement s = ase.createStatement(); ResultSet rs = s.executeQuery(t.selectSql());
-             PreparedStatement merge = gg.prepareStatement(t.mergeSql())) {
-            int pending = 0;
+        GridGainSink.Upserter up = sink.upserter(t.name, t.columns, BATCH);
+        try (Statement s = ase.createStatement(); ResultSet rs = s.executeQuery(t.selectSql())) {
             while (rs.next()) {
-                bind(merge, rs, t.columns.size());
-                merge.addBatch();
+                up.add(rs);
                 total++;
-                if (++pending == BATCH) { merge.executeBatch(); pending = 0; }
             }
-            if (pending > 0) merge.executeBatch();
+            up.flush();
         }
         return total;
     }
@@ -140,7 +140,8 @@ final class SybaseCdc implements CdcSource {
             if (t == null) throw new IllegalStateException("No mapping for table " + e.getKey());
             List<String> pks = new ArrayList<>(e.getValue());
             Set<String> found = new LinkedHashSet<>();
-            try (PreparedStatement merge = gg.prepareStatement(t.mergeSql())) {
+            {
+                GridGainSink.Upserter up = sink.upserter(t.name, t.columns, BATCH);
                 for (int i = 0; i < pks.size(); i += IN_CHUNK) {
                     List<String> chunk = pks.subList(i, Math.min(i + IN_CHUNK, pks.size()));
                     try (PreparedStatement q = ase.prepareStatement(t.selectSql() + " where t." + t.pk + " in ("
@@ -149,16 +150,15 @@ final class SybaseCdc implements CdcSource {
                         try (ResultSet rs = q.executeQuery()) {
                             while (rs.next()) {
                                 found.add(rs.getObject(t.pkIndex + 1).toString().trim());
-                                bind(merge, rs, t.columns.size());
-                                merge.addBatch();
+                                up.add(rs);
                                 upserts++;
                             }
                         }
                     }
                 }
-                merge.executeBatch();
+                up.flush();
             }
-            try (PreparedStatement del = gg.prepareStatement(t.deleteSql())) {
+            try (PreparedStatement del = gg().prepareStatement(t.deleteSql())) {
                 boolean any = false;
                 for (String pk : pks) {
                     if (found.contains(pk)) continue;
@@ -187,7 +187,7 @@ final class SybaseCdc implements CdcSource {
         for (TableSpec t : Tables.ALL) {
             System.out.printf("%-18s %8d %8d%n", t.name,
                 queryLong(ase, "select count(*) from " + t.name),
-                queryLong(gg, "select count(*) from " + t.name));
+                queryLong(gg(), "select count(*) from " + t.name));
         }
     }
 
@@ -198,7 +198,7 @@ final class SybaseCdc implements CdcSource {
         System.out.printf("%-18s %8s %8s %8s %8s %8s%n", "table", "sybase", "gridgain", "missing", "extra", "differ");
         for (TableSpec t : Tables.ALL) {
             Map<String, String> src = hashes(ase, t.selectSql(), t);
-            Map<String, String> dst = hashes(gg, t.gridSelectSql(), t);
+            Map<String, String> dst = hashes(gg(), t.gridSelectSql(), t);
             int missing = 0, extra = 0, differ = 0;
             List<String> samples = new ArrayList<>();
             for (Map.Entry<String, String> e : src.entrySet()) {
@@ -235,16 +235,14 @@ final class SybaseCdc implements CdcSource {
         if (o == null) return "~";
         if (o instanceof BigDecimal b) return b.signum() == 0 ? "0" : b.stripTrailingZeros().toPlainString();
         if (o instanceof Timestamp ts) return Long.toString(ts.getTime());
+        if (o instanceof java.time.LocalDateTime ldt) return Long.toString(ldt.toInstant(java.time.ZoneOffset.UTC).toEpochMilli());   // GridGain 9 JDBC returns java.time types
+        if (o instanceof java.time.LocalDate ld) return ld.toString();
         if (o instanceof Date d) return d.toString();
         if (o instanceof String s) return s.stripTrailing();
         return o.toString();
     }
 
     // ------------------------------------------------------------------ helpers
-
-    static void bind(PreparedStatement ps, ResultSet rs, int n) throws SQLException {
-        for (int i = 1; i <= n; i++) ps.setObject(i, rs.getObject(i));
-    }
 
     static void setPk(PreparedStatement ps, int idx, TableSpec t, String pk) throws SQLException {
         if (t.pkIsString) ps.setString(idx, pk); else ps.setInt(idx, Integer.parseInt(pk));
