@@ -1,0 +1,4 @@
+{
+  "result_set_0": "SELECT i.sku, SUM(i.quantity) AS available FROM inventory AS i GROUP BY i.sku HAVING SUM(i.quantity) >= CAST(? AS INT) ORDER BY i.sku",
+  "result_set_1": "SELECT CAST(? AS INT) AS matching_skus, CAST(? AS INT) AS requested_minimum"
+}

@@ -1,0 +1,28 @@
+{
+  "name": "inventory_results",
+  "parameters": [
+    "minimum",
+    "matches"
+  ],
+  "defaults": {
+    "minimum": 1
+  },
+  "outputs": [
+    "matches"
+  ],
+  "operations": {
+    "result_set_0": {
+      "kind": "result_set",
+      "arguments": [
+        "@minimum"
+      ]
+    },
+    "result_set_1": {
+      "kind": "result_set",
+      "arguments": [
+        "@matches",
+        "@minimum"
+      ]
+    }
+  }
+}

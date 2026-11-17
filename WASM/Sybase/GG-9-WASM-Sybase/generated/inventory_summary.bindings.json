@@ -1,0 +1,4 @@
+{
+  "snapshot_0": "SELECT i.sku, SUM(i.quantity) AS available FROM GG9_WASM_INVENTORY AS i GROUP BY i.sku HAVING SUM(i.quantity) >= CAST(? AS INT)",
+  "result_set_1": "SELECT s.sku, s.available, CASE WHEN s.available < 5 THEN 'low' ELSE 'ready' END AS stock_level FROM __SNAPSHOT__ AS s ORDER BY s.available DESC, s.sku"
+}

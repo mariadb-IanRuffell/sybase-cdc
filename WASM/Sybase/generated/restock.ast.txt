@@ -1,0 +1,49 @@
+script
+  batch
+    procedure
+      object_name	restock
+      parameters
+        parameter_decl
+          @sku
+          datatype
+            object_name	INT
+        parameter_decl
+          @units
+          datatype
+            object_name	INT
+      statements
+        block
+          statements
+            if_statement
+              comparison
+                local_var	@units
+                comparison_op	>
+                integer	0
+              block
+                statements
+                  update
+                    object_name	inventory
+                    assignments
+                      assignment
+                        object_name	quantity
+                        add
+                          column
+                            object_name	quantity
+                          local_var	@units
+                    where_clause
+                      comparison
+                        column
+                          object_name	sku
+                        comparison_op	=
+                        local_var	@sku
+                  if_statement
+                    comparison
+                      system_variable	@@rowcount
+                      comparison_op	=
+                      integer	0
+                    return_status
+                      integer	2
+                  return_status
+                    integer	0
+            return_status
+              integer	1

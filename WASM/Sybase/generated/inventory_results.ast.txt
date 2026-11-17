@@ -1,0 +1,89 @@
+script
+  batch
+    procedure
+      object_name
+        dbo
+        inventory_results
+      parameters
+        parameter_decl
+          @minimum
+          datatype
+            object_name	INT
+          default_argument
+            integer	1
+        parameter_decl
+          @matches
+          datatype
+            object_name	INT
+          output_mode
+      statements
+        block
+          statements
+            set_options
+              NOCOUNT
+              on_off	ON
+            query
+              select_core
+                select_list
+                  select_item
+                    column
+                      object_name
+                        i
+                        sku
+                  select_item
+                    function_call
+                      object_name	SUM
+                      expr_list
+                        column
+                          object_name
+                            i
+                            quantity
+                    column_alias	available
+                from_clause
+                  joined_table
+                    table_reference
+                      object_name
+                        dbo
+                        inventory
+                      alias	i
+                group_by
+                  expr_list
+                    column
+                      object_name
+                        i
+                        sku
+                having
+                  comparison
+                    function_call
+                      object_name	SUM
+                      expr_list
+                        column
+                          object_name
+                            i
+                            quantity
+                    comparison_op	>=
+                    local_var	@minimum
+              order_by
+                order_item
+                  column
+                    object_name
+                      i
+                      sku
+            query
+              select_core
+                select_list
+                  variable_assignment
+                    local_var	@matches
+                    system_variable	@@rowcount
+            query
+              select_core
+                select_list
+                  select_item
+                    local_var	@matches
+                    column_alias	matching_skus
+                  select_item
+                    local_var	@minimum
+                    column_alias	requested_minimum
+            return_status
+              integer	0
+  batch_end	GO

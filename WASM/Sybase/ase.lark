@@ -1,0 +1,298 @@
+// SAP ASE 16.x Transact-SQL, oriented towards stored procedures.
+?start: script
+script: batch? (batch_end batch?)*
+batch_end: GO_LINE
+batch: procedure | statements | implicit_call statements?
+implicit_call: object_name proc_number? call_args? recompile_call? ";"*
+procedure: "create"i replace_option? _proc object_name proc_number? parameters? proc_options? "as"i (statements | external_body)
+_proc: "proc"i | "procedure"i
+replace_option: "or"i "replace"i
+proc_number: _GROUP_SEMI INT
+parameters: _param_list | "(" _param_list ")"
+_param_list: parameter_decl ("," parameter_decl)*
+parameter_decl: LOCAL "as"i? datatype default_argument? output_mode?
+default_argument: "=" scalar
+output_mode: "out"i | "output"i
+proc_options: "with"i proc_option ("," proc_option)*
+?proc_option: "recompile"i -> recompile
+            | "execute"i "as"i principal -> execute_as
+!principal: "owner"i | "caller"i | "invoker"i
+external_body: "external"i "name"i (string | object_name)
+statements: ";"* statement+
+
+// Procedural statements
+?statement: statement_body ";"*
+?statement_body: block | if_statement | while_statement | break_statement | continue_statement
+          | declare_variables | set_variable | set_options | set_isolation
+          | return_status | goto_statement | label | print_statement | raise_error | wait_for
+          | begin_transaction | commit_transaction | rollback_transaction | save_transaction
+          | declare_cursor | open_cursor | fetch_cursor | close_cursor | deallocate_cursor
+          | execute_procedure | execute_string
+          | query | insert | update | delete | merge
+          | create_table | alter_table | drop_object | truncate_table | create_index
+          | use_database | lock_table | set_user | dbcc | dump_statement | grant | revoke
+          | set_cursor_rows | set_lock | set_identity | set_arithmetic | read_text | write_text
+block: "begin"i statements? "end"i
+if_statement: "if"i condition statement ("else"i statement)?
+while_statement: "while"i condition statement
+break_statement: "break"i
+continue_statement: "continue"i
+return_status: "return"i scalar?
+goto_statement: "goto"i identifier
+label: identifier ":"
+declare_variables: "declare"i variable_decl ("," variable_decl)*
+variable_decl: LOCAL datatype
+set_variable: "set"i local_var "=" scalar
+set_options: "set"i option_name ("," option_name)* option_value ("," option_value)*
+!?option_name: identifier | "rowcount"i | "prefetch"i
+?option_value: scalar | on_off
+!on_off: "on"i | "off"i
+set_cursor_rows: "set"i "cursor"i "rows"i (integer | local_var) "for"i identifier
+set_lock: "set"i "lock"i lock_wait
+set_identity: "set"i identity_option object_name on_off
+!identity_option: "identity_insert"i | "identity_update"i
+set_arithmetic: "set"i arithmetic_option arithmetic_scope? on_off
+!arithmetic_option: "arithabort"i | "arithignore"i
+!arithmetic_scope: "arith_overflow"i | "numeric_truncation"i
+set_isolation: "set"i "transaction"i "isolation"i "level"i isolation
+?isolation: integer | "read"i "committed"i -> read_committed
+          | "read"i "uncommitted"i -> read_uncommitted
+          | "repeatable"i "read"i -> repeatable_read
+          | "serializable"i -> serializable
+print_statement: "print"i expr_list
+raise_error: "raiserror"i (integer | local_var | system_variable) (string | local_var)? ("," scalar)* error_data?
+error_data: "with"i "errordata"i select_list
+wait_for: "waitfor"i (wait_kind scalar | wait_event)
+!wait_kind: "delay"i | "time"i
+!wait_event: "errorexit"i | "processexit"i | "mirrorexit"i
+use_database: "use"i object_name
+set_user: "setuser"i (string | identifier)?
+dbcc: "dbcc"i identifier ("(" expr_list? ")")?
+dump_statement: "dump"i dump_kind (object_name | local_var) dump_device? ("stripe"i dump_device)* dump_options?
+!dump_kind: "database"i | "transaction"i | "tran"i
+dump_device: "to"i scalar
+dump_options: "with"i dump_option ("," dump_option)*
+dump_option: identifier ("=" scalar)?
+grant: "grant"i privileges "on"i object_name "to"i name_list grant_option?
+revoke: "revoke"i privileges "on"i object_name "from"i name_list
+privileges: privilege ("," privilege)*
+!privilege: "execute"i | "exec"i | "select"i | "update"i | "insert"i | "delete"i | "references"i | "all"i
+grant_option: "with"i "grant"i "option"i
+
+_tran: "tran"i | "transaction"i
+?transaction_name: identifier | local_var
+begin_transaction: "begin"i _tran transaction_name?
+commit_transaction: "commit"i (_tran transaction_name? | "work"i)?
+rollback_transaction: "rollback"i (_tran transaction_name? | "work"i)?
+save_transaction: "save"i _tran transaction_name
+
+declare_cursor: "declare"i identifier sensitivity? scrollability? "cursor"i "for"i query
+!sensitivity: "insensitive"i | "semi_sensitive"i
+!scrollability: "no"i? "scroll"i
+?cursor_access: "for"i "read"i "only"i -> read_only
+              | "for"i "update"i ("of"i name_list)? -> for_update
+open_cursor: "open"i identifier
+fetch_cursor: "fetch"i fetch_direction? "from"i? identifier ("into"i local_var ("," local_var)*)?
+!fetch_direction: "next"i | "prior"i | "first"i | "last"i | ("absolute"i | "relative"i) scalar
+close_cursor: "close"i identifier
+deallocate_cursor: "deallocate"i "cursor"i identifier
+lock_table: "lock"i "table"i object_name "in"i lock_mode "mode"i lock_wait?
+!lock_mode: "share"i | "exclusive"i
+!lock_wait: "wait"i INT? | "nowait"i
+
+_exec: "exec"i | "execute"i
+execute_procedure: _exec capture_status? (object_name | local_var) proc_number? call_args? recompile_call?
+capture_status: local_var "="
+call_args: call_arg ("," call_arg)*
+call_arg: named_arg? (scalar | default_value) output_mode?
+named_arg: local_var "="
+default_value: "default"i
+recompile_call: "with"i "recompile"i
+execute_string: _exec "(" scalar ")" ("at"i identifier)?
+
+// Relational statements
+query: select_core (set_operator union_operand)* order_by? pagination? compute_clause* query_access? at_isolation? plan_clause?
+?union_operand: select_core | "(" query ")"
+?query_access: cursor_access | "for"i "browse"i -> for_browse
+pagination: "rows"i "limit"i (integer | local_var) ("offset"i (integer | local_var))?
+!set_operator: "union"i ("all"i | "distinct"i)?
+select_core: "select"i quantifier? top_clause? select_list into_table? from_clause? where_clause? group_by? having?
+!quantifier: "distinct"i | "all"i
+top_clause: "top"i (integer | local_var)
+select_list: projection ("," projection)*
+?projection: "*" -> star
+           | object_name _DOT_STAR -> qualified_star
+           | local_var "=" scalar -> variable_assignment
+           | (identifier | string) "=" scalar -> named_projection
+           | scalar column_alias? -> select_item
+column_alias: "as"i? (identifier | string)
+alias: "as"i? identifier
+into_table: "into"i existing_table? object_name table_lock? placement?
+existing_table: "existing"i "table"i
+from_clause: "from"i table_expression ("," table_expression)*
+?table_expression: table_source join_clause* -> joined_table
+?table_source: object_name alias? index_hint? lock_hint* -> table_reference
+             | "(" query ")" alias derived_columns? -> derived_table
+             | "(" table_expression ")" -> table_group
+index_hint: "(" scan_option+ ")"
+?scan_option: "index"i (identifier | INT) -> use_index
+            | "prefetch"i INT -> prefetch
+            | "parallel"i INT -> scan_parallelism
+            | "lru"i -> lru
+            | "mru"i -> mru
+!lock_hint: "holdlock"i | "noholdlock"i | "readpast"i | "shared"i
+derived_columns: "(" name_list ")"
+join_clause: join_type? "join"i table_source "on"i condition
+           | "cross"i "join"i table_source -> cross_join
+!join_type: "inner"i | ("left"i | "right"i | "full"i) "outer"i?
+where_clause: "where"i (condition | current_of)
+current_of: "current"i "of"i identifier
+group_by: "group"i "by"i expr_list
+having: "having"i condition
+order_by: "order"i "by"i order_item ("," order_item)*
+order_item: scalar direction?
+!direction: "asc"i | "desc"i
+compute_clause: "compute"i expr_list ("by"i expr_list)?
+at_isolation: "at"i "isolation"i "level"i? isolation
+plan_clause: "plan"i string
+
+insert: "insert"i top_clause? "into"i? object_name column_list? insert_source
+?insert_source: "values"i value_row ("," value_row)* -> values
+              | "default"i "values"i -> default_values
+              | query | execute_procedure
+value_row: "(" (scalar | default_value) ("," (scalar | default_value))* ")"
+column_list: "(" name_list ")"
+name_list: identifier ("," identifier)*
+update: "update"i top_clause? object_name lock_hint* "set"i assignments from_clause? where_clause?
+assignments: assignment ("," assignment)*
+assignment: (object_name | local_var) "=" scalar
+delete: "delete"i top_clause? "from"i? object_name lock_hint* from_clause? where_clause?
+merge: "merge"i "into"i? object_name alias? "using"i table_source "on"i condition merge_action+
+?merge_action: "when"i "matched"i match_test? "then"i "update"i "set"i assignments -> matched_update
+             | "when"i "matched"i match_test? "then"i "delete"i -> matched_delete
+             | "when"i "not"i "matched"i match_test? "then"i "insert"i column_list? "values"i value_row -> unmatched_insert
+match_test: "and"i condition
+
+read_text: "readtext"i object_name text_pointer text_size text_size lock_hint* at_isolation?
+?text_pointer: local_var | BINARY -> binary
+?text_size: local_var | integer
+write_text: "writetext"i object_name text_pointer lock_hint? with_log? scalar
+with_log: "with"i "log"i
+
+// Table and index DDL commonly embedded in procedures
+create_table: "create"i "table"i object_name "(" table_element ("," table_element)* ")" table_lock? placement?
+?table_element: column_def | table_constraint
+column_def: identifier datatype column_attr*
+?column_attr: nullability | identity | default_clause | column_constraint
+nullability: "not"i "null"i -> not_null
+           | "null"i -> nullable
+identity: "identity"i
+default_clause: "default"i scalar
+constraint_name: "constraint"i identifier
+column_constraint: constraint_name? (primary_key | unique_key | references | check_constraint)
+table_constraint: constraint_name? (primary_key column_list | unique_key column_list | "foreign"i "key"i column_list references | check_constraint)
+primary_key: "primary"i "key"i clustering?
+unique_key: "unique"i clustering?
+references: "references"i object_name column_list?
+check_constraint: "check"i "(" condition ")"
+placement: "on"i identifier
+!table_lock: "lock"i ("allpages"i | "datarows"i | "datapages"i)
+alter_table: "alter"i "table"i object_name alter_action
+?alter_action: "add"i table_element ("," table_element)* -> add_columns
+             | "drop"i "constraint"i identifier -> drop_constraint
+             | "drop"i name_list -> drop_columns
+             | "modify"i column_def ("," column_def)* -> modify_columns
+drop_object: "drop"i object_kind object_name ("," object_name)*
+!object_kind: "table"i | "index"i | "procedure"i | "proc"i | "view"i | "trigger"i | "default"i | "rule"i
+truncate_table: "truncate"i "table"i object_name
+create_index: "create"i unique_index? clustering? "index"i identifier "on"i object_name "(" index_column ("," index_column)* ")" placement?
+unique_index: "unique"i
+!clustering: "clustered"i | "nonclustered"i
+index_column: identifier direction?
+
+// Expressions. Operator nodes retain precedence and associativity.
+?condition: condition "or"i conjunction -> logical_or
+          | conjunction
+?conjunction: conjunction "and"i negation -> logical_and
+            | negation
+?negation: "not"i negation -> logical_not
+         | "(" condition ")" | predicate
+?predicate: scalar comparison_op scalar -> comparison
+          | scalar comparison_op quantification "(" query ")" -> quantified_comparison
+          | scalar "is"i "null"i -> is_null
+          | scalar "is"i "not"i "null"i -> is_not_null
+          | scalar "between"i scalar "and"i scalar -> between
+          | scalar "not"i "between"i scalar "and"i scalar -> not_between
+          | scalar "in"i "(" in_values ")" -> in_predicate
+          | scalar "not"i "in"i "(" in_values ")" -> not_in
+          | scalar "like"i scalar escape_clause? -> like
+          | scalar "not"i "like"i scalar escape_clause? -> not_like
+          | "exists"i "(" query ")" -> exists
+!comparison_op: "=" | "<>" | "!=" | "<" | "<=" | ">" | ">=" | "!<" | "!>" | "*=" | "=*"
+!quantification: "any"i | "all"i | "some"i
+?in_values: expr_list | query
+escape_clause: "escape"i scalar
+expr_list: scalar ("," scalar)*
+?scalar: scalar "+" product -> add
+       | scalar "-" product -> subtract
+       | scalar "&" product -> bit_and
+       | scalar "|" product -> bit_or
+       | scalar "^" product -> bit_xor
+       | scalar "||" product -> concatenate
+       | product
+?product: product "*" unary -> multiply
+        | product "/" unary -> divide
+        | product "%" unary -> modulo
+        | unary
+?unary: "-" unary -> negate
+      | "+" unary -> positive
+      | "~" unary -> bit_not
+      | atom
+?atom: integer | DECIMAL -> decimal | BINARY -> binary | MONEY -> money
+     | string | "null"i -> null | local_var | system_variable
+     | object_name -> column | function_call | cast_expr | convert_expr | case_expr
+     | "(" scalar ")" | "(" query ")" -> scalar_subquery
+integer: INT
+local_var: LOCAL
+system_variable: SYSTEM
+string: STRING | DOUBLE_QUOTED
+function_call: (object_name | builtin_keyword) "(" (star_arg | quantifier? expr_list)? ")"
+!builtin_keyword: "left"i | "right"i | "char"i
+star_arg: "*"
+cast_expr: "cast"i "(" scalar "as"i datatype ")"
+convert_expr: "convert"i "(" datatype "," scalar ("," scalar)? ")"
+case_expr: "case"i (scalar simple_when+ | searched_when+) else_value? "end"i
+simple_when: "when"i scalar "then"i scalar
+searched_when: "when"i condition "then"i scalar
+else_value: "else"i scalar
+datatype: type_name type_args?
+?type_name: object_name | "double"i "precision"i -> double_precision
+          | "unsigned"i identifier -> unsigned_type
+          | char_type
+char_type: national? char_kind varying?
+national: "national"i
+!char_kind: "character"i | "char"i
+varying: "varying"i
+type_args: "(" INT ("," INT)? ")"
+object_name: identifier ("." identifier | omitted_owner identifier | omitted_database_and_owner identifier)*
+omitted_owner: ".."
+omitted_database_and_owner: "..."
+!?identifier: NAME | DELIMITED_NAME | "name"i | "owner"i | "caller"i | "invoker"i | "level"i
+            | "absolute"i | "relative"i | "delay"i | "mode"i | "errordata"i
+
+_DOT_STAR.2: /\.\s*\*/
+_GROUP_SEMI.2: /;(?=\s*[0-9])/
+GO_LINE.5: /(?im:^[ \t]*go(?:[ \t]+[1-9][0-9]*)?[ \t]*(?:--[^\r\n]*)?\r?$)/
+LOCAL: /@[^\W\d][\w$#@]*/
+SYSTEM: /@@[^\W\d][\w$#@]*/
+DELIMITED_NAME: /\[(?:[^\]]|\]\])+\]/
+NAME: /(?:[^\W\d]|#)[\w$#@]*/
+STRING.2: /(?i:N)?'(?:[^']|'')*'/
+DOUBLE_QUOTED: /"(?:""|[^"])*"/
+BINARY.2: /0[xX][a-fA-F0-9]+/
+MONEY: /\$[0-9]+(?:\.[0-9]+)?/
+DECIMAL.1: /(?:[0-9]+\.[0-9]*|\.[0-9]+)(?:[eE][+-]?[0-9]+)?|[0-9]+[eE][+-]?[0-9]+/
+INT: /[0-9]+/
+%ignore /[ \t\f]+|\r?\n/
+%ignore /--[^\r\n]*/
+%ignore /(?s:\/\*.*?\*\/)/
