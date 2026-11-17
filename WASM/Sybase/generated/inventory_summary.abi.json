@@ -1,0 +1,33 @@
+{
+  "name": "inventory_summary",
+  "parameters": [
+    "minimum",
+    "matches"
+  ],
+  "defaults": {
+    "minimum": 1
+  },
+  "outputs": [
+    "matches"
+  ],
+  "operations": {
+    "snapshot_0": {
+      "kind": "snapshot",
+      "arguments": [
+        "@minimum"
+      ],
+      "target": "#stock",
+      "columns": [
+        "sku",
+        "available"
+      ]
+    },
+    "result_set_1": {
+      "kind": "result_set",
+      "arguments": [
+        "#stock.sku",
+        "#stock.available"
+      ]
+    }
+  }
+}

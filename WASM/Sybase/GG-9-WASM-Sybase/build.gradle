@@ -1,0 +1,39 @@
+plugins {
+    id 'application'
+}
+
+dependencies {
+    implementation project(':ignite-api')
+    implementation project(':ignite-client')
+    implementation project(':ignite-runner')
+    implementation rootProject.libs.chicory.runtime
+    implementation platform(rootProject.libs.jackson.bom)
+    implementation rootProject.libs.jackson.databind
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+sourceSets.main.resources.srcDir 'generated'
+application.mainClass = 'example.sybase.ComputeDemo'
+
+tasks.register('jobJar', Jar) {
+    dependsOn classes
+    archiveFileName = 'sybase-wasm-jobs.jar'
+    from sourceSets.main.output
+    include 'example/sybase/SybaseWasmJob*.class'
+    include '*.wasm', '*.abi.json', '*.bindings.json'
+}
+
+tasks.named('run', JavaExec) {
+    dependsOn jobJar
+    workingDir projectDir
+    systemProperty 'sybase.example.dir', projectDir.absolutePath
+    systemProperty 'gridgain.source.dir', rootDir.absolutePath
+    systemProperty 'sybase.job.jar', tasks.named('jobJar').get().archiveFile.get().asFile.absolutePath
+    systemProperty 'micronaut.server.host', '127.0.0.1'
+    jvmArgs rootProject.addOpens
+    jvmArgs '-Xmx1g', '-XX:ActiveProcessorCount=4'
+}

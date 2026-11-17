@@ -1,0 +1,11 @@
+// Include the example alongside the local GridGain source projects for this invocation.
+def directory = System.getProperty('sybase.example.dir')
+if (!directory) {
+    throw new GradleException('Supply -Dsybase.example.dir=<example directory>')
+}
+settingsEvaluated { settings ->
+    if (settings.findProject(':ignite-api') != null) {
+        settings.include ':sybase-wasm-example'
+        settings.project(':sybase-wasm-example').projectDir = new File(directory)
+    }
+}

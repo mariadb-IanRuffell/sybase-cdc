@@ -1,0 +1,21 @@
+script
+  batch
+    procedure
+      object_name	validate_restock
+      parameters
+        parameter_decl
+          @units
+          datatype
+            object_name	INT
+      statements
+        block
+          statements
+            if_statement
+              comparison
+                local_var	@units
+                comparison_op	>
+                integer	0
+              return_status
+                integer	0
+            return_status
+              integer	1

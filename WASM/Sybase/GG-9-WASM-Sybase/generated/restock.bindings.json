@@ -1,0 +1,3 @@
+{
+  "update_0": "UPDATE GG9_WASM_INVENTORY SET quantity = quantity + ? WHERE sku = ?"
+}
