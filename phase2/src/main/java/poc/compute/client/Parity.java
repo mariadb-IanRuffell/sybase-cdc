@@ -14,7 +14,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.IgniteClient;
 
 /**
@@ -25,19 +24,20 @@ import org.apache.ignite.client.IgniteClient;
 final class Parity {
     private static final String PKG = Main.PKG;
 
-    private final ClientCompute compute;
+    private final Compute compute;
     private Connection ase, gg;
     private int passed, failed;
 
     Parity(IgniteClient client) {
-        this.compute = client.compute().withTimeout(120_000);
+        this.compute = new Compute(client);
     }
 
     boolean run(String[] a) throws Exception {
         String what = a.length > 1 ? a[1] : "all";
         ase = DriverManager.getConnection(env("ASE_URL", "jdbc:jtds:sybase://llama.local:5000/testdb"),
             env("ASE_USER", "tester"), env("ASE_PASSWORD", "guest1234"));
-        gg = DriverManager.getConnection(env("GG_JDBC", "jdbc:ignite:thin://127.0.0.1:10800,127.0.0.1:10801,127.0.0.1:10802"));
+        gg = DriverManager.getConnection(env("GG_JDBC", "jdbc:ignite:thin://127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802"));
+        gg.setAutoCommit(false);   // reads in a read-write transaction see data the jobs just committed; autocommit reads are a snapshot about 1.5 s old
         try {
             boolean all = what.equals("all");
             if (all || what.equals("360")) parity360();
@@ -286,7 +286,9 @@ final class Parity {
 
     static List<List<Object>> readAll(Connection c, String sql) throws SQLException {
         try (Statement s = c.createStatement()) {
-            return readAll(s.executeQuery(sql));
+            List<List<Object>> rows = readAll(s.executeQuery(sql));
+            if (!c.getAutoCommit()) c.commit();
+            return rows;
         }
     }
 
@@ -327,6 +329,8 @@ final class Parity {
             return new BigDecimal(a.toString()).subtract(new BigDecimal(b.toString())).abs()
                 .compareTo(new BigDecimal("0.01")) <= 0;
         }
+        if (a instanceof java.time.LocalDateTime x) a = Timestamp.valueOf(x);     // the GridGain 9 JDBC driver returns java.time values
+        if (b instanceof java.time.LocalDateTime x) b = Timestamp.valueOf(x);
         if (a instanceof Timestamp && b instanceof Timestamp) {
             return Math.abs(((Timestamp) a).getTime() - ((Timestamp) b).getTime()) <= 10;
         }

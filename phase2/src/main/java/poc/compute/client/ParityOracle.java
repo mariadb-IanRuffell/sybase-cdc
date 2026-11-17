@@ -14,7 +14,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.client.ClientCompute;
 import org.apache.ignite.client.IgniteClient;
 
 /**
@@ -25,19 +24,20 @@ import org.apache.ignite.client.IgniteClient;
 final class ParityOracle {
     private static final String PKG = Main.PKG;
 
-    private final ClientCompute compute;
+    private final Compute compute;
     private Connection ora, gg;
     private int passed, failed;
     private int oraTestSegment, ggTestSegment;   // the segment each system created in the book-flight test (ids differ by design)
 
     ParityOracle(IgniteClient client) {
-        this.compute = client.compute().withTimeout(120_000);
+        this.compute = new Compute(client);
     }
 
     boolean run() throws Exception {
         ora = DriverManager.getConnection(Parity.env("ORA_URL", "jdbc:oracle:thin:@//localhost:1521/FREEPDB1"),
             Parity.env("ORA_USER", "travel"), Parity.env("ORA_PASSWORD", "travel"));
-        gg = DriverManager.getConnection(Parity.env("GG_JDBC", "jdbc:ignite:thin://127.0.0.1:10800,127.0.0.1:10801,127.0.0.1:10802"));
+        gg = DriverManager.getConnection(Parity.env("GG_JDBC", "jdbc:ignite:thin://127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802"));
+        gg.setAutoCommit(false);   // read-write transaction reads see what the jobs just committed (see Parity)
         try {
             List<List<Object>> o = new ArrayList<>(), g = new ArrayList<>();
             for (String q : SNAPSHOT) { o.addAll(ora(q)); g.addAll(gg(q)); }
@@ -242,6 +242,7 @@ final class ParityOracle {
         // sold out: empty the same cabin on both sides
         ora.createStatement().executeUpdate("update flight_inventory set seats_available = 0 where flight_id = " + open + " and cabin = 'FIRST'");
         gg.createStatement().executeUpdate("update flight_inventory set seats_available = 0 where flight_id = " + open + " and cabin = 'FIRST'");
+        gg.commit();
         bookError("book: cabin sold out", 20107, 12, open, "FIRST", "A Passenger");
 
         cancelError("cancel booking: not found", 20110, 999999999);

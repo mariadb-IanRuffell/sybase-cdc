@@ -4,36 +4,36 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.ignite.Ignition;
-import org.apache.ignite.client.ClientCompute;
-import org.apache.ignite.client.ClientRetryAllPolicy;
 import org.apache.ignite.client.IgniteClient;
-import org.apache.ignite.configuration.ClientConfiguration;
 
 /** CLI for the GridGain compute jobs that replace the Sybase stored procedures. */
 public final class Main {
-    static final String PKG = "poc.compute.jobs.";
+    static final String PKG = Jobs.PKG;
 
     public static void main(String[] a) throws Exception {
         if (a.length == 0) usage();
         try (IgniteClient client = connect()) {
-            ClientCompute compute = client.compute().withTimeout(120_000);
             switch (a[0]) {
-                case "360": print(compute.execute(PKG + "Customer360Task", Integer.parseInt(a[1]))); break;
-                case "recalc": print(compute.execute(PKG + "RecalcLoyaltyTierTask", Integer.parseInt(a[1]))); break;
-                case "score": print(compute.execute(PKG + "ScoreCustomersTask", a.length > 1 ? Long.valueOf(a[1]) : null)); break;
-                case "order": print(compute.execute(PKG + "PlaceOrderTask", orderArgs(a))); break;
-                case "trips": print(compute.execute(PKG + "TripsTask", Integer.parseInt(a[1]))); break;
-                case "hub": print(compute.execute(PKG + "CustomerHubTask", Integer.parseInt(a[1]))); break;
-                case "impact": print(compute.execute(PKG + "DisruptionImpactTask", Integer.parseInt(a[1]))); break;
-                case "cancel-booking": print(compute.execute(PKG + "CancelBookingTask", Integer.parseInt(a[1]))); break;
-                case "book": print(compute.execute(PKG + "BookFlightTask", bookArgs(a))); break;
-                case "delay": print(compute.execute(PKG + "RecordDelayTask", flightOp(a, false))); break;
-                case "cancel-flight": print(compute.execute(PKG + "RecordDelayTask", flightOp(a, true))); break;
+                case "360": print(Jobs.forCustomer(client, "Customer360Job", Integer.parseInt(a[1]), cid(a[1]))); break;
+                case "recalc": print(Jobs.forCustomer(client, "RecalcLoyaltyTierJob", Integer.parseInt(a[1]), cid(a[1]))); break;
+                case "score": {
+                    Map<String, Object> m = new HashMap<>();
+                    if (a.length > 1) m.put("as_of", Long.valueOf(a[1]));
+                    print(Jobs.anywhere(client, "ScoreCustomersJob", m));
+                    break;
+                }
+                case "order": { Map<String, Object> m = orderArgs(a); print(Jobs.forCustomer(client, "PlaceOrderJob", (Integer) m.get("customer_id"), m)); break; }
+                case "trips": print(Jobs.forCustomer(client, "TripsJob", Integer.parseInt(a[1]), cid(a[1]))); break;
+                case "hub": print(Jobs.forCustomer(client, "CustomerHubJob", Integer.parseInt(a[1]), cid(a[1]))); break;
+                case "impact": print(Jobs.anywhere(client, "DisruptionImpactJob", Map.of("flight_id", Integer.parseInt(a[1])))); break;
+                case "cancel-booking": print(Jobs.anywhere(client, "CancelBookingJob", Map.of("booking_id", Integer.parseInt(a[1])))); break;
+                case "book": { Map<String, Object> m = bookArgs(a); print(Jobs.forCustomer(client, "BookFlightJob", (Integer) m.get("customer_id"), m)); break; }
+                case "delay": print(Jobs.anywhere(client, "RecordDelayJob", flightOp(a, false))); break;
+                case "cancel-flight": print(Jobs.anywhere(client, "RecordDelayJob", flightOp(a, true))); break;
                 case "disruptions": {
                     Map<String, Object> m = new HashMap<>();
                     if (a.length > 1) m.put("min_delay", Integer.parseInt(a[1]));
-                    print(compute.execute(PKG + "ProcessDisruptionsTask", m));
+                    print(Jobs.anywhere(client, "ProcessDisruptionsJob", m));
                     break;
                 }
                 case "parity":
@@ -44,12 +44,14 @@ public final class Main {
         }
     }
 
+    private static Map<String, Object> cid(String id) {
+        return Map.of("customer_id", Integer.parseInt(id));
+    }
+
     static IgniteClient connect() {
-        // All three nodes, so the client fails over if one is down. Affinity awareness is off because the
-        // nodes advertise their container-network addresses, which are not reachable from the host.
-        String addr = System.getenv().getOrDefault("GG_ADDR", "127.0.0.1:10800,127.0.0.1:10801,127.0.0.1:10802");
-        return Ignition.startClient(new ClientConfiguration().setAddresses(addr.split(","))
-            .setAffinityAwarenessEnabled(false).setRetryPolicy(new ClientRetryAllPolicy()));
+        // All three nodes, so the client fails over if one is down.
+        String addr = System.getenv().getOrDefault("GG_ADDR", "127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802");
+        return IgniteClient.builder().addresses(addr.split(",")).build();
     }
 
     /** order <customer_id> <channel> <payment_method> <product:qty,product:qty,...> */

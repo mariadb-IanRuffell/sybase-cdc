@@ -29,6 +29,13 @@ class ParityHelpersTest {
     }
 
     @Test
+    void javaTimeValuesFromTheGridGain9DriverCompareWithTimestamps() {
+        assertTrue(Parity.same(Timestamp.valueOf("2026-10-15 12:30:05"), java.time.LocalDateTime.of(2026, 10, 15, 12, 30, 5)));
+        assertTrue(Parity.same(java.time.LocalDateTime.of(2026, 10, 15, 12, 30, 5), Timestamp.valueOf("2026-10-15 12:30:05")));
+        assertFalse(Parity.same(Timestamp.valueOf("2026-10-15 12:30:05"), java.time.LocalDateTime.of(2026, 10, 15, 12, 30, 6)));
+    }
+
+    @Test
     void stringsIgnoreTrailingPaddingOnly() {
         assertTrue(Parity.same("GOLD   ", "GOLD"));
         assertFalse(Parity.same("  GOLD", "GOLD"));
