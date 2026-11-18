@@ -4,6 +4,24 @@
 
 A separate [GridGain 9 compute example](GG-9-WASM-Sybase/README.md) uses unmodified GridGain 9. A Java compute wrapper hosts the inventory WASM and supplies SQL callbacks, output parameters and multiple result sets. Inventory is stored in GridGain 9's persistent storage and verified after a node restart.
 
+## Customer 360 on GridGain 9
+
+The [typed GridGain 9 backend](GG-9-WASM-Sybase/README.md#run-every-procedure-in-03_procssql)
+compiles **all six procedures** in [03_procs.sql](../../sybase/sql/03_procs.sql).
+It adds nullable scalar types, exact decimals, strings, binary and date/time values,
+transactions, identity outputs, nested calls, cursors and six-result-set reporting.
+The Java wrapper uses public APIs and leaves GG9 source unchanged.
+
+```sh
+cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase/GG-9-WASM-Sybase
+./run_customer360.sh
+```
+
+See its README for the type mappings, typed WASM ABI, responses, tracing, real
+GridGain checks and compatibility limits. The original Ignite 2 examples below
+retain their integer ABI. A separately downloaded [ASE procedure corpus](corpus/README.md)
+provides upstream fixtures and a parser/compiler coverage report.
+
 ## Run the inventory summary and read its results
 
 With the local Ignite node running (see **Run it** below), run both result examples from this directory.
@@ -128,7 +146,7 @@ You can also run the compiler on its own.
 .venv/bin/python compiler.py restock.sql --out generated
 ```
 
-## WASM backend scope
+## Original Ignite 2 WASM backend scope
 
 The WASM backend handles integer inputs, defaults and output parameters, signed comparisons, blocks, conditional returns, the restock update, and the aggregate, filter, assignment, and ordered result queries used in the inventory examples. The calling convention assumes non-null signed 32-bit inputs. Table and column names resolve in Ignite. The module starts each standalone invocation with a zero row count. Each supported `UPDATE` replaces it with the Ignite result, and each `IF` evaluates its condition before clearing it. The proof of concept leaves session-wide state, transactions, `@@error`, and SQL null semantics outside its scope. Database errors propagate through the host call. Verification used the compiled module and a real Ignite node. Equivalence against a running ASE server remains untested.
 

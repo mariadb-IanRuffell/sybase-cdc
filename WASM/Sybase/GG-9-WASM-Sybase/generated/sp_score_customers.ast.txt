@@ -1,0 +1,429 @@
+procedure
+  object_name	sp_score_customers
+  parameters
+    parameter_decl
+      @as_of
+      datatype
+        object_name	datetime
+      default_argument
+        null
+    parameter_decl
+      @customer_id
+      datatype
+        object_name	int
+      default_argument
+        null
+  statements
+    block
+      statements
+        declare_variables
+          variable_decl
+            @cid
+            datatype
+              object_name	int
+          variable_decl
+            @last_order
+            datatype
+              object_name	datetime
+          variable_decl
+            @orders_12m
+            datatype
+              object_name	int
+          variable_decl
+            @open_cases
+            datatype
+              object_name	int
+          variable_decl
+            @avg_sent
+            datatype
+              object_name	float
+          variable_decl
+            @recency
+            datatype
+              object_name	int
+          variable_decl
+            @score
+            datatype
+              object_name	int
+          variable_decl
+            @band
+            datatype
+              object_name	varchar
+              type_args	10
+        if_statement
+          is_null
+            local_var	@as_of
+          query
+            select_core
+              select_list
+                variable_assignment
+                  local_var	@as_of
+                  function_call
+                    object_name	getdate
+        declare_cursor
+          cust_cur
+          query
+            select_core
+              select_list
+                select_item
+                  column
+                    object_name	customer_id
+              from_clause
+                joined_table
+                  table_reference
+                    object_name	customer
+              where_clause
+                logical_and
+                  comparison
+                    column
+                      object_name	status
+                    comparison_op	=
+                    string	'ACTIVE'
+                  logical_or
+                    is_null
+                      local_var	@customer_id
+                    comparison
+                      column
+                        object_name	customer_id
+                      comparison_op	=
+                      local_var	@customer_id
+        open_cursor	cust_cur
+        fetch_cursor
+          cust_cur
+          local_var	@cid
+        while_statement
+          comparison
+            system_variable	@@sqlstatus
+            comparison_op	=
+            integer	0
+          block
+            statements
+              query
+                select_core
+                  select_list
+                    variable_assignment
+                      local_var	@last_order
+                      function_call
+                        object_name	max
+                        expr_list
+                          column
+                            object_name	order_date
+                    variable_assignment
+                      local_var	@orders_12m
+                      function_call
+                        object_name	sum
+                        expr_list
+                          case_expr
+                            searched_when
+                              comparison
+                                column
+                                  object_name	order_date
+                                comparison_op	>=
+                                function_call
+                                  object_name	dateadd
+                                  expr_list
+                                    column
+                                      object_name	dd
+                                    negate
+                                      integer	365
+                                    local_var	@as_of
+                              integer	1
+                            else_value
+                              integer	0
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	orders
+                  where_clause
+                    logical_and
+                      logical_and
+                        comparison
+                          column
+                            object_name	customer_id
+                          comparison_op	=
+                          local_var	@cid
+                        comparison
+                          column
+                            object_name	status
+                          comparison_op	=
+                          string	'COMPLETED'
+                      comparison
+                        column
+                          object_name	order_date
+                        comparison_op	<=
+                        local_var	@as_of
+              query
+                select_core
+                  select_list
+                    variable_assignment
+                      local_var	@orders_12m
+                      function_call
+                        object_name	isnull
+                        expr_list
+                          local_var	@orders_12m
+                          integer	0
+              query
+                select_core
+                  select_list
+                    variable_assignment
+                      local_var	@open_cases
+                      function_call
+                        object_name	count
+                        star_arg
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	interaction
+                  where_clause
+                    logical_and
+                      comparison
+                        column
+                          object_name	customer_id
+                        comparison_op	=
+                        local_var	@cid
+                      comparison
+                        column
+                          object_name	status
+                        comparison_op	=
+                        string	'OPEN'
+              query
+                select_core
+                  select_list
+                    variable_assignment
+                      local_var	@avg_sent
+                      function_call
+                        object_name	isnull
+                        expr_list
+                          function_call
+                            object_name	avg
+                            expr_list
+                              convert_expr
+                                datatype
+                                  object_name	float
+                                column
+                                  object_name	sentiment
+                          integer	0
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	interaction
+                  where_clause
+                    logical_and
+                      comparison
+                        column
+                          object_name	customer_id
+                        comparison_op	=
+                        local_var	@cid
+                      comparison
+                        column
+                          object_name	opened_at
+                        comparison_op	>=
+                        function_call
+                          object_name	dateadd
+                          expr_list
+                            column
+                              object_name	dd
+                            negate
+                              integer	365
+                            local_var	@as_of
+              query
+                select_core
+                  select_list
+                    variable_assignment
+                      local_var	@recency
+                      case_expr
+                        searched_when
+                          is_null
+                            local_var	@last_order
+                          integer	9999
+                        else_value
+                          function_call
+                            object_name	datediff
+                            expr_list
+                              column
+                                object_name	dd
+                              local_var	@last_order
+                              local_var	@as_of
+              query
+                select_core
+                  select_list
+                    variable_assignment
+                      local_var	@score
+                      add
+                        add
+                          add
+                            case_expr
+                              searched_when
+                                comparison
+                                  local_var	@recency
+                                  comparison_op	<=
+                                  integer	90
+                                integer	0
+                              searched_when
+                                comparison
+                                  local_var	@recency
+                                  comparison_op	<=
+                                  integer	180
+                                integer	20
+                              searched_when
+                                comparison
+                                  local_var	@recency
+                                  comparison_op	<=
+                                  integer	365
+                                integer	40
+                              else_value
+                                integer	60
+                            case_expr
+                              searched_when
+                                comparison
+                                  local_var	@orders_12m
+                                  comparison_op	>=
+                                  integer	4
+                                integer	0
+                              searched_when
+                                comparison
+                                  local_var	@orders_12m
+                                  comparison_op	>=
+                                  integer	2
+                                integer	10
+                              searched_when
+                                comparison
+                                  local_var	@orders_12m
+                                  comparison_op	=
+                                  integer	1
+                                integer	20
+                              else_value
+                                integer	30
+                          case_expr
+                            searched_when
+                              comparison
+                                multiply
+                                  local_var	@open_cases
+                                  integer	5
+                                comparison_op	>
+                                integer	10
+                              integer	10
+                            else_value
+                              multiply
+                                local_var	@open_cases
+                                integer	5
+                        case_expr
+                          searched_when
+                            comparison
+                              local_var	@avg_sent
+                              comparison_op	<
+                              integer	0
+                            integer	10
+                          else_value
+                            integer	0
+              if_statement
+                comparison
+                  local_var	@score
+                  comparison_op	>
+                  integer	100
+                query
+                  select_core
+                    select_list
+                      variable_assignment
+                        local_var	@score
+                        integer	100
+              query
+                select_core
+                  select_list
+                    variable_assignment
+                      local_var	@band
+                      case_expr
+                        searched_when
+                          comparison
+                            local_var	@score
+                            comparison_op	<
+                            integer	30
+                          string	'LOW'
+                        searched_when
+                          comparison
+                            local_var	@score
+                            comparison_op	<
+                            integer	60
+                          string	'MEDIUM'
+                        else_value
+                          string	'HIGH'
+              update
+                object_name	customer_score
+                assignments
+                  assignment
+                    object_name	churn_score
+                    local_var	@score
+                  assignment
+                    object_name	risk_band
+                    local_var	@band
+                  assignment
+                    object_name	scored_at
+                    local_var	@as_of
+                where_clause
+                  comparison
+                    column
+                      object_name	customer_id
+                    comparison_op	=
+                    local_var	@cid
+              if_statement
+                comparison
+                  system_variable	@@rowcount
+                  comparison_op	=
+                  integer	0
+                insert
+                  object_name	customer_score
+                  column_list
+                    name_list
+                      customer_id
+                      churn_score
+                      risk_band
+                      scored_at
+                  values
+                    value_row
+                      local_var	@cid
+                      local_var	@score
+                      local_var	@band
+                      local_var	@as_of
+              fetch_cursor
+                cust_cur
+                local_var	@cid
+        close_cursor	cust_cur
+        deallocate_cursor	cust_cur
+        query
+          select_core
+            select_list
+              select_item
+                column
+                  object_name	risk_band
+              select_item
+                function_call
+                  object_name	count
+                  star_arg
+                column_alias	customers
+              select_item
+                function_call
+                  object_name	avg
+                  expr_list
+                    column
+                      object_name	churn_score
+                column_alias	avg_score
+            from_clause
+              joined_table
+                table_reference
+                  object_name	customer_score
+            where_clause
+              comparison
+                column
+                  object_name	scored_at
+                comparison_op	=
+                local_var	@as_of
+            group_by
+              expr_list
+                column
+                  object_name	risk_band
+          order_by
+            order_item
+              column
+                object_name	risk_band
+        return_status
+          integer	0

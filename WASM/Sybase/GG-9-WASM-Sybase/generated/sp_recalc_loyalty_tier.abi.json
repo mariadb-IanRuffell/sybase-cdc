@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "name": "sp_recalc_loyalty_tier",
+  "parameters": [
+    "customer_id",
+    "new_tier"
+  ],
+  "outputs": [
+    "new_tier"
+  ],
+  "defaults": {
+    "new_tier": null
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@customer_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@new_tier": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(10)",
+      "length": 10,
+      "fixed": false
+    },
+    "@spend": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(14,2)",
+      "precision": 14,
+      "scale": 2
+    },
+    "@old_tier": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(10)",
+      "length": 10,
+      "fixed": false
+    }
+  },
+  "operations": {
+    "assign_0": {
+      "kind": "assign",
+      "arguments": [
+        "@customer_id",
+        "@old_tier"
+      ],
+      "results": 2,
+      "destinations": [
+        "@old_tier"
+      ],
+      "sql_arguments": 1
+    },
+    "condition_1": {
+      "kind": "condition",
+      "arguments": [
+        "@old_tier"
+      ],
+      "results": 1
+    },
+    "raise_error_2": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20002,
+      "message": "Customer not found"
+    },
+    "assign_3": {
+      "kind": "assign",
+      "arguments": [
+        "@customer_id",
+        "@spend"
+      ],
+      "results": 2,
+      "destinations": [
+        "@spend"
+      ],
+      "sql_arguments": 1
+    },
+    "assign_4": {
+      "kind": "assign",
+      "arguments": [
+        "@spend",
+        "@new_tier"
+      ],
+      "results": 2,
+      "destinations": [
+        "@new_tier"
+      ],
+      "sql_arguments": 1
+    },
+    "condition_5": {
+      "kind": "condition",
+      "arguments": [
+        "@new_tier",
+        "@old_tier"
+      ],
+      "results": 1
+    },
+    "dml_6": {
+      "kind": "dml",
+      "arguments": [
+        "@new_tier",
+        "@customer_id"
+      ],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

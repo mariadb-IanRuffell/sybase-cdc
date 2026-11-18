@@ -29,8 +29,11 @@ import org.apache.ignite.sql.SqlRow;
 
 /** Runs a compiled Sybase procedure inside a GridGain compute job with SQL host functions. */
 public class SybaseWasmJob implements ComputeJob<String, String> {
-    private static final ObjectMapper JSON = new ObjectMapper();
-    private static final Set<String> PROCEDURES = Set.of("restock", "inventory_summary", "inventory_results");
+    private static final ObjectMapper JSON = new ObjectMapper()
+            .enable(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
+    private static final Set<String> PROCEDURES = Set.of("restock", "inventory_summary", "inventory_results",
+            "sp_recalc_loyalty_tier", "sp_customer_360", "sp_create_order",
+            "sp_add_order_item", "sp_complete_order", "sp_score_customers", "typed_roundtrip");
 
     @Override
     public CompletableFuture<String> executeAsync(JobExecutionContext context, String argument) {
@@ -51,6 +54,9 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
                 throw new IllegalArgumentException("Unknown bundled procedure " + name);
             }
             JsonNode abi = JSON.readTree(resource(name + ".abi.json"));
+            if (abi.path("version").asInt() == 2) {
+                return CompletableFuture.completedFuture(new TypedWasmRuntime(context).execute(name, request.path("parameters"), trace));
+            }
             JsonNode bindings = JSON.readTree(resource(name + ".bindings.json"));
             JsonNode input = request.path("parameters");
             if (!input.isMissingNode() && !input.isObject()) {
@@ -191,15 +197,15 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
         }
     }
 
-    private static class Trace {
-        private final String callId = UUID.randomUUID().toString();
-        private boolean enabled;
-        private String procedure;
-        private String node;
+    static class Trace {
+        final String callId = UUID.randomUUID().toString();
+        boolean enabled;
+        String procedure;
+        String node;
         private int sequence;
-        private int sqlCalls;
+        int sqlCalls;
 
-        private void event(String event, Map<String, ?> details) {
+        void event(String event, Map<String, ?> details) {
             if (!enabled) {
                 return;
             }
@@ -217,7 +223,7 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
             }
         }
 
-        private Map<Instruction, String> localWrites(WasmModule module, List<String> outputs) {
+        Map<Instruction, String> localWrites(WasmModule module, List<String> outputs) {
             Map<Instruction, String> writes = new IdentityHashMap<>();
             if (module.nameSection() == null) {
                 throw new IllegalStateException("Local tracing requires WASM names; recompile with prepare.py");
@@ -243,7 +249,7 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
         }
     }
 
-    private static byte[] resource(String name) throws Exception {
+    static byte[] resource(String name) throws Exception {
         try (InputStream stream = SybaseWasmJob.class.getResourceAsStream("/" + name)) {
             if (stream == null) {
                 throw new IllegalStateException("Missing deployment resource " + name);
@@ -252,7 +258,7 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
         }
     }
 
-    private static List<String> names(JsonNode array) {
+    static List<String> names(JsonNode array) {
         List<String> result = new ArrayList<>();
         array.forEach(node -> result.add(node.asText()));
         return result;

@@ -1,0 +1,554 @@
+procedure
+  object_name	sp_customer_360
+  parameters
+    parameter_decl
+      @customer_id
+      datatype
+        object_name	int
+  statements
+    block
+      statements
+        declare_variables
+          variable_decl
+            @spend_12m
+            datatype
+              object_name	numeric
+              type_args
+                14
+                2
+          variable_decl
+            @next_threshold
+            datatype
+              object_name	numeric
+              type_args
+                14
+                2
+        if_statement
+          logical_not
+            exists
+              query
+                select_core
+                  select_list
+                    select_item
+                      integer	1
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	customer
+                  where_clause
+                    comparison
+                      column
+                        object_name	customer_id
+                      comparison_op	=
+                      local_var	@customer_id
+          block
+            statements
+              raise_error
+                integer	20002
+                string	'Customer not found'
+              return_status
+                negate
+                  integer	1
+        query
+          select_core
+            select_list
+              select_item
+                column
+                  object_name
+                    c
+                    customer_id
+              select_item
+                column
+                  object_name
+                    c
+                    first_name
+              select_item
+                column
+                  object_name
+                    c
+                    last_name
+              select_item
+                column
+                  object_name
+                    c
+                    email
+              select_item
+                column
+                  object_name
+                    c
+                    phone
+              select_item
+                column
+                  object_name
+                    c
+                    nationality
+              select_item
+                column
+                  object_name
+                    c
+                    segment
+              select_item
+                column
+                  object_name
+                    c
+                    loyalty_tier
+              select_item
+                column
+                  object_name
+                    c
+                    loyalty_points
+              select_item
+                column
+                  object_name
+                    c
+                    marketing_opt_in
+              select_item
+                column
+                  object_name
+                    c
+                    status
+              select_item
+                column
+                  object_name
+                    c
+                    created_at
+              select_item
+                column
+                  object_name
+                    a
+                    city
+              select_item
+                column
+                  object_name
+                    a
+                    country
+            from_clause
+              joined_table
+                table_reference
+                  object_name	customer
+                  alias	c
+                join_clause
+                  join_type	left
+                  table_reference
+                    object_name	address
+                    alias	a
+                  logical_and
+                    comparison
+                      column
+                        object_name
+                          a
+                          customer_id
+                      comparison_op	=
+                      column
+                        object_name
+                          c
+                          customer_id
+                    comparison
+                      column
+                        object_name
+                          a
+                          is_primary
+                      comparison_op	=
+                      integer	1
+            where_clause
+              comparison
+                column
+                  object_name
+                    c
+                    customer_id
+                comparison_op	=
+                local_var	@customer_id
+        query
+          select_core
+            select_list
+              select_item
+                function_call
+                  object_name	count
+                  star_arg
+                column_alias	order_count
+              select_item
+                function_call
+                  object_name	isnull
+                  expr_list
+                    function_call
+                      object_name	sum
+                      expr_list
+                        column
+                          object_name	total_amount
+                    integer	0
+                column_alias	lifetime_spend
+              select_item
+                function_call
+                  object_name	isnull
+                  expr_list
+                    function_call
+                      object_name	avg
+                      expr_list
+                        column
+                          object_name	total_amount
+                    integer	0
+                column_alias	avg_order_value
+              select_item
+                function_call
+                  object_name	max
+                  expr_list
+                    column
+                      object_name	order_date
+                column_alias	last_order_date
+              select_item
+                function_call
+                  object_name	isnull
+                  expr_list
+                    function_call
+                      object_name	sum
+                      expr_list
+                        case_expr
+                          searched_when
+                            comparison
+                              column
+                                object_name	order_date
+                              comparison_op	>=
+                              function_call
+                                object_name	dateadd
+                                expr_list
+                                  column
+                                    object_name	dd
+                                  negate
+                                    integer	365
+                                  function_call
+                                    object_name	getdate
+                            column
+                              object_name	total_amount
+                          else_value
+                            integer	0
+                    integer	0
+                column_alias	spend_12m
+            from_clause
+              joined_table
+                table_reference
+                  object_name	orders
+            where_clause
+              logical_and
+                comparison
+                  column
+                    object_name	customer_id
+                  comparison_op	=
+                  local_var	@customer_id
+                comparison
+                  column
+                    object_name	status
+                  comparison_op	=
+                  string	'COMPLETED'
+        query
+          select_core
+            top_clause
+              integer	5
+            select_list
+              select_item
+                column
+                  object_name	order_id
+              select_item
+                column
+                  object_name	order_date
+              select_item
+                column
+                  object_name	status
+              select_item
+                column
+                  object_name	channel
+              select_item
+                column
+                  object_name	total_amount
+              select_item
+                column
+                  object_name	currency
+            from_clause
+              joined_table
+                table_reference
+                  object_name	orders
+            where_clause
+              comparison
+                column
+                  object_name	customer_id
+                comparison_op	=
+                local_var	@customer_id
+          order_by
+            order_item
+              column
+                object_name	order_date
+              direction	desc
+        query
+          select_core
+            top_clause
+              integer	3
+            select_list
+              select_item
+                column
+                  object_name
+                    p
+                    category
+              select_item
+                function_call
+                  object_name	sum
+                  expr_list
+                    column
+                      object_name
+                        oi
+                        line_total
+                column_alias	spend
+              select_item
+                function_call
+                  object_name	sum
+                  expr_list
+                    column
+                      object_name
+                        oi
+                        qty
+                column_alias	qty
+            from_clause
+              joined_table
+                table_reference
+                  object_name	orders
+                  alias	o
+                join_clause
+                  table_reference
+                    object_name	order_item
+                    alias	oi
+                  comparison
+                    column
+                      object_name
+                        oi
+                        order_id
+                    comparison_op	=
+                    column
+                      object_name
+                        o
+                        order_id
+                join_clause
+                  table_reference
+                    object_name	product
+                    alias	p
+                  comparison
+                    column
+                      object_name
+                        p
+                        product_id
+                    comparison_op	=
+                    column
+                      object_name
+                        oi
+                        product_id
+            where_clause
+              logical_and
+                comparison
+                  column
+                    object_name
+                      o
+                      customer_id
+                  comparison_op	=
+                  local_var	@customer_id
+                comparison
+                  column
+                    object_name
+                      o
+                      status
+                  comparison_op	=
+                  string	'COMPLETED'
+            group_by
+              expr_list
+                column
+                  object_name
+                    p
+                    category
+          order_by
+            order_item
+              function_call
+                object_name	sum
+                expr_list
+                  column
+                    object_name
+                      oi
+                      line_total
+              direction	desc
+            order_item
+              column
+                object_name
+                  p
+                  category
+        query
+          select_core
+            select_list
+              select_item
+                function_call
+                  object_name	count
+                  star_arg
+                column_alias	total_interactions
+              select_item
+                function_call
+                  object_name	isnull
+                  expr_list
+                    function_call
+                      object_name	sum
+                      expr_list
+                        case_expr
+                          searched_when
+                            comparison
+                              column
+                                object_name	status
+                              comparison_op	=
+                              string	'OPEN'
+                            integer	1
+                          else_value
+                            integer	0
+                    integer	0
+                column_alias	open_cases
+              select_item
+                function_call
+                  object_name	max
+                  expr_list
+                    column
+                      object_name	opened_at
+                column_alias	last_contact
+              select_item
+                function_call
+                  object_name	isnull
+                  expr_list
+                    function_call
+                      object_name	avg
+                      expr_list
+                        convert_expr
+                          datatype
+                            object_name	float
+                          column
+                            object_name	sentiment
+                    integer	0
+                column_alias	avg_sentiment
+            from_clause
+              joined_table
+                table_reference
+                  object_name	interaction
+            where_clause
+              comparison
+                column
+                  object_name	customer_id
+                comparison_op	=
+                local_var	@customer_id
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@spend_12m
+                function_call
+                  object_name	isnull
+                  expr_list
+                    function_call
+                      object_name	sum
+                      expr_list
+                        column
+                          object_name	total_amount
+                    integer	0
+            from_clause
+              joined_table
+                table_reference
+                  object_name	orders
+            where_clause
+              logical_and
+                logical_and
+                  comparison
+                    column
+                      object_name	customer_id
+                    comparison_op	=
+                    local_var	@customer_id
+                  comparison
+                    column
+                      object_name	status
+                    comparison_op	=
+                    string	'COMPLETED'
+                comparison
+                  column
+                    object_name	order_date
+                  comparison_op	>=
+                  function_call
+                    object_name	dateadd
+                    expr_list
+                      column
+                        object_name	dd
+                      negate
+                        integer	365
+                      function_call
+                        object_name	getdate
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@next_threshold
+                function_call
+                  object_name	min
+                  expr_list
+                    column
+                      object_name	min_spend
+            from_clause
+              joined_table
+                table_reference
+                  object_name	loyalty_tier_rule
+            where_clause
+              comparison
+                column
+                  object_name	min_spend
+                comparison_op	>
+                local_var	@spend_12m
+        query
+          select_core
+            select_list
+              select_item
+                column
+                  object_name
+                    c
+                    loyalty_tier
+              select_item
+                column
+                  object_name
+                    c
+                    loyalty_points
+              select_item
+                local_var	@spend_12m
+                column_alias	spend_12m
+              select_item
+                scalar_subquery
+                  query
+                    select_core
+                      select_list
+                        select_item
+                          column
+                            object_name	tier
+                      from_clause
+                        joined_table
+                          table_reference
+                            object_name	loyalty_tier_rule
+                      where_clause
+                        comparison
+                          column
+                            object_name	min_spend
+                          comparison_op	=
+                          local_var	@next_threshold
+                column_alias	next_tier
+              select_item
+                subtract
+                  local_var	@next_threshold
+                  local_var	@spend_12m
+                column_alias	spend_to_next_tier
+            from_clause
+              joined_table
+                table_reference
+                  object_name	customer
+                  alias	c
+            where_clause
+              comparison
+                column
+                  object_name
+                    c
+                    customer_id
+                comparison_op	=
+                local_var	@customer_id
+        return_status
+          integer	0

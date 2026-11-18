@@ -39,3 +39,39 @@ for source in sources:
     abi_path.write_text(json.dumps(abi, indent=2) + '\n')
     bindings_path.write_text(json.dumps(bindings, indent=2) + '\n')
     print(f'Prepared {name}')
+
+# Compile the complete Customer 360 script using the typed GridGain ABI.
+from gg9_compiler import compile_script
+
+# The GridGain order_item and payment tables carry the colocation key customer_id, which Sybase's do not.
+DENORMALISED = {t: {'column': 'customer_id', 'parent': 'orders', 'via': 'order_id'} for t in ('order_item', 'payment')}
+repository = HERE.parents[2]
+for name in compile_script(repository / 'sybase/sql/03_procs.sql', output, repository / 'sybase/sql/01_schema.sql', DENORMALISED):
+    print(f'Compiled typed GridGain job: {name}')
+for name in compile_script(HERE / 'sql/typed_roundtrip.sql', output):
+    print(f'Compiled typed GridGain job: {name}')
+
+# Disposable demo schema, derived from the source column types/primary keys.
+# Foreign keys, indexes and ASE defaults are not a schema migration feature.
+from ase_parser import parse_sql
+from gg9_compiler import datatype, Sql
+from compiler import unqualified_name, identifier
+schema = parse_sql((repository / 'sybase/sql/01_schema.sql').read_text())
+statements = ['CREATE TABLE WASM_IDENTITY (table_name VARCHAR(128) PRIMARY KEY, next_id BIGINT NOT NULL)']
+for table in schema.find_data('create_table'):
+    name = unqualified_name(table.children[0])
+    columns = []
+    identity = False
+    for node in table.children[1:]:
+        if node.data == 'column_def':
+            column, typ, *options = node.children
+            identity |= any(x.data == 'identity' for x in options)
+            notnull = any(x.data in ('not_null', 'identity') for x in options)
+            columns.append(f'{identifier(column)} {datatype(typ)["sql"]}' + (' NOT NULL' if notnull else ''))
+        elif node.data == 'table_constraint' and any(x.data == 'primary_key' for x in node.children):
+            keys = next(x for x in node.children if x.data == 'column_list')
+            columns.append('PRIMARY KEY ' + Sql({}).render(keys))
+    statements.append(f'CREATE TABLE {name} (' + ', '.join(columns) + ')')
+    if identity:
+        statements.append(f"INSERT INTO WASM_IDENTITY VALUES ('{name}', 0)")
+(output / 'customer360-schema.sql').write_text(';\n'.join(statements)+';\n')

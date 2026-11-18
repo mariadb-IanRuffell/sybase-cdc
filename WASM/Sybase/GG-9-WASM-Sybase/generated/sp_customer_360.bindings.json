@@ -1,0 +1,11 @@
+{
+  "condition_0": "SELECT CASE WHEN (NOT EXISTS (SELECT 1 FROM customer WHERE (customer_id = CAST(? AS INT)))) THEN 1 ELSE 0 END",
+  "result_set_2": "SELECT c.customer_id, c.first_name, c.last_name, c.email, c.phone, c.nationality, c.segment, c.loyalty_tier, c.loyalty_points, c.marketing_opt_in, c.status, c.created_at, a.city, a.country FROM customer AS c LEFT JOIN address AS a ON ((a.customer_id = c.customer_id) AND (a.is_primary = TRUE)) WHERE (c.customer_id = CAST(? AS INT))",
+  "result_set_3": "SELECT COUNT(*) AS order_count, COALESCE(SUM(total_amount), 0) AS lifetime_spend, COALESCE(AVG(total_amount), 0) AS avg_order_value, MAX(order_date) AS last_order_date, COALESCE(SUM(CASE WHEN (order_date >= TIMESTAMPADD(DAY, (-365), LOCALTIMESTAMP)) THEN total_amount ELSE 0 END), 0) AS spend_12m FROM orders WHERE ((customer_id = CAST(? AS INT)) AND (status = 'COMPLETED'))",
+  "result_set_4": "SELECT order_id, order_date, status, channel, total_amount, currency FROM orders WHERE (customer_id = CAST(? AS INT)) ORDER BY order_date DESC LIMIT 5",
+  "result_set_5": "SELECT p.category, SUM(oi.line_total) AS spend, SUM(oi.qty) AS qty FROM orders AS o JOIN order_item AS oi ON (oi.order_id = o.order_id) JOIN product AS p ON (p.product_id = oi.product_id) WHERE ((o.customer_id = CAST(? AS INT)) AND (o.status = 'COMPLETED')) GROUP BY p.category ORDER BY SUM(oi.line_total) DESC, p.category LIMIT 3",
+  "result_set_6": "SELECT COUNT(*) AS total_interactions, COALESCE(SUM(CASE WHEN (status = 'OPEN') THEN 1 ELSE 0 END), 0) AS open_cases, MAX(opened_at) AS last_contact, COALESCE(AVG(CAST(sentiment AS DOUBLE)), 0) AS avg_sentiment FROM interaction WHERE (customer_id = CAST(? AS INT))",
+  "assign_7": "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE (((customer_id = CAST(? AS INT)) AND (status = 'COMPLETED')) AND (order_date >= TIMESTAMPADD(DAY, (-365), LOCALTIMESTAMP)))",
+  "assign_8": "SELECT MIN(min_spend) FROM loyalty_tier_rule WHERE (min_spend > CAST(? AS DECIMAL(14,2)))",
+  "result_set_9": "SELECT c.loyalty_tier, c.loyalty_points, CAST(? AS DECIMAL(14,2)) AS spend_12m, (SELECT tier FROM loyalty_tier_rule WHERE (min_spend = CAST(? AS DECIMAL(14,2)))) AS next_tier, (CAST(? AS DECIMAL(14,2)) - CAST(? AS DECIMAL(14,2))) AS spend_to_next_tier FROM customer AS c WHERE (c.customer_id = CAST(? AS INT))"
+}

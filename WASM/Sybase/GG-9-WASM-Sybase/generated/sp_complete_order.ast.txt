@@ -1,0 +1,215 @@
+procedure
+  object_name	sp_complete_order
+  parameters
+    parameter_decl
+      @order_id
+      datatype
+        object_name	int
+    parameter_decl
+      @payment_method
+      datatype
+        object_name	varchar
+        type_args	10
+      default_argument
+        string	'CARD'
+  statements
+    block
+      statements
+        declare_variables
+          variable_decl
+            @customer_id
+            datatype
+              object_name	int
+          variable_decl
+            @total
+            datatype
+              object_name	numeric
+              type_args
+                12
+                2
+          variable_decl
+            @tier
+            datatype
+              object_name	varchar
+              type_args	10
+          variable_decl
+            @mult
+            datatype
+              object_name	numeric
+              type_args
+                4
+                2
+          variable_decl
+            @points
+            datatype
+              object_name	int
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@customer_id
+                column
+                  object_name	customer_id
+              variable_assignment
+                local_var	@total
+                column
+                  object_name	total_amount
+            from_clause
+              joined_table
+                table_reference
+                  object_name	orders
+            where_clause
+              logical_and
+                comparison
+                  column
+                    object_name	order_id
+                  comparison_op	=
+                  local_var	@order_id
+                comparison
+                  column
+                    object_name	status
+                  comparison_op	=
+                  string	'NEW'
+        if_statement
+          is_null
+            local_var	@customer_id
+          block
+            statements
+              raise_error
+                integer	20005
+                string	'Order not found or not open'
+              return_status
+                negate
+                  integer	5
+        if_statement
+          comparison
+            local_var	@total
+            comparison_op	<=
+            integer	0
+          block
+            statements
+              raise_error
+                integer	20007
+                string	'Order has no items'
+              return_status
+                negate
+                  integer	7
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@tier
+                column
+                  object_name	loyalty_tier
+            from_clause
+              joined_table
+                table_reference
+                  object_name	customer
+            where_clause
+              comparison
+                column
+                  object_name	customer_id
+                comparison_op	=
+                local_var	@customer_id
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@mult
+                column
+                  object_name	points_multiplier
+            from_clause
+              joined_table
+                table_reference
+                  object_name	loyalty_tier_rule
+            where_clause
+              comparison
+                column
+                  object_name	tier
+                comparison_op	=
+                local_var	@tier
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@points
+                convert_expr
+                  datatype
+                    object_name	int
+                  multiply
+                    local_var	@total
+                    local_var	@mult
+        begin_transaction	complete_order
+        update
+          object_name	orders
+          assignments
+            assignment
+              object_name	status
+              string	'COMPLETED'
+          where_clause
+            comparison
+              column
+                object_name	order_id
+              comparison_op	=
+              local_var	@order_id
+        insert
+          object_name	payment
+          column_list
+            name_list
+              order_id
+              method
+              amount
+              status
+              paid_at
+          values
+            value_row
+              local_var	@order_id
+              local_var	@payment_method
+              local_var	@total
+              string	'CAPTURED'
+              function_call
+                object_name	getdate
+        insert
+          object_name	loyalty_txn
+          column_list
+            name_list
+              customer_id
+              order_id
+              points
+              reason
+              txn_date
+          values
+            value_row
+              local_var	@customer_id
+              local_var	@order_id
+              local_var	@points
+              string	'PURCHASE'
+              function_call
+                object_name	getdate
+        update
+          object_name	customer
+          assignments
+            assignment
+              object_name	loyalty_points
+              add
+                column
+                  object_name	loyalty_points
+                local_var	@points
+            assignment
+              object_name	updated_at
+              function_call
+                object_name	getdate
+          where_clause
+            comparison
+              column
+                object_name	customer_id
+              comparison_op	=
+              local_var	@customer_id
+        commit_transaction	complete_order
+        execute_procedure
+          object_name	sp_recalc_loyalty_tier
+          call_args
+            call_arg
+              local_var	@customer_id
+        return_status
+          integer	0

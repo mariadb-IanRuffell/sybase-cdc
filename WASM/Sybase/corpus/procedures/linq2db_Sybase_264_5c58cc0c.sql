@@ -1,0 +1,8 @@
+-- Extracted fixture; not executed.
+-- Source: https://raw.githubusercontent.com/linq2db/linq2db/d141f5671afe0b6d2d5ab23fcd3b5ae252c2dcc9/Data/Create%20Scripts/Sybase.sql (near line 264)
+-- License: MIT; retain upstream license and source notices.
+CREATE Procedure Person_SelectAll
+AS
+
+SELECT * FROM Person
+GO

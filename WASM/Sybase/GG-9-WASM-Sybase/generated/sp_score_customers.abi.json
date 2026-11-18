@@ -1,0 +1,326 @@
+{
+  "version": 2,
+  "name": "sp_score_customers",
+  "parameters": [
+    "as_of",
+    "customer_id"
+  ],
+  "outputs": [],
+  "defaults": {
+    "as_of": null,
+    "customer_id": null
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@as_of": {
+      "ase": "datetime",
+      "kind": "datetime",
+      "sql": "TIMESTAMP(6)"
+    },
+    "@customer_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@cid": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@last_order": {
+      "ase": "datetime",
+      "kind": "datetime",
+      "sql": "TIMESTAMP(6)"
+    },
+    "@orders_12m": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@open_cases": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@avg_sent": {
+      "ase": "float",
+      "kind": "float",
+      "sql": "DOUBLE"
+    },
+    "@recency": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@score": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@band": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(10)",
+      "length": 10,
+      "fixed": false
+    }
+  },
+  "operations": {
+    "condition_0": {
+      "kind": "condition",
+      "arguments": [
+        "@as_of"
+      ],
+      "results": 1
+    },
+    "assign_1": {
+      "kind": "assign",
+      "arguments": [
+        "@as_of"
+      ],
+      "results": 2,
+      "destinations": [
+        "@as_of"
+      ],
+      "sql_arguments": 0
+    },
+    "open_cursor_2": {
+      "kind": "open_cursor",
+      "arguments": [
+        "@customer_id",
+        "@customer_id"
+      ],
+      "results": 1,
+      "cursor": "cust_cur"
+    },
+    "fetch_cursor_3": {
+      "kind": "fetch_cursor",
+      "arguments": [
+        "@cid"
+      ],
+      "results": 3,
+      "cursor": "cust_cur",
+      "destinations": [
+        "@cid"
+      ]
+    },
+    "condition_4": {
+      "kind": "condition",
+      "arguments": [
+        "@@sqlstatus"
+      ],
+      "results": 1
+    },
+    "assign_5": {
+      "kind": "assign",
+      "arguments": [
+        "@as_of",
+        "@cid",
+        "@as_of",
+        "@last_order",
+        "@orders_12m"
+      ],
+      "results": 3,
+      "destinations": [
+        "@last_order",
+        "@orders_12m"
+      ],
+      "sql_arguments": 3
+    },
+    "assign_6": {
+      "kind": "assign",
+      "arguments": [
+        "@orders_12m",
+        "@orders_12m"
+      ],
+      "results": 2,
+      "destinations": [
+        "@orders_12m"
+      ],
+      "sql_arguments": 1
+    },
+    "assign_7": {
+      "kind": "assign",
+      "arguments": [
+        "@cid",
+        "@open_cases"
+      ],
+      "results": 2,
+      "destinations": [
+        "@open_cases"
+      ],
+      "sql_arguments": 1
+    },
+    "assign_8": {
+      "kind": "assign",
+      "arguments": [
+        "@cid",
+        "@as_of",
+        "@avg_sent"
+      ],
+      "results": 2,
+      "destinations": [
+        "@avg_sent"
+      ],
+      "sql_arguments": 2
+    },
+    "assign_9": {
+      "kind": "assign",
+      "arguments": [
+        "@last_order",
+        "@last_order",
+        "@as_of",
+        "@recency"
+      ],
+      "results": 2,
+      "destinations": [
+        "@recency"
+      ],
+      "sql_arguments": 3
+    },
+    "assign_10": {
+      "kind": "assign",
+      "arguments": [
+        "@recency",
+        "@recency",
+        "@recency",
+        "@orders_12m",
+        "@orders_12m",
+        "@orders_12m",
+        "@open_cases",
+        "@open_cases",
+        "@avg_sent",
+        "@score"
+      ],
+      "results": 2,
+      "destinations": [
+        "@score"
+      ],
+      "sql_arguments": 9
+    },
+    "condition_11": {
+      "kind": "condition",
+      "arguments": [
+        "@score"
+      ],
+      "results": 1
+    },
+    "assign_12": {
+      "kind": "assign",
+      "arguments": [
+        "@score"
+      ],
+      "results": 2,
+      "destinations": [
+        "@score"
+      ],
+      "sql_arguments": 0
+    },
+    "assign_13": {
+      "kind": "assign",
+      "arguments": [
+        "@score",
+        "@score",
+        "@band"
+      ],
+      "results": 2,
+      "destinations": [
+        "@band"
+      ],
+      "sql_arguments": 2
+    },
+    "dml_14": {
+      "kind": "dml",
+      "arguments": [
+        "@score",
+        "@band",
+        "@as_of",
+        "@cid"
+      ],
+      "results": 1
+    },
+    "condition_15": {
+      "kind": "condition",
+      "arguments": [
+        "@@rowcount"
+      ],
+      "results": 1
+    },
+    "insert_16": {
+      "kind": "insert",
+      "arguments": [
+        "@cid",
+        "@score",
+        "@band",
+        "@as_of"
+      ],
+      "results": 1,
+      "table": "customer_score",
+      "identity": null,
+      "counter": null
+    },
+    "fetch_cursor_17": {
+      "kind": "fetch_cursor",
+      "arguments": [
+        "@cid"
+      ],
+      "results": 3,
+      "cursor": "cust_cur",
+      "destinations": [
+        "@cid"
+      ]
+    },
+    "close_cursor_18": {
+      "kind": "close_cursor",
+      "arguments": [],
+      "results": 0,
+      "cursor": "cust_cur"
+    },
+    "deallocate_cursor_19": {
+      "kind": "deallocate_cursor",
+      "arguments": [],
+      "results": 0,
+      "cursor": "cust_cur"
+    },
+    "result_set_20": {
+      "kind": "result_set",
+      "arguments": [
+        "@as_of"
+      ],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

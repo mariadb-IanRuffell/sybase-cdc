@@ -1,0 +1,185 @@
+{
+  "version": 2,
+  "name": "sp_add_order_item",
+  "parameters": [
+    "order_id",
+    "product_id",
+    "qty"
+  ],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@order_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@product_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@qty": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@price": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(10,2)",
+      "precision": 10,
+      "scale": 2
+    }
+  },
+  "operations": {
+    "condition_0": {
+      "kind": "condition",
+      "arguments": [
+        "@qty"
+      ],
+      "results": 1
+    },
+    "raise_error_1": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20004,
+      "message": "Quantity must be positive"
+    },
+    "condition_2": {
+      "kind": "condition",
+      "arguments": [
+        "@order_id"
+      ],
+      "results": 1
+    },
+    "raise_error_3": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20005,
+      "message": "Order not found or not open"
+    },
+    "assign_4": {
+      "kind": "assign",
+      "arguments": [
+        "@product_id",
+        "@price"
+      ],
+      "results": 2,
+      "destinations": [
+        "@price"
+      ],
+      "sql_arguments": 1
+    },
+    "condition_5": {
+      "kind": "condition",
+      "arguments": [
+        "@price"
+      ],
+      "results": 1
+    },
+    "raise_error_6": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20006,
+      "message": "Product not found or inactive"
+    },
+    "begin_transaction_7": {
+      "kind": "begin_transaction",
+      "arguments": [],
+      "results": 0,
+      "name": "add_item"
+    },
+    "dml_8": {
+      "kind": "dml",
+      "arguments": [
+        "@qty",
+        "@product_id",
+        "@qty"
+      ],
+      "results": 1
+    },
+    "condition_9": {
+      "kind": "condition",
+      "arguments": [
+        "@@rowcount"
+      ],
+      "results": 1
+    },
+    "rollback_transaction_10": {
+      "kind": "rollback_transaction",
+      "arguments": [],
+      "results": 0,
+      "name": "add_item"
+    },
+    "raise_error_11": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20003,
+      "message": "Insufficient stock"
+    },
+    "insert_12": {
+      "kind": "insert",
+      "arguments": [
+        "@order_id",
+        "@product_id",
+        "@qty",
+        "@price",
+        "@price",
+        "@qty",
+        "@order_id"
+      ],
+      "results": 2,
+      "table": "order_item",
+      "identity": "order_item_id",
+      "counter": "order_item_id"
+    },
+    "dml_13": {
+      "kind": "dml",
+      "arguments": [
+        "@price",
+        "@qty",
+        "@order_id"
+      ],
+      "results": 1
+    },
+    "commit_transaction_14": {
+      "kind": "commit_transaction",
+      "arguments": [],
+      "results": 0,
+      "name": "add_item"
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

@@ -1,0 +1,269 @@
+{
+  "version": 2,
+  "name": "typed_roundtrip",
+  "parameters": [
+    "tiny",
+    "small",
+    "big",
+    "huge",
+    "amount",
+    "cash",
+    "smallcash",
+    "real_value",
+    "float_value",
+    "text_value",
+    "fixed",
+    "bytes",
+    "version",
+    "day",
+    "clock",
+    "instant",
+    "flag",
+    "nullable"
+  ],
+  "outputs": [
+    "tiny",
+    "small",
+    "big",
+    "huge",
+    "amount",
+    "cash",
+    "smallcash",
+    "real_value",
+    "float_value",
+    "text_value",
+    "fixed",
+    "bytes",
+    "version",
+    "day",
+    "clock",
+    "instant",
+    "flag",
+    "nullable"
+  ],
+  "defaults": {
+    "nullable": null
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@tiny": {
+      "ase": "tinyint",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "0",
+      "maximum": "255"
+    },
+    "@small": {
+      "ase": "smallint",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "-32768",
+      "maximum": "32767"
+    },
+    "@big": {
+      "ase": "bigint",
+      "kind": "integer",
+      "sql": "BIGINT",
+      "minimum": "-9223372036854775808",
+      "maximum": "9223372036854775807"
+    },
+    "@huge": {
+      "ase": "unsigned bigint",
+      "kind": "integer",
+      "sql": "DECIMAL(20,0)",
+      "minimum": "0",
+      "maximum": "18446744073709551615"
+    },
+    "@amount": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(38,9)",
+      "precision": 38,
+      "scale": 9
+    },
+    "@cash": {
+      "ase": "money",
+      "kind": "decimal",
+      "sql": "DECIMAL(19,4)",
+      "precision": 19,
+      "scale": 4,
+      "minimum": "-922337203685477.5808",
+      "maximum": "922337203685477.5807"
+    },
+    "@smallcash": {
+      "ase": "smallmoney",
+      "kind": "decimal",
+      "sql": "DECIMAL(10,4)",
+      "precision": 10,
+      "scale": 4,
+      "minimum": "-214748.3648",
+      "maximum": "214748.3647"
+    },
+    "@real_value": {
+      "ase": "real",
+      "kind": "float",
+      "sql": "REAL"
+    },
+    "@float_value": {
+      "ase": "float",
+      "kind": "float",
+      "sql": "DOUBLE"
+    },
+    "@text_value": {
+      "ase": "univarchar",
+      "kind": "string",
+      "sql": "VARCHAR(80)",
+      "length": 80,
+      "fixed": false
+    },
+    "@fixed": {
+      "ase": "char",
+      "kind": "string",
+      "sql": "VARCHAR(4)",
+      "length": 4,
+      "fixed": true
+    },
+    "@bytes": {
+      "ase": "varbinary",
+      "kind": "binary",
+      "sql": "VARBINARY(16)",
+      "length": 16,
+      "fixed": false
+    },
+    "@version": {
+      "ase": "timestamp",
+      "kind": "binary",
+      "sql": "VARBINARY(8)",
+      "length": 8,
+      "fixed": true
+    },
+    "@day": {
+      "ase": "date",
+      "kind": "date",
+      "sql": "DATE"
+    },
+    "@clock": {
+      "ase": "bigtime",
+      "kind": "time",
+      "sql": "TIME(6)"
+    },
+    "@instant": {
+      "ase": "bigdatetime",
+      "kind": "datetime",
+      "sql": "TIMESTAMP(6)"
+    },
+    "@flag": {
+      "ase": "bit",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "0",
+      "maximum": "1"
+    },
+    "@nullable": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(10)",
+      "length": 10,
+      "fixed": false
+    }
+  },
+  "operations": {
+    "assign_0": {
+      "kind": "assign",
+      "arguments": [
+        "@tiny",
+        "@small",
+        "@big",
+        "@huge",
+        "@amount",
+        "@cash",
+        "@smallcash",
+        "@real_value",
+        "@float_value",
+        "@text_value",
+        "@fixed",
+        "@bytes",
+        "@version",
+        "@day",
+        "@clock",
+        "@instant",
+        "@flag",
+        "@nullable",
+        "@tiny",
+        "@small",
+        "@big",
+        "@huge",
+        "@amount",
+        "@cash",
+        "@smallcash",
+        "@real_value",
+        "@float_value",
+        "@text_value",
+        "@fixed",
+        "@bytes",
+        "@version",
+        "@day",
+        "@clock",
+        "@instant",
+        "@flag",
+        "@nullable"
+      ],
+      "results": 19,
+      "destinations": [
+        "@tiny",
+        "@small",
+        "@big",
+        "@huge",
+        "@amount",
+        "@cash",
+        "@smallcash",
+        "@real_value",
+        "@float_value",
+        "@text_value",
+        "@fixed",
+        "@bytes",
+        "@version",
+        "@day",
+        "@clock",
+        "@instant",
+        "@flag",
+        "@nullable"
+      ],
+      "sql_arguments": 18
+    },
+    "result_set_1": {
+      "kind": "result_set",
+      "arguments": [
+        "@amount",
+        "@big",
+        "@huge",
+        "@text_value",
+        "@bytes",
+        "@instant",
+        "@nullable"
+      ],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

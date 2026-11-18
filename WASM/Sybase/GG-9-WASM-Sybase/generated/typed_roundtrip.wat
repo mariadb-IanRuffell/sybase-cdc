@@ -1,0 +1,113 @@
+(module
+  (import "ignite" "assign_0" (func $assign_0 (param i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32) (result i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)))
+  (import "ignite" "result_set_1" (func $result_set_1 (param i32 i32 i32 i32 i32 i32 i32) (result i32)))
+  (func (export "typed_roundtrip") (param $tiny i32) (param $small i32) (param $big i32) (param $huge i32) (param $amount i32) (param $cash i32) (param $smallcash i32) (param $real_value i32) (param $float_value i32) (param $text_value i32) (param $fixed i32) (param $bytes i32) (param $version i32) (param $day i32) (param $clock i32) (param $instant i32) (param $flag i32) (param $nullable i32) (result i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32 i32)
+    (local $@@rowcount i32)
+    (local $@@sqlstatus i32)
+    (local $@@identity i32)
+    local.get $tiny
+    local.get $small
+    local.get $big
+    local.get $huge
+    local.get $amount
+    local.get $cash
+    local.get $smallcash
+    local.get $real_value
+    local.get $float_value
+    local.get $text_value
+    local.get $fixed
+    local.get $bytes
+    local.get $version
+    local.get $day
+    local.get $clock
+    local.get $instant
+    local.get $flag
+    local.get $nullable
+    local.get $tiny
+    local.get $small
+    local.get $big
+    local.get $huge
+    local.get $amount
+    local.get $cash
+    local.get $smallcash
+    local.get $real_value
+    local.get $float_value
+    local.get $text_value
+    local.get $fixed
+    local.get $bytes
+    local.get $version
+    local.get $day
+    local.get $clock
+    local.get $instant
+    local.get $flag
+    local.get $nullable
+    call $assign_0
+    local.set $@@rowcount
+    local.set $nullable
+    local.set $flag
+    local.set $instant
+    local.set $clock
+    local.set $day
+    local.set $version
+    local.set $bytes
+    local.set $fixed
+    local.set $text_value
+    local.set $float_value
+    local.set $real_value
+    local.set $smallcash
+    local.set $cash
+    local.set $amount
+    local.set $huge
+    local.set $big
+    local.set $small
+    local.set $tiny
+    local.get $amount
+    local.get $big
+    local.get $huge
+    local.get $text_value
+    local.get $bytes
+    local.get $instant
+    local.get $nullable
+    call $result_set_1
+    local.set $@@rowcount
+    i32.const 0
+    local.get $tiny
+    local.get $small
+    local.get $big
+    local.get $huge
+    local.get $amount
+    local.get $cash
+    local.get $smallcash
+    local.get $real_value
+    local.get $float_value
+    local.get $text_value
+    local.get $fixed
+    local.get $bytes
+    local.get $version
+    local.get $day
+    local.get $clock
+    local.get $instant
+    local.get $flag
+    local.get $nullable
+    return
+    i32.const 0
+    local.get $tiny
+    local.get $small
+    local.get $big
+    local.get $huge
+    local.get $amount
+    local.get $cash
+    local.get $smallcash
+    local.get $real_value
+    local.get $float_value
+    local.get $text_value
+    local.get $fixed
+    local.get $bytes
+    local.get $version
+    local.get $day
+    local.get $clock
+    local.get $instant
+    local.get $flag
+    local.get $nullable
+  )
+)

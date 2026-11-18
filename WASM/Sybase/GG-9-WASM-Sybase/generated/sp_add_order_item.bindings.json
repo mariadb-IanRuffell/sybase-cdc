@@ -1,0 +1,10 @@
+{
+  "condition_0": "SELECT CASE WHEN (CAST(? AS INT) <= 0) THEN 1 ELSE 0 END",
+  "condition_2": "SELECT CASE WHEN (NOT EXISTS (SELECT 1 FROM orders WHERE ((order_id = CAST(? AS INT)) AND (status = 'NEW')))) THEN 1 ELSE 0 END",
+  "assign_4": "SELECT unit_price FROM product WHERE ((product_id = CAST(? AS INT)) AND (active = TRUE))",
+  "condition_5": "SELECT CASE WHEN (CAST(? AS DECIMAL(10,2)) IS NULL) THEN 1 ELSE 0 END",
+  "dml_8": "UPDATE product SET stock_qty = (stock_qty - CAST(? AS INT)) WHERE ((product_id = CAST(? AS INT)) AND (stock_qty >= CAST(? AS INT)))",
+  "condition_9": "SELECT CASE WHEN (CAST(? AS INT) = 0) THEN 1 ELSE 0 END",
+  "insert_12": "INSERT INTO order_item (order_id, product_id, qty, unit_price, line_total, customer_id, order_item_id) VALUES (CAST(? AS INT), CAST(? AS INT), CAST(? AS INT), CAST(? AS DECIMAL(10,2)), (CAST(? AS DECIMAL(10,2)) * CAST(? AS INT)), (SELECT customer_id FROM orders WHERE order_id = CAST(? AS INT)), CAST(? AS INT))",
+  "dml_13": "UPDATE orders SET total_amount = (total_amount + (CAST(? AS DECIMAL(10,2)) * CAST(? AS INT))) WHERE (order_id = CAST(? AS INT))"
+}
