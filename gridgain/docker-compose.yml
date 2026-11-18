@@ -1,6 +1,7 @@
 # 3-node GridGain 9 cluster with native persistence (native arm64/amd64). The version is in one place: GG_VERSION (default below).
 #   thin client / JDBC: localhost:11800, 11801, 11802     REST (init, CLI, metrics): localhost:11300, 11301, 11302
 #   (shifted by 1000 from the GridGain defaults so it can run beside another GridGain 9 cluster on this Mac)
+# ext-lib/ holds the Chicory WASM runtime for the sybase-wasm-example unit: run ./fetch-ext-lib.sh once before ./cluster.sh up.
 # Start with ./cluster.sh up: the cluster has to be initialised once (with the license) after all nodes have started.
 x-node: &node
   # built from ./Dockerfile: the official image minus its columnar module, which crashes on Apple Silicon in 9.2.0-b1
@@ -26,6 +27,8 @@ services:
     volumes:
       - ./config/gridgain-config.conf:/opt/gridgain/etc/gridgain-config.conf:ro
       - node1-work:/opt/gridgain/work
+      - ./ext-lib/chicory-runtime-1.6.1.jar:/opt/gridgain/lib/chicory-runtime-1.6.1.jar:ro
+      - ./ext-lib/chicory-wasm-1.6.1.jar:/opt/gridgain/lib/chicory-wasm-1.6.1.jar:ro
   gridgain2:
     <<: *node
     container_name: gridgain2
@@ -35,6 +38,8 @@ services:
     volumes:
       - ./config/gridgain-config.conf:/opt/gridgain/etc/gridgain-config.conf:ro
       - node2-work:/opt/gridgain/work
+      - ./ext-lib/chicory-runtime-1.6.1.jar:/opt/gridgain/lib/chicory-runtime-1.6.1.jar:ro
+      - ./ext-lib/chicory-wasm-1.6.1.jar:/opt/gridgain/lib/chicory-wasm-1.6.1.jar:ro
   gridgain3:
     <<: *node
     container_name: gridgain3
@@ -44,6 +49,8 @@ services:
     volumes:
       - ./config/gridgain-config.conf:/opt/gridgain/etc/gridgain-config.conf:ro
       - node3-work:/opt/gridgain/work
+      - ./ext-lib/chicory-runtime-1.6.1.jar:/opt/gridgain/lib/chicory-runtime-1.6.1.jar:ro
+      - ./ext-lib/chicory-wasm-1.6.1.jar:/opt/gridgain/lib/chicory-wasm-1.6.1.jar:ro
 
 volumes:
   node1-work:

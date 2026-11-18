@@ -64,7 +64,7 @@ Sybase ASE --triggers--> cdc_change_log --poll--> cdc/ (Java) --upsert/DELETE-->
   `orders`); `product` and `loyalty_tier_rule` are in zone `c360_ref`, which keeps a copy on every node. This is the layout the compute jobs use.
 
 ```bash
-cd gridgain && ./cluster.sh up               # 3-node persistent GridGain 9 on :11800/11801/11802
+cd gridgain && ./fetch-ext-lib.sh && ./cluster.sh up   # 3-node persistent GridGain 9 on :11800/11801/11802 (fetch once: Chicory jars the nodes mount)
 cd ../sybase && ./deploy.sh                  # (re)build Sybase schema, seed, procs, CDC triggers
 cd ../cdc
 ./run.sh init      # create GridGain tables, snapshot copy, set offset to the pre-copy watermark
@@ -235,6 +235,16 @@ cd gridgain
 ./cluster.sh status   # cluster state and node states
 ./cluster.sh down     # stop, KEEP data     |     ./cluster.sh wipe   # stop and DELETE the data volumes
 ```
+
+- **Run `./fetch-ext-lib.sh` once before `./cluster.sh up`.** It copies the Chicory WASM runtime into `gridgain/ext-lib/`, and the compose
+  file mounts those jars into every node's `lib/`. The `sybase-wasm-example` unit expects them there (see the WASM README for why).
+- **Storage size is capped at 1 GiB per node** (`ignite.storage.profiles` in `config/gridgain-config.conf`). Without a size GridGain takes
+  about 20% of the machine's RAM for the persistent region, which outgrew the 4 GB container limit and got nodes OOM-killed (exit 137).
+- **A node keeps its own normalised copy of the config in its work volume** (`work/etc/<node>/`), so editing `gridgain-config.conf` has no
+  effect on a cluster that has already started, and the REST config API refuses to change storage profiles. To apply a change to an
+  existing cluster, stop it, delete that folder in each volume (the data is untouched) and start it again:
+  `docker compose stop; for n in 1 2 3; do docker run --rm -v gridgain_node$n-work:/w alpine rm -rf /w/etc; done; ./cluster.sh up`.
+  `./cluster.sh wipe` also works if the data can go.
 
 - The version is one variable, `GG_VERSION` (default `9.2.0-b1`; 9.2.0 final is not published yet, there is no image or Maven artifact for it).
   The compose file builds the node image from `gridgain/Dockerfile`, which takes the **columnar storage jar out of the official image**: on

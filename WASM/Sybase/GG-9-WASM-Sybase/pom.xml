@@ -34,11 +34,15 @@
       <groupId>com.dylibso.chicory</groupId>
       <artifactId>runtime</artifactId>
       <version>${chicory.version}</version>
+      <!-- on the nodes' classpath (gridgain/ext-lib, mounted by docker-compose.yml): loaded once and kept warm -->
+      <scope>provided</scope>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
       <version>${jackson.version}</version>
+      <!-- the nodes ship Jackson; bundling our own makes every job load and initialise it cold -->
+      <scope>provided</scope>
     </dependency>
   </dependencies>
 

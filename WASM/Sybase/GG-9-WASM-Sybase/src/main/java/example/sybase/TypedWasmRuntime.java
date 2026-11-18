@@ -42,6 +42,9 @@ final class TypedWasmRuntime {
     private boolean implicitTransaction;
     private boolean explicitBegun;
     private int sqlCalls;
+    // Timing breakdown returned with every response (milliseconds), to show where a call spends its time.
+    private long sqlNanos, loadNanos, buildNanos, wasmNanos;
+    private final List<Map<String, Object>> statementTimes = new ArrayList<>();
     private int depth;
 
     TypedWasmRuntime(JobExecutionContext context) {
@@ -50,6 +53,7 @@ final class TypedWasmRuntime {
     }
 
     String execute(String name, JsonNode input, SybaseWasmJob.Trace trace) throws Exception {
+        long started = System.nanoTime();
         try {
             // GridGain autocommit reads can lag a just-committed write by ~1.5 s, so a procedure that has its own transaction
             // (or calls another procedure) would act on stale rows before BEGIN TRAN. Run such a call in one read-write
@@ -72,8 +76,18 @@ final class TypedWasmRuntime {
             if (transaction != null) {
                 throw new IllegalStateException("Procedure returned with an open transaction");
             }
+            Map<String, Object> timing = new LinkedHashMap<>();
+            long total = System.nanoTime() - started;
+            timing.put("total_ms", total / 1e6);
+            timing.put("sql_ms", sqlNanos / 1e6);
+            timing.put("sql_statements", sqlCalls);
+            timing.put("wasm_load_ms", loadNanos / 1e6);
+            timing.put("wasm_instantiate_ms", buildNanos / 1e6);
+            timing.put("wasm_run_incl_sql_ms", wasmNanos / 1e6);
+            timing.put("other_ms", (total - sqlNanos - loadNanos - buildNanos) / 1e6);
+            timing.put("statements", statementTimes);
             return JSON.writeValueAsString(Map.of("node", context.ignite().name(), "status", returned.status(),
-                    "outputs", returned.outputs(), "result_sets", resultSets, "messages", messages));
+                    "outputs", returned.outputs(), "result_sets", resultSets, "messages", messages, "timing", timing));
         } finally {
             if (transaction != null) {
                 transaction.rollback();
@@ -140,9 +154,11 @@ final class TypedWasmRuntime {
                             }
                         }));
             });
+            long loadStart = System.nanoTime();
             var module = Parser.parse(SybaseWasmJob.resource(name + ".wasm"));
             var builder = Instance.builder(module).withImportValues(
                     ImportValues.builder().addFunction(functions.toArray(HostFunction[]::new)).build());
+            loadNanos += System.nanoTime() - loadStart;
             // The listener also checks cancellation during CPU-only WASM execution.
             var writes = trace.enabled ? trace.localWrites(module, outputs) : Map.<com.dylibso.chicory.wasm.types.Instruction, String>of();
             builder.withUnsafeExecutionListener((instruction, stack) -> {
@@ -158,7 +174,12 @@ final class TypedWasmRuntime {
                 }
             });
             trace.event("WASM_CALL", Map.of("argument_handles", arguments));
-            long[] returned = builder.build().export(name).apply(arguments);
+            long buildStart = System.nanoTime();
+            var wasmInstance = builder.build();
+            buildNanos += System.nanoTime() - buildStart;
+            long runStart = System.nanoTime();
+            long[] returned = wasmInstance.export(name).apply(arguments);
+            wasmNanos += System.nanoTime() - runStart;
             if (returned.length != outputs.size() + 1) throw new IllegalStateException("Wrong WASM return arity");
             trace.event("WASM_RETURN", Map.of("values", returned));
             Map<String, Object> output = new LinkedHashMap<>();
@@ -310,6 +331,17 @@ final class TypedWasmRuntime {
     }
 
     private Rows sql(String statement, List<Object> args, Transaction tx, SybaseWasmJob.Trace trace, String operation) {
+        long start = System.nanoTime();
+        try {
+            return sqlRun(statement, args, tx, trace, operation);
+        } finally {
+            long took = System.nanoTime() - start;
+            sqlNanos += took;
+            if (statementTimes.size() < 60) statementTimes.add(Map.of("op", operation, "ms", took / 1e6));
+        }
+    }
+
+    private Rows sqlRun(String statement, List<Object> args, Transaction tx, SybaseWasmJob.Trace trace, String operation) {
         if (++sqlCalls > MAX_SQL_CALLS) throw new IllegalStateException("SQL call limit exceeded");
         int call = ++trace.sqlCalls;
         trace.event("SQL_START", Map.of("sql_call", call, "operation", operation, "sql", statement,

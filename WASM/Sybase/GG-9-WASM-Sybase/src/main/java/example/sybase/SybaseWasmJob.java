@@ -44,6 +44,9 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
                 throw new IllegalArgumentException("Supply a JSON request object");
             }
             String name = request.path("procedure").asText();
+            if (name.equals("_noop")) {   // measures job submission overhead alone
+                return CompletableFuture.completedFuture("{\"noop\":true}");
+            }
             if (request.has("trace") && !request.get("trace").isBoolean()) {
                 throw new IllegalArgumentException("trace must be a JSON boolean");
             }

@@ -449,3 +449,39 @@ Differences from the embedded demo, all needed because GridGain 9 is not Sybase:
   wrote so far, including statements before `BEGIN TRAN` (ASE would keep those). A failure rolls back. Procedures
   without either (`sp_customer_360`, `sp_score_customers`, ...) keep autocommit statements.
 - `Customer360Checks` and `ComputeDemo` need the embedded node, so `pom.xml` leaves them out of the unit jar.
+
+## Performance: where a call's time goes, and what fixed it
+
+Measured on one 32-core host (llama) running ASE and a 3-node GridGain cluster, the benchmark client on the same machine. Every response
+carries a `timing` block (`total_ms`, `sql_ms`, `sql_statements`, `wasm_load_ms`, `wasm_instantiate_ms`, `statements`) and a `_noop`
+procedure returns immediately, which measures job submission alone.
+
+GridGain loads a deployment unit's classes **fresh for every compute job**, so a library bundled in the unit is loaded and initialised
+cold on every call. That, not the SQL or the WASM interpreter, was almost all of the first version's ~95 ms per call:
+
+| Per call | Libraries bundled in the unit | Jackson and Chicory on the nodes |
+|---|---|---|
+| Building a Jackson `ObjectMapper` in the job | ~58 ms | ~0 |
+| WASM module parse + instantiate (Chicory) | ~14 ms | ~0.7 ms |
+| Job submit and return | ~6 ms | ~7 ms |
+| SQL (1 to 15 statements) | 1 to 10 ms | 1 to 10 ms |
+| **`sp_customer_360` seen by the client** | **~96 ms** | **~18 ms** |
+
+The nodes already ship Jackson, so `pom.xml` marks it `provided`. Chicory is not on the nodes: `gridgain/fetch-ext-lib.sh` copies its two jars
+into `gridgain/ext-lib/` and `docker-compose.yml` mounts them into each node's `lib/`, so they load once and stay warm. The unit jar is now
+about 66 KB. On a cluster that does not have the jars the job fails with `NoClassDefFoundError`; change Chicory's scope in `pom.xml`
+back to `compile` to bundle it again, at a cost of ~14 ms per call.
+
+Median latency and throughput after the change, against the real procedures on ASE (same host, same workload, each thread on its own
+customers):
+
+| | ASE median | WASM median | ASE calls/s, 1 to 16 threads | WASM calls/s, 1 to 16 threads |
+|---|---|---|---|---|
+| `sp_customer_360` | 0.4 ms | 18 ms | 1,702 to 2,083 | 69 to 727 |
+| `sp_recalc_loyalty_tier` | 0.1 ms | 10.5 ms | 5,295 to 39,784 | 154 to 1,804 |
+| `sp_score_customers` (1 customer, writes) | 2.3 ms | 15.8 ms | 311 to 446 | 94 to 1,098 |
+
+ASE is much faster for a single call because it runs the procedure in-process. ASE's throughput flattens at 4 to 8 callers (and ran out of
+sort buffers once at 16); GridGain's keeps growing with callers and passes ASE on the write-heavy `sp_score_customers` at 16.
+The first GridGain numbers had also been taken on nodes that were OOM-killed, which is why the storage region is now capped (see the
+repository README).
