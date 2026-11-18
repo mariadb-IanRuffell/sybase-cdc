@@ -1,0 +1,179 @@
+procedure
+  object_name	sp_add_order_item
+  parameters
+    parameter_decl
+      @order_id
+      datatype
+        object_name	int
+    parameter_decl
+      @product_id
+      datatype
+        object_name	int
+    parameter_decl
+      @qty
+      datatype
+        object_name	int
+  statements
+    block
+      statements
+        declare_variables
+          variable_decl
+            @price
+            datatype
+              object_name	numeric
+              type_args
+                10
+                2
+        if_statement
+          comparison
+            local_var	@qty
+            comparison_op	<=
+            integer	0
+          block
+            statements
+              raise_error
+                integer	20004
+                string	'Quantity must be positive'
+              return_status
+                negate
+                  integer	4
+        if_statement
+          logical_not
+            exists
+              query
+                select_core
+                  select_list
+                    select_item
+                      integer	1
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	orders
+                  where_clause
+                    logical_and
+                      comparison
+                        column
+                          object_name	order_id
+                        comparison_op	=
+                        local_var	@order_id
+                      comparison
+                        column
+                          object_name	status
+                        comparison_op	=
+                        string	'NEW'
+          block
+            statements
+              raise_error
+                integer	20005
+                string	'Order not found or not open'
+              return_status
+                negate
+                  integer	5
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@price
+                column
+                  object_name	unit_price
+            from_clause
+              joined_table
+                table_reference
+                  object_name	product
+            where_clause
+              logical_and
+                comparison
+                  column
+                    object_name	product_id
+                  comparison_op	=
+                  local_var	@product_id
+                comparison
+                  column
+                    object_name	active
+                  comparison_op	=
+                  integer	1
+        if_statement
+          is_null
+            local_var	@price
+          block
+            statements
+              raise_error
+                integer	20006
+                string	'Product not found or inactive'
+              return_status
+                negate
+                  integer	6
+        begin_transaction	add_item
+        update
+          object_name	product
+          assignments
+            assignment
+              object_name	stock_qty
+              subtract
+                column
+                  object_name	stock_qty
+                local_var	@qty
+          where_clause
+            logical_and
+              comparison
+                column
+                  object_name	product_id
+                comparison_op	=
+                local_var	@product_id
+              comparison
+                column
+                  object_name	stock_qty
+                comparison_op	>=
+                local_var	@qty
+        if_statement
+          comparison
+            system_variable	@@rowcount
+            comparison_op	=
+            integer	0
+          block
+            statements
+              rollback_transaction	add_item
+              raise_error
+                integer	20003
+                string	'Insufficient stock'
+              return_status
+                negate
+                  integer	3
+        insert
+          object_name	order_item
+          column_list
+            name_list
+              order_id
+              product_id
+              qty
+              unit_price
+              line_total
+          values
+            value_row
+              local_var	@order_id
+              local_var	@product_id
+              local_var	@qty
+              local_var	@price
+              multiply
+                local_var	@price
+                local_var	@qty
+        update
+          object_name	orders
+          assignments
+            assignment
+              object_name	total_amount
+              add
+                column
+                  object_name	total_amount
+                multiply
+                  local_var	@price
+                  local_var	@qty
+          where_clause
+            comparison
+              column
+                object_name	order_id
+              comparison_op	=
+              local_var	@order_id
+        commit_transaction	add_item
+        return_status
+          integer	0

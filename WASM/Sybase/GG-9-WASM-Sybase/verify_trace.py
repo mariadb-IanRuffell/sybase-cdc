@@ -19,6 +19,8 @@ if args.disabled:
     print("Trace-disabled run passed: no trace events; business results and persistence checks passed.")
     raise SystemExit(0)
 
+# Customer 360 may run in the same log; this verifier checks the original ABI v1 calls.
+events = [e for e in events if e["procedure"] in ("restock", "inventory_summary", "inventory_results")]
 responses = json.loads((Path(__file__).parent / "build/demo-results.json").read_text())
 calls = defaultdict(list)
 for event in events:

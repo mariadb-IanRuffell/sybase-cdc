@@ -1,0 +1,81 @@
+procedure
+  object_name	sp_create_order
+  parameters
+    parameter_decl
+      @customer_id
+      datatype
+        object_name	int
+    parameter_decl
+      @channel
+      datatype
+        object_name	varchar
+        type_args	10
+      default_argument
+        string	'WEB'
+    parameter_decl
+      @order_id
+      datatype
+        object_name	int
+      output_mode
+  statements
+    block
+      statements
+        if_statement
+          logical_not
+            exists
+              query
+                select_core
+                  select_list
+                    select_item
+                      integer	1
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	customer
+                  where_clause
+                    logical_and
+                      comparison
+                        column
+                          object_name	customer_id
+                        comparison_op	=
+                        local_var	@customer_id
+                      comparison
+                        column
+                          object_name	status
+                        comparison_op	=
+                        string	'ACTIVE'
+          block
+            statements
+              raise_error
+                integer	20002
+                string	'Customer not found or inactive'
+              return_status
+                negate
+                  integer	1
+        insert
+          object_name	orders
+          column_list
+            name_list
+              customer_id
+              order_date
+              status
+              channel
+              total_amount
+              currency
+          values
+            value_row
+              local_var	@customer_id
+              function_call
+                object_name	getdate
+              string	'NEW'
+              local_var	@channel
+              integer	0
+              string	'AED'
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@order_id
+                system_variable	@@identity
+        return_status
+          integer	0

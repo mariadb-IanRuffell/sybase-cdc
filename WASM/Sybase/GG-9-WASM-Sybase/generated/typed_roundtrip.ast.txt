@@ -1,0 +1,189 @@
+procedure
+  object_name	typed_roundtrip
+  parameters
+    parameter_decl
+      @tiny
+      datatype
+        object_name	tinyint
+      output_mode
+    parameter_decl
+      @small
+      datatype
+        object_name	smallint
+      output_mode
+    parameter_decl
+      @big
+      datatype
+        object_name	bigint
+      output_mode
+    parameter_decl
+      @huge
+      datatype
+        unsigned_type	bigint
+      output_mode
+    parameter_decl
+      @amount
+      datatype
+        object_name	numeric
+        type_args
+          38
+          9
+      output_mode
+    parameter_decl
+      @cash
+      datatype
+        object_name	money
+      output_mode
+    parameter_decl
+      @smallcash
+      datatype
+        object_name	smallmoney
+      output_mode
+    parameter_decl
+      @real_value
+      datatype
+        object_name	real
+      output_mode
+    parameter_decl
+      @float_value
+      datatype
+        object_name	float
+      output_mode
+    parameter_decl
+      @text_value
+      datatype
+        object_name	univarchar
+        type_args	80
+      output_mode
+    parameter_decl
+      @fixed
+      datatype
+        char_type
+          char_kind	char
+        type_args	4
+      output_mode
+    parameter_decl
+      @bytes
+      datatype
+        object_name	varbinary
+        type_args	16
+      output_mode
+    parameter_decl
+      @version
+      datatype
+        object_name	timestamp
+      output_mode
+    parameter_decl
+      @day
+      datatype
+        object_name	date
+      output_mode
+    parameter_decl
+      @clock
+      datatype
+        object_name	bigtime
+      output_mode
+    parameter_decl
+      @instant
+      datatype
+        object_name	bigdatetime
+      output_mode
+    parameter_decl
+      @flag
+      datatype
+        object_name	bit
+      output_mode
+    parameter_decl
+      @nullable
+      datatype
+        object_name	varchar
+        type_args	10
+      default_argument
+        null
+      output_mode
+  statements
+    block
+      statements
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@tiny
+                local_var	@tiny
+              variable_assignment
+                local_var	@small
+                local_var	@small
+              variable_assignment
+                local_var	@big
+                local_var	@big
+              variable_assignment
+                local_var	@huge
+                local_var	@huge
+              variable_assignment
+                local_var	@amount
+                local_var	@amount
+              variable_assignment
+                local_var	@cash
+                local_var	@cash
+              variable_assignment
+                local_var	@smallcash
+                local_var	@smallcash
+              variable_assignment
+                local_var	@real_value
+                local_var	@real_value
+              variable_assignment
+                local_var	@float_value
+                local_var	@float_value
+              variable_assignment
+                local_var	@text_value
+                local_var	@text_value
+              variable_assignment
+                local_var	@fixed
+                local_var	@fixed
+              variable_assignment
+                local_var	@bytes
+                local_var	@bytes
+              variable_assignment
+                local_var	@version
+                local_var	@version
+              variable_assignment
+                local_var	@day
+                local_var	@day
+              variable_assignment
+                local_var	@clock
+                local_var	@clock
+              variable_assignment
+                local_var	@instant
+                local_var	@instant
+              variable_assignment
+                local_var	@flag
+                local_var	@flag
+              variable_assignment
+                local_var	@nullable
+                local_var	@nullable
+        query
+          select_core
+            select_list
+              select_item
+                local_var	@amount
+                column_alias	amount
+              select_item
+                local_var	@big
+                column_alias	big_value
+              select_item
+                local_var	@huge
+                column_alias	huge_value
+              select_item
+                local_var	@text_value
+                column_alias	text_value
+              select_item
+                local_var	@bytes
+                column_alias	bytes_value
+              select_item
+                local_var	@instant
+                column_alias	instant_value
+              select_item
+                local_var	@nullable
+                column_alias	nullable_value
+        return_status
+          integer	0

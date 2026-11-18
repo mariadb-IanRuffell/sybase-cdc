@@ -1,0 +1,140 @@
+{
+  "version": 2,
+  "name": "sp_customer_360",
+  "parameters": [
+    "customer_id"
+  ],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@customer_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@spend_12m": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(14,2)",
+      "precision": 14,
+      "scale": 2
+    },
+    "@next_threshold": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(14,2)",
+      "precision": 14,
+      "scale": 2
+    }
+  },
+  "operations": {
+    "condition_0": {
+      "kind": "condition",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "raise_error_1": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20002,
+      "message": "Customer not found"
+    },
+    "result_set_2": {
+      "kind": "result_set",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "result_set_3": {
+      "kind": "result_set",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "result_set_4": {
+      "kind": "result_set",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "result_set_5": {
+      "kind": "result_set",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "result_set_6": {
+      "kind": "result_set",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "assign_7": {
+      "kind": "assign",
+      "arguments": [
+        "@customer_id",
+        "@spend_12m"
+      ],
+      "results": 2,
+      "destinations": [
+        "@spend_12m"
+      ],
+      "sql_arguments": 1
+    },
+    "assign_8": {
+      "kind": "assign",
+      "arguments": [
+        "@spend_12m",
+        "@next_threshold"
+      ],
+      "results": 2,
+      "destinations": [
+        "@next_threshold"
+      ],
+      "sql_arguments": 1
+    },
+    "result_set_9": {
+      "kind": "result_set",
+      "arguments": [
+        "@spend_12m",
+        "@next_threshold",
+        "@next_threshold",
+        "@spend_12m",
+        "@customer_id"
+      ],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

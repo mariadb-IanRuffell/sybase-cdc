@@ -268,7 +268,8 @@ else_value: "else"i scalar
 datatype: type_name type_args?
 ?type_name: object_name | "double"i "precision"i -> double_precision
           | "unsigned"i identifier -> unsigned_type
-          | char_type
+          | char_type | time_type
+!time_type: "time"i
 char_type: national? char_kind varying?
 national: "national"i
 !char_kind: "character"i | "char"i

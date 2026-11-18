@@ -1,0 +1,162 @@
+procedure
+  object_name	sp_recalc_loyalty_tier
+  parameters
+    parameter_decl
+      @customer_id
+      datatype
+        object_name	int
+    parameter_decl
+      @new_tier
+      datatype
+        object_name	varchar
+        type_args	10
+      default_argument
+        null
+      output_mode
+  statements
+    block
+      statements
+        declare_variables
+          variable_decl
+            @spend
+            datatype
+              object_name	numeric
+              type_args
+                14
+                2
+          variable_decl
+            @old_tier
+            datatype
+              object_name	varchar
+              type_args	10
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@old_tier
+                column
+                  object_name	loyalty_tier
+            from_clause
+              joined_table
+                table_reference
+                  object_name	customer
+            where_clause
+              comparison
+                column
+                  object_name	customer_id
+                comparison_op	=
+                local_var	@customer_id
+        if_statement
+          is_null
+            local_var	@old_tier
+          block
+            statements
+              raise_error
+                integer	20002
+                string	'Customer not found'
+              return_status
+                negate
+                  integer	1
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@spend
+                function_call
+                  object_name	isnull
+                  expr_list
+                    function_call
+                      object_name	sum
+                      expr_list
+                        column
+                          object_name	total_amount
+                    integer	0
+            from_clause
+              joined_table
+                table_reference
+                  object_name	orders
+            where_clause
+              logical_and
+                logical_and
+                  comparison
+                    column
+                      object_name	customer_id
+                    comparison_op	=
+                    local_var	@customer_id
+                  comparison
+                    column
+                      object_name	status
+                    comparison_op	=
+                    string	'COMPLETED'
+                comparison
+                  column
+                    object_name	order_date
+                  comparison_op	>=
+                  function_call
+                    object_name	dateadd
+                    expr_list
+                      column
+                        object_name	dd
+                      negate
+                        integer	365
+                      function_call
+                        object_name	getdate
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@new_tier
+                column
+                  object_name	tier
+            from_clause
+              joined_table
+                table_reference
+                  object_name	loyalty_tier_rule
+            where_clause
+              comparison
+                column
+                  object_name	min_spend
+                comparison_op	=
+                scalar_subquery
+                  query
+                    select_core
+                      select_list
+                        select_item
+                          function_call
+                            object_name	max
+                            expr_list
+                              column
+                                object_name	min_spend
+                      from_clause
+                        joined_table
+                          table_reference
+                            object_name	loyalty_tier_rule
+                      where_clause
+                        comparison
+                          column
+                            object_name	min_spend
+                          comparison_op	<=
+                          local_var	@spend
+        if_statement
+          comparison
+            local_var	@new_tier
+            comparison_op	<>
+            local_var	@old_tier
+          update
+            object_name	customer
+            assignments
+              assignment
+                object_name	loyalty_tier
+                local_var	@new_tier
+              assignment
+                object_name	updated_at
+                function_call
+                  object_name	getdate
+            where_clause
+              comparison
+                column
+                  object_name	customer_id
+                comparison_op	=
+                local_var	@customer_id
+        return_status
+          integer	0

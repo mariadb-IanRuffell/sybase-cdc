@@ -1,0 +1,226 @@
+{
+  "version": 2,
+  "name": "sp_complete_order",
+  "parameters": [
+    "order_id",
+    "payment_method"
+  ],
+  "outputs": [],
+  "defaults": {
+    "payment_method": "CARD"
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@order_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@payment_method": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(10)",
+      "length": 10,
+      "fixed": false
+    },
+    "@customer_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@total": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(12,2)",
+      "precision": 12,
+      "scale": 2
+    },
+    "@tier": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(10)",
+      "length": 10,
+      "fixed": false
+    },
+    "@mult": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(4,2)",
+      "precision": 4,
+      "scale": 2
+    },
+    "@points": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    }
+  },
+  "operations": {
+    "assign_0": {
+      "kind": "assign",
+      "arguments": [
+        "@order_id",
+        "@customer_id",
+        "@total"
+      ],
+      "results": 3,
+      "destinations": [
+        "@customer_id",
+        "@total"
+      ],
+      "sql_arguments": 1
+    },
+    "condition_1": {
+      "kind": "condition",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "raise_error_2": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20005,
+      "message": "Order not found or not open"
+    },
+    "condition_3": {
+      "kind": "condition",
+      "arguments": [
+        "@total"
+      ],
+      "results": 1
+    },
+    "raise_error_4": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20007,
+      "message": "Order has no items"
+    },
+    "assign_5": {
+      "kind": "assign",
+      "arguments": [
+        "@customer_id",
+        "@tier"
+      ],
+      "results": 2,
+      "destinations": [
+        "@tier"
+      ],
+      "sql_arguments": 1
+    },
+    "assign_6": {
+      "kind": "assign",
+      "arguments": [
+        "@tier",
+        "@mult"
+      ],
+      "results": 2,
+      "destinations": [
+        "@mult"
+      ],
+      "sql_arguments": 1
+    },
+    "assign_7": {
+      "kind": "assign",
+      "arguments": [
+        "@total",
+        "@mult",
+        "@points"
+      ],
+      "results": 2,
+      "destinations": [
+        "@points"
+      ],
+      "sql_arguments": 2
+    },
+    "begin_transaction_8": {
+      "kind": "begin_transaction",
+      "arguments": [],
+      "results": 0,
+      "name": "complete_order"
+    },
+    "dml_9": {
+      "kind": "dml",
+      "arguments": [
+        "@order_id"
+      ],
+      "results": 1
+    },
+    "insert_10": {
+      "kind": "insert",
+      "arguments": [
+        "@order_id",
+        "@payment_method",
+        "@total"
+      ],
+      "results": 2,
+      "table": "payment",
+      "identity": "payment_id"
+    },
+    "insert_11": {
+      "kind": "insert",
+      "arguments": [
+        "@customer_id",
+        "@order_id",
+        "@points"
+      ],
+      "results": 2,
+      "table": "loyalty_txn",
+      "identity": "txn_id"
+    },
+    "dml_12": {
+      "kind": "dml",
+      "arguments": [
+        "@points",
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "commit_transaction_13": {
+      "kind": "commit_transaction",
+      "arguments": [],
+      "results": 0,
+      "name": "complete_order"
+    },
+    "execute_procedure_14": {
+      "kind": "execute_procedure",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 0,
+      "procedure": "sp_recalc_loyalty_tier",
+      "parameters": [
+        "customer_id"
+      ]
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

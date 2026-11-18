@@ -324,9 +324,15 @@ if __name__ == "__main__":
     cli = argparse.ArgumentParser(description=__doc__)
     cli.add_argument("source", type=Path)
     cli.add_argument("--out", type=Path, default=ROOT / "generated")
+    cli.add_argument("--target", choices=["ignite2", "gridgain9"], default="ignite2")
+    cli.add_argument("--schema", type=Path, help="ASE schema supplying IDENTITY column mappings (GridGain 9)")
     args = cli.parse_args()
     try:
-        proc = compile_file(args.source, args.out)
+        if args.target == "gridgain9":
+            from gg9_compiler import compile_script
+            proc = ", ".join(compile_script(args.source, args.out, args.schema))
+        else:
+            proc = compile_file(args.source, args.out)
     except UnexpectedInput as exc:
         sys.exit(f"{args.source}: {syntax_error(args.source.read_text(), exc)}")
     except (ValueError, OSError) as exc:

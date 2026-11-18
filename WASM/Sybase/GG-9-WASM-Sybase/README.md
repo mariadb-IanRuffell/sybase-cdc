@@ -1,8 +1,8 @@
 # Sybase WASM procedures on unmodified GridGain 9
 
-This example uses the existing public compute and SQL APIs from `/Users/oscar/Projects/MariaDB/gridgain-9`. **No GridGain source modifications are required.** All example implementation code is in this directory.
+This example uses the existing public compute and SQL APIs from `/Users/oscar/Projects/MariaDB/gridgain-9`. **No GridGain source modifications are required.** The wrapper and demos live here; the shared typed compiler is in `../gg9_compiler.py`.
 
-The inventory procedures run inside the deployed Java compute job [`SybaseWasmJob`](src/main/java/example/sybase/SybaseWasmJob.java). It hosts their compiled WASM with Chicory and provides SQL callbacks through `context.ignite().sql()`. The self-contained `validate_restock` example also demonstrates GridGain's existing native `WASM_EMBEDDED` executor.
+The inventory and Customer 360 procedures run inside the deployed Java compute job [`SybaseWasmJob`](src/main/java/example/sybase/SybaseWasmJob.java). It hosts their compiled WASM with Chicory and provides SQL callbacks through `context.ignite().sql()`. The self-contained `validate_restock` example also demonstrates GridGain's existing native `WASM_EMBEDDED` executor.
 
 Inventory data lives in the GridGain 9 table `PUBLIC.GG9_WASM_INVENTORY`, using the **`aipersist` persistent storage engine**. The demo restarts the node and queries the same inventory again through the Java wrapper.
 
@@ -11,7 +11,7 @@ Inventory data lives in the GridGain 9 table `PUBLIC.GG9_WASM_INVENTORY`, using 
 Prerequisites: JDK 21, the parent Python environment, and the local GridGain checkout.
 
 ```sh
-cd /Users/oscar/Projects/WASM/Sybase/GG-9-WASM-Sybase
+cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase/GG-9-WASM-Sybase
 ./run.sh
 ```
 
@@ -187,10 +187,233 @@ Each executed client-facing `SELECT` appends a result set in order. Assignments,
 
 `inventory_summary(minimum=99)` takes its early return: status 2, `matches=0`, and no result sets.
 
-## Scope
+## Inventory ABI v1 scope
 
 The unmodified native WASM executor in this checkout does not expose these SQL callbacks. The inventory examples therefore use the Java compute wrapper; their procedure control flow still executes as WASM, and the database remains GridGain 9.
 
-The compiler retains the parent project's supported Sybase subset. Snapshot cells support INT/BIGINT/NULL. The wrapper buffers results for these small examples; large or streaming results require a different transport. It is intended for the bundled modules and is outside the native WASM executor's resource controls.
+The original inventory ABI v1 retains the parent project's integer subset. The Customer 360 ABI v2 described below has broader support. Snapshot cells support INT/BIGINT/NULL. The wrapper buffers results for these small examples; large or streaming results require a different transport. It is intended for the bundled modules and is outside the native WASM executor's resource controls.
 
-SQL statements use implicit GridGain transactions. There is no procedure-wide rollback or exactly-once guarantee. SQL failures fail the compute call; earlier committed statements remain committed. Compute retries are disabled, and application retries after an uncertain write outcome can still duplicate an increment. Full ASE session semantics, nested procedures and TDS result tokens remain outside this proof of concept.
+SQL statements use implicit GridGain transactions. There is no procedure-wide rollback or exactly-once guarantee. SQL failures fail the compute call; earlier committed statements remain committed. Compute retries are disabled, and application retries after an uncertain write outcome can still duplicate an increment. This describes the original inventory ABI v1; ABI v2 supports the explicit transactions and nested call in `03_procs.sql`. Full ASE session semantics and TDS result tokens remain outside both backends.
+
+
+## Run every procedure in `03_procs.sql`
+
+The typed backend compiles all **six** procedures directly from
+[`sybase/sql/03_procs.sql`](../../../sybase/sql/03_procs.sql). It does not replace their
+bodies with handwritten Java business logic. The Java wrapper implements a shared
+host interface for SQL, typed values, transactions, identity allocation and cursors.
+WASM executes the statement sequence, conditional branches, loop and returns.
+SQL expressions, including branch predicates, are evaluated by GridGain SQL. This
+keeps SQL decimal/NULL behavior in the SQL engine but adds round trips even for
+local expressions; it is a compatibility proof of concept, not a performance
+benchmark or a standalone SQL-free WASM module.
+
+```sh
+cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase/GG-9-WASM-Sybase
+mkdir -p build
+./run_customer360.sh 2>&1 | tee build/customer360.log
+```
+
+This runs the inventory regression checks plus the Customer 360 workflow and a typed
+roundtrip procedure. It creates a disposable GridGain node with persistent storage,
+deploys the wrapper JAR, exercises the jobs through the thin client compute API,
+restarts that node, checks the customer data again, then stops it. There are **40
+client compute invocations**: the original 11, 23 additional successful or
+business-error responses, and six expected failed jobs. Nested procedure execution
+adds a WASM invocation within its parent job. `build/demo-results.json` contains
+all returned responses; trace logs contain the expected failures as well.
+
+The fixture uses the column types and primary keys in
+[`01_schema.sql`](../../../sybase/sql/01_schema.sql), translated by `prepare.py` into
+[`generated/customer360-schema.sql`](generated/customer360-schema.sql). This is a
+**demo schema**, not a complete schema migration: foreign keys, indexes, ASE defaults
+and triggers are not reproduced. Seed rows are explicit. Customer, order, product,
+payment, loyalty and score data all reside in GridGain 9 tables.
+
+| Procedure | Compiled behavior exercised on GridGain |
+| --- | --- |
+| `sp_recalc_loyalty_tier` | Decimal spend aggregate, date filter, subquery lookup, nullable VARCHAR locals and `@new_tier OUTPUT`, conditional update and missing-customer error |
+| `sp_customer_360` | `NOT EXISTS`, joins, `TOP` → `LIMIT`, aggregates, CASE, SELECT assignment, **six ordered result sets**, empty sets and NULL cells |
+| `sp_create_order` | Default string parameter, INSERT, generated identity and `@order_id OUTPUT`, inactive-customer error |
+| `sp_add_order_item` | Decimal multiplication, conditional stock UPDATE, `@@rowcount`, explicit commit/rollback, validation errors; an injected duplicate-key SQL failure verifies rollback of the preceding stock change |
+| `sp_complete_order` | Multiple variable assignments, decimal-to-integer truncation, transactional order/payment/points writes, nested call to compiled `sp_recalc_loyalty_tier` |
+| `sp_score_customers` | Nullable datetime defaults, a forward-only cursor, `FETCH`/`@@sqlstatus`, a WASM `loop`, CASE scoring, update-then-insert and grouped summary |
+
+The fixture creates order **101**, adds two items at **75.25**, completes it at
+**150.50**, awards **150** points, and promotes the customer to **SILVER** after
+including prior completed spend of 4900. The score checks exercise a customer with
+orders (25/LOW), one without orders (90/HIGH), a repeated UPDATE, and an empty cursor.
+These checks passed on the local unmodified GridGain checkout on 2026-11-18.
+Equivalence against an executing SAP ASE server has **not** been tested.
+
+Compile the complete script without starting GridGain:
+
+```sh
+cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase
+.venv/bin/python compiler.py ../../sybase/sql/03_procs.sql \
+  --target gridgain9 --schema ../../sybase/sql/01_schema.sql \
+  --out GG-9-WASM-Sybase/generated
+.venv/bin/python -m unittest discover -v
+```
+
+Each procedure produces `.ast.txt`, `.wat`, `.wasm`, `.abi.json` and `.bindings.json`.
+`USE` and guarded `DROP PROCEDURE` batches are deployment scaffolding and are not
+executed. Other unsupported statements fail compilation. The original default
+`--target ignite2` and its Python runtime retain the inventory ABI v1.
+
+## Typed ABI v2 and data types
+
+WASM has no native SQL DECIMAL, VARCHAR, datetime or NULL type. ABI v2 uses
+**invocation-local i32 handles** into Java values. Handle **0 means SQL NULL**;
+a handle containing integer zero is a separate nonzero handle. Parameters, locals,
+identity values and output parameters use handles. Return status, `@@rowcount`,
+`@@sqlstatus` and predicate booleans are unboxed i32 values. Handles are neither
+pointers nor serialized data, and are discarded when the job ends.
+
+The ABI declares each variable's ASE type and its GridGain binding type. Every
+SQL placeholder has an explicit cast. A host call dereferences its input handles,
+uses Java values with the SQL API, and registers returned values as new handles.
+Assignments preserve a variable's previous value when their SELECT returns no
+rows; otherwise they use the last row, coerced to the declared type. Uninitialized
+locals and omitted output parameters are NULL. Defaults apply only to omitted inputs.
+
+| ASE types | GridGain / Java representation | JSON representation |
+| --- | --- | --- |
+| `tinyint`, `smallint`, `int`, `integer`, `bigint`, unsigned integer variants | Range-checked SMALLINT/INT/BIGINT; unsigned BIGINT uses DECIMAL(20,0) | Small integers are numbers; BIGINT/unsigned BIGINT are strings to preserve all digits |
+| `bit` | SMALLINT constrained to 0 or 1; boolean input accepted | 0/1 |
+| `numeric`, `decimal`, `dec`, `money`, `smallmoney` | DECIMAL / BigDecimal, up to precision 38; money scale 4 and ASE money bounds | Decimal strings; no conversion through double |
+| `real`, `float`, `double precision` | REAL/Float or DOUBLE/Double; finite values only | JSON numbers |
+| `char`, `varchar`, `nchar`, `nvarchar`, `unichar`, `univarchar`, `text`, `unitext`, `sysname`, `longsysname` | VARCHAR/String; declared length checked, fixed CHAR values space-padded | Unicode strings |
+| `binary`, `varbinary`, `image`, `timestamp` | VARBINARY/byte[]; fixed binary zero-padded; ASE timestamp is eight binary bytes | `0x` hexadecimal strings |
+| `date` | DATE/LocalDate | ISO date, e.g. `2024-02-29` |
+| `time`, `bigtime` | TIME(6)/LocalTime | ISO local time |
+| `datetime`, `smalldatetime`, `bigdatetime` | TIMESTAMP(6)/LocalDateTime | ISO local datetime, without a timezone |
+| SQL NULL | Handle 0 / Java null | JSON null |
+
+The mapping covers ordinary scalar transport and the six procedures, **not every
+ASE type's storage semantics**. ASE datetime tick rounding, smalldatetime minute
+rounding/ranges, server charset/collation, empty-string rules, text/image locators,
+and automatic row-version updates for `timestamp` are not emulated. LOBs are
+buffered values, not streamed locators. User-defined datatypes need an explicit
+mapping and currently fail compilation. Input integer overflow, fractional integer
+inputs, excess decimal scale, invalid binary strings and oversized strings fail the
+job rather than silently losing data. Assignment decimal scaling uses HALF_UP;
+`CONVERT(int, expression)` truncates toward zero.
+
+[`typed_roundtrip.sql`](sql/typed_roundtrip.sql) tests actual SQL callbacks and WASM
+outputs for 18 parameters, including `numeric(38,9)`, maximum signed/unsigned BIGINT,
+Unicode, binary, microsecond time, fixed CHAR padding and NULL. For example:
+
+```json
+{
+  "procedure": "typed_roundtrip",
+  "parameters": {
+    "big": "9223372036854775807",
+    "huge": "18446744073709551615",
+    "amount": "12345678901234567890123456789.123456789",
+    "text_value": "日本語 – café",
+    "bytes": "0x00feff",
+    "instant": "2026-11-18T12:34:56.123456"
+  },
+  "trace": true
+}
+```
+
+## Output parameters, errors and multiple results in ABI v2
+
+Submit the same public Java compute descriptor as the inventory examples, with
+`procedure` set to one of the bundled names. For example:
+
+```json
+{"procedure":"sp_create_order","parameters":{"customer_id":1},"trace":true}
+```
+
+Its WASM export returns `(status, order_id_handle)`. Java dereferences that handle:
+
+```json
+{"node":"sybase-wasm-node","status":0,"outputs":{"order_id":101},"result_sets":[],"messages":[]}
+```
+
+`sp_recalc_loyalty_tier` returns a string output in the same envelope:
+
+```json
+{"node":"sybase-wasm-node","status":0,"outputs":{"new_tier":"SILVER"},"result_sets":[],"messages":[]}
+```
+
+`sp_customer_360` returns six entries in `result_sets`, in source order: profile,
+order summary, recent orders, category spend, interactions and loyalty position.
+Each entry has `columns` and positional `rows`. Executed empty SELECTs remain in
+that list. Internal SELECT assignments, predicates and cursor queries do not add
+client result sets. Decimal and BIGINT cells follow the encoding table above.
+The nested procedure shares its parent's result/message collector; it runs another
+compiled WASM export within the same Java compute job.
+
+For a missing customer, RAISERROR is recorded separately from the explicit RETURN:
+
+```json
+{
+  "node":"sybase-wasm-node","status":-1,"outputs":{},"result_sets":[],
+  "messages":[{"procedure":"sp_customer_360","number":20002,"message":"Customer not found"}]
+}
+```
+
+This is a JSON contract, not an ASE/TDS exception/severity implementation. The
+source's RAISERROR is nonfatal to the host and the following WASM RETURN supplies
+its status. Actual GridGain SQL errors and type-validation failures fail the compute
+call; active explicit transactions are rolled back on exit.
+
+## Transactions, identities and tracing in ABI v2
+
+BEGIN creates a public GridGain transaction; SQL callbacks use:
+
+```java
+context.ignite().sql().execute(transaction, context.cancellationToken(), sql, args.toArray());
+```
+
+COMMIT/ROLLBACK complete it. Statements outside an explicit transaction use implicit
+transactions. Returning with an open transaction is an error and rolls it back.
+`sp_complete_order` commits before calling `sp_recalc_loyalty_tier`, matching the
+source; failure of that later call does not undo the already committed order.
+
+The ASE schema identifies the omitted identity columns. The wrapper appends the
+identity column/value to the INSERT. `WASM_IDENTITY` stores one counter per table.
+A separate committed transaction atomically increments and reads that counter, so
+concurrent jobs cannot allocate the same value. It never computes `MAX(id)+1` on
+an insert. Seed/import counters must be initialized to at least the existing maximum;
+the demo does this explicitly. Failed inserts can leave gaps. This mechanism supports
+the file's single-row INT identities, not triggers, multi-row identity INSERTs or
+arbitrary ASE identity/session settings.
+
+Tracing retains `[SYBASE-TRACE]` and adds typed details:
+
+- `SQL_START` shows the expanded SQL, decoded parameters and whether the call uses
+  an explicit transaction; `SQL_END` shows rows or `affected_rows`.
+- `HOST_RETURN.wasm_values` shows raw handles/counts. For assignment the tuple is
+  `(assigned_handles..., rowcount)`; for an identity INSERT it is `(rowcount, identity_handle)`.
+- `ROWCOUNT_SET` observes WASM storing the raw affected count. IF reads that count
+  through its predicate callback before setting it to zero.
+- `OUTPUT_SET` and `OUTPUT` show both the handle and decoded value, including NULL.
+- `TRANSACTION`, `IDENTITY`, `CURSOR_FETCH` (including `sqlstatus` 0 or 2), `RAISERROR`,
+  `EXECUTE_PROCEDURE` and `EXECUTE_RETURN` expose the remaining runtime effects.
+  A nested call has its own `call_id`, linked by `child_call_id`.
+
+```sh
+python3 verify_customer360.py build/customer360.log
+python3 verify_trace.py build/customer360.log  # original inventory regression trace
+rg '^\[SYBASE-TRACE\].*"procedure":"sp_add_order_item"' build/customer360.log
+rg '^\[SYBASE-TRACE\].*"event":"(OUTPUT|RESULT_SET|CURSOR_FETCH|TRANSACTION)"' build/customer360.log
+SYBASE_TRACE=false ./run_customer360.sh
+```
+
+The typed runtime is for small, trusted bundled procedures. It buffers up to 10,000
+rows per SQL result/cursor, allows 100,000 value handles, 20,000 SQL calls and a
+maximum nested-call depth of 32, and checks job cancellation. The cursor is a
+materialized forward-only snapshot in one job, not a distributed ASE cursor. It
+is outside the native WASM executor's fuel/memory controls. No automatic compute
+retry or exactly-once guarantee is supplied. Nested BEGIN, savepoints, dynamic SQL,
+GOTO, `@@error`, positional EXEC output/status capture, triggers, session state and
+full dialect compatibility remain unsupported. The original inventory snapshot
+support remains in ABI v1; ABI v2 does not yet implement `SELECT INTO #temp`.
+
+For broader compatibility work, see the downloaded
+[ASE corpus and measured parser/compiler coverage](../corpus/README.md).

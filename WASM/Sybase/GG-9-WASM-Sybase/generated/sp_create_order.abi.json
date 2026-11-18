@@ -1,0 +1,98 @@
+{
+  "version": 2,
+  "name": "sp_create_order",
+  "parameters": [
+    "customer_id",
+    "channel",
+    "order_id"
+  ],
+  "outputs": [
+    "order_id"
+  ],
+  "defaults": {
+    "channel": "WEB"
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@customer_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@channel": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(10)",
+      "length": 10,
+      "fixed": false
+    },
+    "@order_id": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    }
+  },
+  "operations": {
+    "condition_0": {
+      "kind": "condition",
+      "arguments": [
+        "@customer_id"
+      ],
+      "results": 1
+    },
+    "raise_error_1": {
+      "kind": "raise_error",
+      "arguments": [],
+      "results": 0,
+      "number": 20002,
+      "message": "Customer not found or inactive"
+    },
+    "insert_2": {
+      "kind": "insert",
+      "arguments": [
+        "@customer_id",
+        "@channel"
+      ],
+      "results": 2,
+      "table": "orders",
+      "identity": "order_id"
+    },
+    "assign_3": {
+      "kind": "assign",
+      "arguments": [
+        "@@identity",
+        "@order_id"
+      ],
+      "results": 2,
+      "destinations": [
+        "@order_id"
+      ],
+      "sql_arguments": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}
