@@ -187,7 +187,7 @@ final class Parity {
     /** Customer state plus the stock of the products used, as one comparable result set. */
     private static String stateSql(int cid) {
         return "select customer_id, loyalty_tier, loyalty_points from customer where customer_id = " + cid
-            + " union all select product_id, sku, stock_qty from product where product_id in (4, 17, 9)";
+            + " union all select product_id, sku, stock_qty from product where product_id in (4, 17, 9) order by 1";
     }
 
     private int sybaseOrder(int cid, int[][] items) throws SQLException {

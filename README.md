@@ -115,7 +115,7 @@ cd phase2
 
 **Parity:** the Sybase harness (`./run.sh parity all`, 16 checks) compares every customer x all 6 result sets of `sp_customer_360`, the tier returned and
 stored for every customer, `customer_score` for all active customers, the error numbers for bad input, and a full order. It passed against GridGain
-8.9; **the port to GridGain 9 has not been run against Sybase** (see "GridGain 9 port" below). The Oracle harness (30 checks) passes on GridGain 9.
+8.9 and again on GridGain 9.2.0-b1 (16 of 16). The Oracle harness (30 checks) also passes on GridGain 9.
 
 **How deployment works:** `deploy.sh` uploads `target/gg-compute.jar` through the REST API as version `1.0.<epoch>` of the unit `customer360-jobs`,
 waits for it to be `DEPLOYED` on all nodes and removes the older versions. There is no node restart and no node configuration to change.
@@ -364,6 +364,18 @@ ASE runs in the `datagrip/sybase` image inside an Ubuntu 20.04 VM (kernel 5.4) o
 segfaults at startup on the host's kernel 7.0 and under Docker Desktop emulation on Apple Silicon.
 Login `tester` / `guest1234` (image default, PoC only), database `testdb`, port 5000.
 
+**Sybase VM:** if `sybvm` is gone (port 5000 closed), the disk is still in `~/sybase-vm` and the VM restarts with:
+
+```bash
+ssh llama.local 'cd ~/sybase-vm; docker rm sybvm; docker run -d --name sybvm --restart unless-stopped --network host --device /dev/kvm -v $PWD:/vm -w /vm ubuntu:24.04 bash -c "
+apt-get update -qq && apt-get install -y -qq qemu-system-x86 >/dev/null &&
+exec qemu-system-x86_64 -enable-kvm -cpu host -smp 4 -m 6G -nographic \
+ -drive file=disk.qcow2,if=virtio -drive file=seed.iso,if=virtio,media=cdrom \
+ -nic user,hostfwd=tcp::2222-:22,hostfwd=tcp::5000-:5000"'
+```
+
+ASE answers on port 5000 a minute or two after the VM boots.
+
 ## GridGain 9 port (this branch)
 
 This branch moves the project from GridGain 8.9 to **9.2.0-b1**. GridGain 9 is a different product, so most of the GridGain-facing code changed:
@@ -378,11 +390,10 @@ This branch moves the project from GridGain 8.9 to **9.2.0-b1**. GridGain 9 is a
 | node list | `sys.nodes` | the client's view of the topology |
 | reads | consistent | **autocommit reads are a snapshot about 1.5 s old** |
 
-**What was verified:** the Oracle CDC reader (snapshot, streaming, verify identical), the Oracle parity harness (30 of 30), the API smoke test (148 of
-148), the hub SQL, the dashboard, and a node stopped and restarted under load of requests. **What was not:** the Sybase reader and the Sybase parity
-harness were ported and unit-tested but not run, because the Sybase VM on `llama` no longer exists. The customer-side jobs were run by hand against the
-seed data (loaded into GridGain 9 from the generated seed) and behave as before. Run `sybase/deploy.sh`, `cdc/run.sh init` and `phase2/run.sh parity all`
-once ASE is back to close that gap.
+**What was verified:** the Sybase and Oracle CDC readers (snapshot, streaming, verify identical), both parity harnesses (Sybase 16 of 16, Oracle
+30 of 30), the API smoke test (148 of 148, run before the Sybase check), the hub SQL, the dashboard, and a node stopped and restarted under load of
+requests. The Sybase check ran against ASE on `llama` after the VM was restarted (see "Sybase VM" below); the only fix it needed was an `ORDER BY` in the
+parity harness's pre-check query, because GridGain 9 returns rows in a different order from ASE when none is given.
 
 **Behaviour changes to know about:**
 - Per-node fan-out is gone: GridGain 9 SQL has no local-only mode, so the scoring and disruption jobs are single set-based jobs.
