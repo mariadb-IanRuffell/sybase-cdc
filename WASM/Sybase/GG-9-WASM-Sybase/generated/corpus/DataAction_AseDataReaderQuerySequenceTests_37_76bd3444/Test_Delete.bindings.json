@@ -1,0 +1,3 @@
+{
+  "dml_0": "DELETE FROM \"RECORDS_TESTS\" WHERE (\"DATA_FIELD\" > 0)"
+}

@@ -1,0 +1,29 @@
+procedure
+  object_name
+    [dbo]
+    [sp_insert_test_echo_text]
+  parameters
+    parameter_decl
+      @input
+      datatype
+        object_name	text
+    parameter_decl
+      @output
+      datatype
+        object_name	int
+      output_mode
+  statements
+    block
+      statements
+        insert
+          object_name
+            [dbo]
+            [test_text_table]
+          column_list
+            name_list	Fragment
+          values
+            value_row
+              local_var	@input
+        set_variable
+          local_var	@output
+          integer	10

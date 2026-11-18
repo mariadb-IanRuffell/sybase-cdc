@@ -12,6 +12,10 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.math.RoundingMode;
+import java.time.Duration;
+import java.nio.charset.StandardCharsets;
+import java.util.UUID;
+import java.util.regex.Pattern;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -32,7 +36,15 @@ final class TypedWasmRuntime {
     private static final int MAX_ROWS = 10_000;
     private static final int MAX_VALUES = 100_000;
     private static final int MAX_SQL_CALLS = 20_000;
+    private static final long MAX_BUFFER_BYTES = 64L * 1024 * 1024;
+    private static final long MAX_WAIT_MILLIS = 60_000;
     private final JobExecutionContext context;
+    private final String resourcePrefix;
+    private final String tempPrefix = "WASM_TMP_" + UUID.randomUUID().toString().replace("-", "") + "_";
+    private final Map<String, String> temporaryTables = new LinkedHashMap<>();
+    private final List<Map<String, Object>> events = new ArrayList<>();
+    private long bufferedBytes;
+    private long waitedMillis;
     private final List<Object> values = new ArrayList<>();
     private final List<Map<String, Object>> resultSets = new ArrayList<>();
     private final List<Map<String, Object>> messages = new ArrayList<>();
@@ -48,18 +60,24 @@ final class TypedWasmRuntime {
     private int depth;
 
     TypedWasmRuntime(JobExecutionContext context) {
+        this(context, "");
+    }
+
+    TypedWasmRuntime(JobExecutionContext context, String resourcePrefix) {
         this.context = context;
+        this.resourcePrefix = resourcePrefix;
         values.add(null); // SQL NULL has handle zero. Handles never cross a job boundary.
     }
 
     String execute(String name, JsonNode input, SybaseWasmJob.Trace trace) throws Exception {
         long started = System.nanoTime();
+        Exception failure = null;
         try {
             // GridGain autocommit reads can lag a just-committed write by ~1.5 s, so a procedure that has its own transaction
             // (or calls another procedure) would act on stale rows before BEGIN TRAN. Run such a call in one read-write
             // transaction from the start: reads are then current, COMMIT TRAN is deferred to the end of the call, and
             // ROLLBACK TRAN undoes everything the call wrote so far (ASE would keep the statements before BEGIN TRAN).
-            for (var operation : JSON.readTree(SybaseWasmJob.resource(name + ".abi.json")).path("operations")) {
+            for (var operation : JSON.readTree(SybaseWasmJob.resource(resourcePrefix + name + ".abi.json")).path("operations")) {
                 String kind = operation.path("kind").asText();
                 if (kind.equals("begin_transaction") || kind.equals("execute_procedure")) implicitTransaction = true;
             }
@@ -68,6 +86,7 @@ final class TypedWasmRuntime {
                 trace.event("TRANSACTION", Map.of("action", "begin_implicit"));
             }
             FrameResult returned = invoke(name, input, trace);
+            if (explicitBegun) throw new IllegalStateException("Procedure returned with an open transaction");
             if (implicitTransaction && transaction != null) {
                 transaction.commit();
                 transaction = null;
@@ -86,16 +105,37 @@ final class TypedWasmRuntime {
             timing.put("wasm_run_incl_sql_ms", wasmNanos / 1e6);
             timing.put("other_ms", (total - sqlNanos - loadNanos - buildNanos) / 1e6);
             timing.put("statements", statementTimes);
-            return JSON.writeValueAsString(Map.of("node", context.ignite().name(), "status", returned.status(),
-                    "outputs", returned.outputs(), "result_sets", resultSets, "messages", messages, "timing", timing));
+            Map<String, Object> response = new LinkedHashMap<>(Map.of("node", context.ignite().name(), "status", returned.status(),
+                    "outputs", returned.outputs(), "result_sets", resultSets, "messages", messages));
+            response.put("timing", timing);
+            if (!resourcePrefix.isEmpty()) response.put("events", events);
+            return JSON.writeValueAsString(response);
+        } catch (Exception error) {
+            failure = error;
+            throw error;
         } finally {
+            // Cleanup uses an uncancelled SQL call so job cancellation cannot skip DROP TABLE.
+            RuntimeException cleanupError = null;
             if (transaction != null) {
-                transaction.rollback();
+                try { transaction.rollback(); }
+                catch (RuntimeException error) { cleanupError = error; }
                 transaction = null;
                 trace.event("TRANSACTION", Map.of("action", "rollback_on_exit"));
             }
+            for (String table : temporaryTables.values()) {
+                try (var ignored = context.ignite().sql().execute((Transaction) null, "DROP TABLE IF EXISTS " + table)) {
+                    trace.event("TEMP_CLEANUP", Map.of("table", table));
+                } catch (RuntimeException error) {
+                    if (cleanupError == null) cleanupError = error; else cleanupError.addSuppressed(error);
+                }
+            }
+            if (cleanupError != null) {
+                if (failure != null) failure.addSuppressed(cleanupError); else throw cleanupError;
+            }
         }
     }
+
+    private record TextLocator(String text) { }
 
     private record FrameResult(int status, Map<String, Object> outputs) { }
     private record Rows(List<String> columns, List<List<Object>> rows, long affected) { }
@@ -108,9 +148,9 @@ final class TypedWasmRuntime {
     private FrameResult invoke(String name, JsonNode input, SybaseWasmJob.Trace trace) throws Exception {
         if (++depth > 32) throw new IllegalStateException("Maximum procedure call depth exceeded");
         try {
-            JsonNode abi = JSON.readTree(SybaseWasmJob.resource(name + ".abi.json"));
+            JsonNode abi = JSON.readTree(SybaseWasmJob.resource(resourcePrefix + name + ".abi.json"));
             if (abi.path("version").asInt() != 2) throw new IllegalArgumentException("Expected typed ABI v2");
-            JsonNode bindings = JSON.readTree(SybaseWasmJob.resource(name + ".bindings.json"));
+            JsonNode bindings = JSON.readTree(SybaseWasmJob.resource(resourcePrefix + name + ".bindings.json"));
             List<String> parameters = SybaseWasmJob.names(abi.get("parameters"));
             List<String> outputs = SybaseWasmJob.names(abi.get("outputs"));
             if (!input.isMissingNode() && !input.isObject()) throw new IllegalArgumentException("parameters must be an object");
@@ -124,7 +164,7 @@ final class TypedWasmRuntime {
                 JsonNode value = input.get(key);
                 if (value == null) value = abi.path("defaults").get(key);
                 if (value == null && !outputs.contains(key)) throw new IllegalArgumentException("Missing parameter " + key);
-                Object converted = convert(jsonValue(value), abi.path("types").get("@" + key), true);
+                Object converted = convert(parameterValue(value, abi.path("types").get("@" + key)), abi.path("types").get("@" + key), true);
                 arguments[i] = handle(converted);
                 resolved.put(key, wire(converted));
             }
@@ -155,7 +195,7 @@ final class TypedWasmRuntime {
                         }));
             });
             long loadStart = System.nanoTime();
-            var module = Parser.parse(SybaseWasmJob.resource(name + ".wasm"));
+            var module = Parser.parse(SybaseWasmJob.resource(resourcePrefix + name + ".wasm"));
             var builder = Instance.builder(module).withImportValues(
                     ImportValues.builder().addFunction(functions.toArray(HostFunction[]::new)).build());
             loadNanos += System.nanoTime() - loadStart;
@@ -243,7 +283,7 @@ final class TypedWasmRuntime {
             case "raise_error":
                 Map<String, Object> message = Map.of("procedure", trace.procedure,
                         "number", op.get("number").asInt(), "message", op.get("message").asText());
-                messages.add(message);
+                addMessage(message);
                 trace.event("RAISERROR", message);
                 return new long[0]; // ASE RAISERROR here is followed by an explicit RETURN in the source.
             case "execute_procedure":
@@ -293,11 +333,71 @@ final class TypedWasmRuntime {
             identity = nextIdentity(op.get("counter").asText(), trace);
             sqlArgs.add(identity);
         }
-        Rows data = sql(bindings.get(name).asText(), sqlArgs, transaction, trace, name);
+        if (kind.equals("create_temp")) {
+            if (transaction != null) throw new IllegalStateException("Temporary DDL inside a transaction is unsupported");
+            String marker = op.get("temporary").asText();
+            if (temporaryTables.containsKey(marker)) throw new IllegalStateException("Temporary table already exists");
+            temporaryTables.put(marker, tempPrefix + temporaryTables.size());
+        }
+        if (kind.equals("drop_temp") && transaction != null) {
+            throw new IllegalStateException("Temporary DDL inside a transaction is unsupported");
+        }
+        String statement = expandTemporaries(bindings.get(name).asText());
+        Rows data = sql(statement, sqlArgs, transaction, trace, name);
         switch (kind) {
+            case "create_temp":
+                trace.event("TEMP_CREATE", Map.of("table", temporaryTables.get(op.get("temporary").asText())));
+                return new long[0];
+            case "drop_temp":
+                trace.event("TEMP_DROP", Map.of("table", temporaryTables.remove(op.get("temporary").asText())));
+                return new long[0];
+            case "print":
+                List<Object> cells = data.rows().getFirst();
+                String text = cells.getFirst() == null ? "" : cells.getFirst().toString();
+                // ASE's %1!, %2!, ... substitution. Literal percent signs use %%.
+                var matcher = Pattern.compile("%%|%([1-9][0-9]*)!").matcher(text);
+                StringBuffer formatted = new StringBuffer();
+                while (matcher.find()) {
+                    String replacement = "%";
+                    if (matcher.group(1) != null) {
+                        int index = Integer.parseInt(matcher.group(1));
+                        if (index >= cells.size()) throw new IllegalArgumentException("Missing PRINT argument");
+                        replacement = cells.get(index) == null ? "" : cells.get(index).toString();
+                    }
+                    matcher.appendReplacement(formatted, java.util.regex.Matcher.quoteReplacement(replacement));
+                }
+                matcher.appendTail(formatted);
+                Map<String, Object> printed = Map.of("procedure", trace.procedure, "kind", "print", "message", formatted.toString());
+                addMessage(printed);
+                trace.event("PRINT", printed);
+                return new long[0];
+            case "wait":
+                String delay = String.valueOf(data.rows().getFirst().getFirst()).strip();
+                if (!delay.matches("[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,3})?")) throw new IllegalArgumentException("WAITFOR requires hh:mm:ss[.fff]");
+                long millis = LocalTime.parse(delay).toNanoOfDay() / 1_000_000;
+                if (waitedMillis + millis > MAX_WAIT_MILLIS) throw new IllegalArgumentException("WAITFOR budget exceeded: 60000 ms per invocation");
+                waitedMillis += millis;
+                long deadline = System.nanoTime() + Duration.ofMillis(millis).toNanos();
+                trace.event("WAIT_START", Map.of("milliseconds", millis));
+                while (System.nanoTime() < deadline) {
+                    if (context.isCancelled()) throw new IllegalStateException("Compute job cancelled");
+                    Thread.sleep(Math.min(25, Math.max(1, (deadline - System.nanoTime()) / 1_000_000)));
+                }
+                trace.event("WAIT_END", Map.of("milliseconds", millis));
+                return new long[0];
+            case "set_variable":
+                return new long[] {handle(convert(data.rows().getFirst().getFirst(),
+                        abi.path("types").get(op.get("destinations").get(0).asText()), false))};
             case "condition":
             case "status":
-                return new long[] {new BigDecimal(data.rows().getFirst().getFirst().toString()).intValueExact()};
+                Object scalar = data.rows().getFirst().getFirst();
+                if (scalar == null && kind.equals("status")) {
+                    Map<String, Object> warning = Map.of("procedure", trace.procedure, "kind", "warning", "message", "NULL return status normalized to 0");
+                    addMessage(warning);
+                    trace.event("RETURN_NULL", warning);
+                    return new long[] {0};
+                }
+                return new long[] {new BigDecimal(scalar.toString()).intValueExact()};
             case "dml":
             case "insert":
                 int affected = Math.toIntExact(data.affected());
@@ -319,6 +419,7 @@ final class TypedWasmRuntime {
             case "result_set":
                 Map<String, Object> result = Map.of("columns", data.columns(), "rows", wire(data.rows()));
                 resultSets.add(result);
+                events.add(Map.of("kind", "result_set", "index", resultSets.size()));
                 trace.event("RESULT_SET", Map.of("index", resultSets.size(), "columns", data.columns(), "rows", wire(data.rows())));
                 return new long[] {data.rows().size()};
             case "open_cursor":
@@ -342,7 +443,21 @@ final class TypedWasmRuntime {
     }
 
     private Rows sqlRun(String statement, List<Object> args, Transaction tx, SybaseWasmJob.Trace trace, String operation) {
+        // Server-local implicit read-only snapshots can predate the thin client's last write.
+        // A short read/write transaction reads the latest committed data across that boundary.
+        if (tx == null && statement.stripLeading().startsWith("SELECT")) {
+            Transaction read = context.ignite().transactions().begin();
+            try {
+                Rows result = sqlRun(statement, args, read, trace, operation);
+                read.commit();
+                return result;
+            } catch (RuntimeException error) {
+                read.rollback();
+                throw error;
+            }
+        }
         if (++sqlCalls > MAX_SQL_CALLS) throw new IllegalStateException("SQL call limit exceeded");
+        args = args.stream().map(v -> v instanceof TextLocator locator ? locator.text() : v).toList();
         int call = ++trace.sqlCalls;
         trace.event("SQL_START", Map.of("sql_call", call, "operation", operation, "sql", statement,
                 "parameters", wire(args), "explicit_transaction", tx != null));
@@ -358,7 +473,11 @@ final class TypedWasmRuntime {
                 if (rows.size() >= MAX_ROWS) throw new IllegalStateException("Buffered row limit exceeded: " + MAX_ROWS);
                 var row = rs.next();
                 List<Object> cells = new ArrayList<>();
-                for (int i = 0; i < columns.size(); i++) cells.add(row.value(i));
+                for (int i = 0; i < columns.size(); i++) {
+                    Object cell = row.value(i);
+                    account(cell);
+                    cells.add(cell);
+                }
                 rows.add(cells);
             }
             trace.event("SQL_END", Map.of("sql_call", call, "row_count", rows.size()));
@@ -367,6 +486,35 @@ final class TypedWasmRuntime {
             trace.event("SQL_ERROR", Map.of("sql_call", call, "message", String.valueOf(error.getMessage())));
             throw error;
         }
+    }
+
+    private String expandTemporaries(String sql) {
+        // Do not replace marker-looking text in SQL literals or quoted identifiers.
+        var matcher = Pattern.compile("'(?:''|[^'])*'|\"(?:\"\"|[^\"])*\"|__WASM_TEMP_[0-9]+__").matcher(sql);
+        StringBuffer expanded = new StringBuffer();
+        while (matcher.find()) {
+            String text = matcher.group();
+            if (text.startsWith("__WASM_TEMP_")) {
+                String table = temporaryTables.get(text);
+                if (table == null) throw new IllegalStateException("Temporary table is not available: " + text);
+                matcher.appendReplacement(expanded, java.util.regex.Matcher.quoteReplacement(table));
+            } else matcher.appendReplacement(expanded, java.util.regex.Matcher.quoteReplacement(text));
+        }
+        matcher.appendTail(expanded);
+        return expanded.toString();
+    }
+
+    private void account(Object value) {
+        Object cell = value instanceof TextLocator locator ? locator.text() : value;
+        bufferedBytes += cell instanceof String text ? text.getBytes(StandardCharsets.UTF_8).length
+                : cell instanceof byte[] bytes ? bytes.length : 16;
+        if (bufferedBytes > MAX_BUFFER_BYTES) throw new IllegalStateException("Buffered value byte limit exceeded: " + MAX_BUFFER_BYTES);
+    }
+
+    private void addMessage(Map<String, Object> message) {
+        account(message.get("message"));
+        messages.add(message);
+        events.add(Map.of("kind", "message", "index", messages.size()));
     }
 
     private static final long ID_BASE = 1_000_000_000L;
@@ -404,6 +552,7 @@ final class TypedWasmRuntime {
     private int handle(Object value) {
         if (value == null) return 0;
         if (values.size() >= MAX_VALUES) throw new IllegalStateException("Value handle limit exceeded: " + MAX_VALUES);
+        account(value);
         values.add(value);
         return values.size() - 1;
     }
@@ -412,6 +561,16 @@ final class TypedWasmRuntime {
         int index = Math.toIntExact(handle);
         if (index < 0 || index >= values.size()) throw new IllegalArgumentException("Invalid WASM value handle " + handle);
         return values.get(index);
+    }
+
+    private static Object parameterValue(JsonNode node, JsonNode type) {
+        if (node != null && !node.isNull() && type.path("kind").asText().equals("text_locator")) {
+            if (!node.isObject() || node.size() != 1 || !node.path("text").isTextual()) {
+                throw new IllegalArgumentException("text_locator requires {\"text\":\"materialized value\"}; ASE locator tokens are not accepted");
+            }
+            return new TextLocator(node.get("text").asText());
+        }
+        return jsonValue(node);
     }
 
     private static Object jsonValue(JsonNode node) {
@@ -426,6 +585,7 @@ final class TypedWasmRuntime {
     private static Object convert(Object value, JsonNode type, boolean input) {
         if (value == null) return null;
         String kind = type.get("kind").asText();
+        if (value instanceof TextLocator locator && !kind.equals("text_locator")) value = locator.text();
         switch (kind) {
             case "integer": {
                 if (value instanceof Boolean flag && type.path("ase").asText().equals("bit")) value = flag ? 1 : 0;
@@ -462,9 +622,15 @@ final class TypedWasmRuntime {
                 }
                 return number;
             }
+            case "text_locator": {
+                if (value instanceof TextLocator) return value;
+                if (value instanceof String text) return new TextLocator(text);
+                throw new IllegalArgumentException("Expected a materialized text locator");
+            }
             case "string": {
                 if (!(value instanceof String)) throw new IllegalArgumentException("Expected a string");
                 String text = value.toString();
+                if (text.isEmpty()) text = " "; // ASE empty character values are a single space.
                 int length = type.get("length").asInt();
                 if (text.length() > length) throw new IllegalArgumentException("String exceeds declared length " + length);
                 return type.path("fixed").asBoolean() ? text + " ".repeat(length - text.length()) : text;
@@ -486,6 +652,7 @@ final class TypedWasmRuntime {
     }
 
     private static Object wire(Object value) {
+        if (value instanceof TextLocator locator) return Map.of("text", locator.text(), "scope", "invocation");
         if (value instanceof BigDecimal decimal) return decimal.toPlainString();
         if (value instanceof BigInteger integer) return integer.toString();
         if (value instanceof Long number) return number.toString(); // JSON clients must not lose 64-bit precision.

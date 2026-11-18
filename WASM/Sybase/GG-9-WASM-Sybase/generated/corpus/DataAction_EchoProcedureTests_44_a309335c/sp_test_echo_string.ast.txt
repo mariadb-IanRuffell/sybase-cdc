@@ -1,0 +1,24 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_echo_string]
+  parameters
+    parameter_decl
+      @input
+      datatype
+        char_type
+          char_kind	char
+        type_args	255
+    parameter_decl
+      @output
+      datatype
+        char_type
+          char_kind	char
+        type_args	255
+      output_mode
+  statements
+    block
+      statements
+        set_variable
+          local_var	@output
+          local_var	@input

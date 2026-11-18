@@ -19,7 +19,8 @@ if args.disabled:
     raise SystemExit()
 calls=defaultdict(list)
 for event in events:
-    if event['procedure'].startswith('sp_') or event['procedure']=='typed_roundtrip':
+    if event['procedure'] in {'sp_create_order', 'sp_add_order_item', 'sp_complete_order',
+                              'sp_customer_360', 'sp_recalc_loyalty_tier', 'sp_score_customers', 'typed_roundtrip'}:
         calls[event['call_id']].append(event)
 assert len(calls)==30, f'Expected 23 responses + 6 failures + one nested call, got {len(calls)}'
 root=Path(__file__).resolve().parent
@@ -50,15 +51,16 @@ for call_id,trace in calls.items():
         if procedure=='sp_add_order_item':
             assert any(e['action']=='rollback_on_exit' for e in select('TRANSACTION'))
         continue
-    assert trace[0]['event']=='CALL_START' and trace[-1]['event']=='CALL_END'
+    assert len(select('CALL_START'))==1
+    ended,=select('CALL_END') # wrapper-managed transaction events may surround the WASM call
     returned,=select('WASM_RETURN')
-    assert returned['values'][0]==trace[-1]['status']
+    assert returned['values'][0]==ended['status']
     output=select('OUTPUT')
     assert [e['handle'] for e in output]==returned['values'][1:]
-    assert {e['parameter'][1:]:e['value'] for e in output}==trace[-1]['outputs']
+    assert {e['parameter'][1:]:e['value'] for e in output}==ended['outputs']
     sets=select('RESULT_SET')
     assert [e['index'] for e in sets]==list(range(1,len(sets)+1))
-    if procedure=='sp_customer_360' and trace[-1]['status']==0:
+    if procedure=='sp_customer_360' and ended['status']==0:
         assert len(sets)==6
 assert failures==6
 assert any(e['sqlstatus']==0 and e['rowcount']==1 for e in fetches)

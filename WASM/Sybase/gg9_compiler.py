@@ -11,7 +11,65 @@ from pathlib import Path
 from lark import Token, Tree
 from wasmtime import Engine, Module, wat2wasm
 from ase_parser import parse_sql
-from compiler import UnsupportedSQL, identifier, unqualified_name
+from compiler import UnsupportedSQL
+
+
+def identifier(token):
+    """Decode ASE delimiters; SQL rendering quotes separately from artifact names."""
+    value = str(token)
+    if value.startswith('[') and value.endswith(']'):
+        value = value[1:-1].replace(']]', ']')
+    elif value.startswith('"') and value.endswith('"'):
+        value = value[1:-1].replace('""', '"')
+    if not re.fullmatch(r'[A-Za-z_#][A-Za-z_0-9$#@-]*', value):
+        raise UnsupportedSQL(token, 'a portable identifier without path separators')
+    return value
+
+
+def sql_identifier(token):
+    value = identifier(token)
+    # ASE names are case-insensitive here, including [delimited] names.
+    return '"' + value.upper() + '"'
+
+
+def unqualified_name(node):
+    parts = node.children
+    if len(parts) == 2 and identifier(parts[0]).lower() == 'dbo':
+        parts = parts[1:]
+    if len(parts) != 1 or not isinstance(parts[0], Token):
+        raise UnsupportedSQL(node, 'an unqualified or dbo-qualified object')
+    return identifier(parts[0])
+
+
+def procedure_header(node):
+    return [c for c in node.children if c.data != 'replace_option']
+
+
+def ase_capabilities(node):
+    """Dependencies with no equivalent ASE service in GridGain; never substitute fake results."""
+    capabilities = set()
+    functions = {'db_id', 'db_name', 'object_id', 'object_name', 'user_name', 'suser_name',
+                 'data_pages', 'reserved_pages', 'row_count', 'lct_admin', 'loginfo', 'proc_role'}
+    for n in node.iter_subtrees():
+        if n.data == 'function_call' and n.children[0].data == 'object_name':
+            name = str(n.children[0].children[-1]).lower()
+            if name in functions: capabilities.add('ASE function ' + name)
+        if n.data == 'table_reference':
+            parts = [str(x).strip('[]').lower() for x in n.children[0].children if isinstance(x, Token)]
+            if parts and (parts[-1].startswith('sys') or parts[-1] == 'spt_values'):
+                capabilities.add('ASE catalog ' + '.'.join(parts))
+        if n.data in ('dbcc', 'dump_statement', 'execute_string'):
+            capabilities.add({'dbcc': 'ASE DBCC', 'dump_statement': 'ASE database/log DUMP',
+                              'execute_string': 'dynamic EXEC'}[n.data])
+        if n.data == 'system_variable' and str(n.children[0]).lower() not in ('@@rowcount', '@@sqlstatus', '@@identity'):
+            capabilities.add('ASE session variable ' + str(n.children[0]).lower())
+    return sorted(capabilities)
+
+
+class ASECapabilityError(ValueError):
+    def __init__(self, capabilities):
+        self.capabilities = capabilities
+        super().__init__('Requires unavailable ASE services: ' + ', '.join(capabilities))
 
 
 def datatype(node):
@@ -33,6 +91,7 @@ def datatype(node):
     integer_types = {'tinyint': ('SMALLINT', 0, 255), 'smallint': ('SMALLINT', -32768, 32767),
                      'int': ('INT', -(2**31), 2**31-1), 'integer': ('INT', -(2**31), 2**31-1),
                      'bigint': ('BIGINT', -(2**63), 2**63-1),
+                     'unsigned tinyint': ('SMALLINT', 0, 255),
                      'unsigned smallint': ('INT', 0, 65535),
                      'unsigned int': ('BIGINT', 0, 2**32-1),
                      'unsigned bigint': ('DECIMAL(20,0)', 0, 2**64-1), 'bit': ('SMALLINT', 0, 1)}
@@ -62,6 +121,8 @@ def datatype(node):
         length = sizes[0] if sizes else {'text': 2147483647, 'unitext': 2147483647, 'sysname': 30, 'longsysname': 255}.get(ase, 1)
         fixed = ase in ('char', 'nchar', 'unichar')
         result.update(kind='string', sql=f'VARCHAR({length})', length=length, fixed=fixed)
+    elif ase == 'text_locator':
+        result.update(kind='text_locator', sql='VARCHAR(2147483647)', length=2147483647, scope='materialized-invocation')
     elif ase in ('binary', 'varbinary', 'image', 'timestamp'):
         length = 8 if ase == 'timestamp' else (sizes[0] if sizes else (2147483647 if ase == 'image' else 1))
         result.update(kind='binary', sql=f'VARBINARY({length})', length=length, fixed=ase in ('binary', 'timestamp'))
@@ -103,10 +164,26 @@ def counter_name(table):
 
 
 class Sql:
-    def __init__(self, types, bits=frozenset()):
+    def __init__(self, types, temporaries=None, tables=None, bits=frozenset()):
         self.types = types
         self.bits = bits
+        self.temporaries = temporaries if temporaries is not None else {}
+        self.tables = tables or {}
         self.arguments = []
+
+    def table(self, node):
+        name = unqualified_name(node).lower()
+        if name.startswith('#'):
+            if name not in self.temporaries: raise UnsupportedSQL(node, 'a declared temporary table')
+            return self.temporaries[name]['marker']
+        return sql_identifier(name)
+
+    def string_expression(self, node):
+        if node.data == 'string': return True
+        if node.data == 'local_var': return self.types.get(str(node.children[0]).lower(), {}).get('kind') in ('string', 'text_locator')
+        if node.data in ('add', 'concatenate'): return any(self.string_expression(c) for c in node.children)
+        if node.data == 'function_call': return unqualified_name(node.children[0]).lower() in ('replicate', 'rtrim', 'substring')
+        return False
 
     def is_bit(self, node):
         """A reference to an ASE bit column, which GridGain stores as BOOLEAN."""
@@ -119,7 +196,7 @@ class Sql:
         return self.render(node)
 
     def render(self, node):
-        if isinstance(node, Token): return identifier(node)
+        if isinstance(node, Token): return sql_identifier(node)
         k, c = node.data, node.children
         r = self.render
         if k in ('local_var', 'system_variable'):
@@ -127,19 +204,27 @@ class Sql:
             if key not in self.types: raise UnsupportedSQL(node, 'a declared variable or supported @@variable')
             self.arguments.append(key)
             return f'CAST(? AS {self.types[key]["sql"]})'
-        if k == 'object_name': return '.'.join(identifier(x) for x in c)
+        if k == 'object_name': return '.'.join(sql_identifier(x) for x in c)
         if k == 'table_reference':
             if any(x.data != 'alias' for x in c[1:]): raise UnsupportedSQL(node, 'a table with an optional alias')
-            return ' '.join([unqualified_name(c[0]), *(r(x) for x in c[1:])])
+            name = unqualified_name(c[0]).lower()
+            source = self.table(c[0])
+            if name in self.temporaries:
+                columns = ', '.join(sql_identifier(x) for x in self.temporaries[name]['columns'])
+                source = '(SELECT ' + columns + ' FROM ' + source + ')'
+                if len(c) == 1: source += ' AS ' + sql_identifier(name)
+            return ' '.join([source, *(r(x) for x in c[1:])])
         if k in ('integer', 'decimal'): return str(c[0])
         if k == 'money': return str(c[0]).lstrip('$')
         if k == 'null': return 'NULL'
         if k == 'binary': return "X'" + str(c[0])[2:] + "'"
-        if k == 'string': return "'" + literal(node).replace("'", "''") + "'"
+        if k == 'string': return "'" + (literal(node) or ' ').replace("'", "''") + "'"
         if k in ('star_arg', 'star'): return '*'
         if k in ('comparison_op', 'direction', 'quantifier', 'join_type'): return ' '.join(str(x).upper() for x in c)
         operators = {'add': '+', 'subtract': '-', 'multiply': '*', 'divide': '/', 'modulo': '%',
                      'logical_and': 'AND', 'logical_or': 'OR', 'concatenate': '||'}
+        if k in ('add', 'concatenate') and self.string_expression(node):
+            return f"(COALESCE({r(c[0])}, '') || COALESCE({r(c[1])}, ''))"
         if k in operators: return f'({r(c[0])} {operators[k]} {r(c[1])})'
         if k in ('negate', 'positive', 'logical_not'):
             return '(' + {'negate': '-', 'positive': '+', 'logical_not': 'NOT '}[k] + r(c[0]) + ')'
@@ -160,7 +245,11 @@ class Sql:
                 if name == 'datediff':
                     return f'TIMESTAMPDIFF(DAY, CAST({r(args[1])} AS DATE), CAST({r(args[2])} AS DATE))'
                 return f'TIMESTAMPADD(DAY, {r(args[1])}, {r(args[2])})'
-            functions = {'isnull': 'COALESCE', 'sum': 'SUM', 'count': 'COUNT', 'avg': 'AVG', 'min': 'MIN', 'max': 'MAX'}
+            if name == 'create_locator' and len(args) == 2:
+                if args[0].data != 'column' or unqualified_name(args[0].children[0]).lower() != 'text_locator':
+                    raise UnsupportedSQL(node, 'CREATE_LOCATOR(text_locator, text expression)')
+                return r(args[1])
+            functions = {'replicate': 'REPEAT', 'rtrim': 'RTRIM', 'substring': 'SUBSTRING', 'isnull': 'COALESCE', 'sum': 'SUM', 'count': 'COUNT', 'avg': 'AVG', 'min': 'MIN', 'max': 'MAX'}
             if name not in functions: raise UnsupportedSQL(node, 'a supported SQL function')
             return functions[name] + '(' + ', '.join(r(x) for x in args) + ')'
         if k in ('convert_expr', 'cast_expr'):
@@ -183,15 +272,32 @@ class Sql:
             sql = ' '.join(r(x) for x in c)
             if tops: sql += ' LIMIT ' + r(tops[0].children[0])
             return sql
-        if k == 'select_core': return 'SELECT ' + ' '.join(r(x) for x in c if x.data != 'top_clause')
+        if k == 'select_core':
+            tables = list(node.find_data('table_reference'))
+            projections = next(x for x in c if x.data == 'select_list')
+            if len(tables) == 1 and any(x.data == 'star' for x in projections.children):
+                name = unqualified_name(tables[0].children[0]).lower()
+                if name in self.tables:
+                    # Project the source schema's columns, excluding host-added synthetic keys.
+                    visible = ', '.join(', '.join(sql_identifier(col) for col in self.tables[name]) if item.data == 'star' else r(item)
+                                        for item in projections.children)
+                    return 'SELECT ' + ' '.join(visible if x is projections else r(x) for x in c if x.data != 'top_clause')
+            parts = []
+            has_from = any(x.data == 'from_clause' for x in c)
+            for child in c:
+                if child.data == 'top_clause': continue
+                if child.data == 'where_clause' and not has_from:
+                    parts.append('FROM (VALUES (0)) AS __WASM_ONE_ROW(__VALUE)')
+                parts.append(r(child))
+            return 'SELECT ' + ' '.join(parts)
         prefixes = {'from_clause': 'FROM ', 'where_clause': 'WHERE ', 'group_by': 'GROUP BY ',
                     'having': 'HAVING ', 'order_by': 'ORDER BY ', 'alias': 'AS ', 'column_alias': 'AS '}
         comma = {'select_list', 'expr_list', 'order_by', 'from_clause', 'assignments', 'name_list'}
         if k in prefixes or k in comma or k in ('select_item', 'column', 'joined_table', 'order_item'):
             return prefixes.get(k, '') + (', ' if k in comma else ' ').join(r(x) for x in c)
         if k == 'assignment': return r(c[0]) + ' = ' + self.bit_literal(c[1], c[0])
-        if k == 'update': return 'UPDATE ' + unqualified_name(c[0]) + ' SET ' + ' '.join(r(x) for x in c[1:])
-        if k == 'delete': return 'DELETE FROM ' + unqualified_name(c[0]) + ' ' + ' '.join(r(x) for x in c[1:])
+        if k == 'update': return 'UPDATE ' + self.table(c[0]) + ' SET ' + ' '.join(r(x) for x in c[1:])
+        if k == 'delete': return 'DELETE FROM ' + self.table(c[0]) + ' ' + ' '.join(r(x) for x in c[1:])
         if k == 'column_list': return '(' + r(c[0]) + ')'
         if k == 'values': return 'VALUES ' + ', '.join(r(x) for x in c)
         if k == 'value_row': return '(' + ', '.join(r(x) for x in c) + ')'
@@ -199,9 +305,13 @@ class Sql:
 
 
 class Compiler:
-    def __init__(self, procedure, identities, signatures, bits=frozenset(), denormalised=None):
+    def __init__(self, procedure, identities, signatures, tables=None, bits=frozenset(), denormalised=None):
         self.bits, self.denormalised = bits, denormalised or {}
-        name, *modifiers, self.body = procedure.children
+        capabilities = ase_capabilities(procedure)
+        if capabilities: raise ASECapabilityError(capabilities)
+        name, *modifiers, self.body = procedure_header(procedure)
+        self.temporaries = {}
+        self.tables = tables or {}
         self.name = unqualified_name(name)
         self.types = {'@@rowcount': INT, '@@sqlstatus': INT, '@@identity': INT}
         self.parameters, self.outputs, self.defaults = [], [], {}
@@ -234,12 +344,12 @@ class Compiler:
         return [*(f'local.get ${self.local(arg)}' for arg in arguments), f'call ${key}']
 
     def query(self, node, kind, **metadata):
-        renderer = Sql(self.types, self.bits)
+        renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
         sql = renderer.render(node)
         return self.call(kind, sql, renderer.arguments, **metadata)
 
     def condition(self, node):
-        renderer = Sql(self.types, self.bits)
+        renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
         sql = 'SELECT CASE WHEN ' + renderer.render(node) + ' THEN 1 ELSE 0 END'
         return self.call('condition', sql, renderer.arguments)
 
@@ -260,11 +370,56 @@ class Compiler:
             return [f'block $done{label}', f'loop $loop{label}', *self.condition(c[0]),
                     'i32.const 0', 'local.set $@@rowcount', 'i32.eqz', f'br_if $done{label}',
                     *self.emit(c[1]), f'br $loop{label}', 'end', 'end']
+        if k == 'set_variable':
+            dest = str(c[0].children[0]).lower()
+            if dest not in self.types: raise UnsupportedSQL(node, 'a declared SET target')
+            renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
+            sql = 'SELECT ' + renderer.render(c[1])
+            return [*self.call('set_variable', sql, renderer.arguments, destinations=[dest]),
+                    f'local.set ${self.local(dest)}', 'i32.const 0', 'local.set $@@rowcount']
+        if k == 'print_statement':
+            renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
+            sql = 'SELECT ' + renderer.render(c[0])
+            return [*self.call('print', sql, renderer.arguments, results=0), 'i32.const 0', 'local.set $@@rowcount']
+        if k == 'wait_for':
+            if len(c) != 2 or str(c[0].children[0]).lower() != 'delay':
+                raise UnsupportedSQL(node, 'WAITFOR DELAY')
+            renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
+            sql = 'SELECT ' + renderer.render(c[1])
+            return [*self.call('wait', sql, renderer.arguments, results=0), 'i32.const 0', 'local.set $@@rowcount']
+        if k == 'create_table':
+            name = unqualified_name(c[0]).lower()
+            if not name.startswith('#') or name in self.temporaries:
+                raise UnsupportedSQL(node, 'a new local #temporary table')
+            columns = {}
+            definitions = []
+            for column in c[1:]:
+                if column.data != 'column_def' or any(x.data not in ('nullable', 'not_null') for x in column.children[2:]):
+                    raise UnsupportedSQL(column, 'a temporary column with type and optional nullability')
+                col, typ, *options = column.children
+                key = identifier(col).lower()
+                if key in columns or key == '__wasm_id': raise UnsupportedSQL(column, 'a unique temporary column')
+                columns[key] = datatype(typ)
+                definitions.append(sql_identifier(col) + ' ' + columns[key]['sql'] +
+                                   (' NOT NULL' if any(x.data == 'not_null' for x in options) else ''))
+            marker = f'__WASM_TEMP_{len(self.temporaries)}__'
+            self.temporaries[name] = {'marker': marker, 'columns': columns}
+            sql = 'CREATE TABLE ' + marker + ' (__WASM_ID UUID DEFAULT RAND_UUID PRIMARY KEY, ' + ', '.join(definitions) + ')'
+            return [*self.call('create_temp', sql, results=0, temporary=marker), 'i32.const 0', 'local.set $@@rowcount']
+        if k == 'drop_object':
+            if len(c) != 2 or str(c[0].children[0]).lower() != 'table':
+                raise UnsupportedSQL(node, 'DROP TABLE of a local temporary table')
+            renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
+            name = unqualified_name(c[1]).lower()
+            if name not in self.temporaries: raise UnsupportedSQL(node, 'a known temporary table')
+            marker = renderer.table(c[1])
+            return [*self.call('drop_temp', 'DROP TABLE ' + marker, results=0, temporary=marker),
+                    'i32.const 0', 'local.set $@@rowcount']
         if k == 'return_status':
             if not c: status = ['i32.const 0']
             elif c[0].data in ('integer', 'negate', 'positive'): status = [f'i32.const {literal(c[0])}']
             else:
-                renderer = Sql(self.types, self.bits)
+                renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
                 sql = 'SELECT ' + renderer.render(c[0])
                 status = self.call('status', sql, renderer.arguments)
             return [*status, *(f'local.get ${key}' for key in self.outputs), 'return']
@@ -275,7 +430,7 @@ class Compiler:
                 if len(assignments) != len(projections.children): raise UnsupportedSQL(node, 'SELECT assigning only variables')
                 destinations = [str(a.children[0].children[0]).lower() for a in assignments]
                 if any(d not in self.types for d in destinations): raise UnsupportedSQL(node, 'declared assignment targets')
-                renderer = Sql(self.types, self.bits)
+                renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
                 # Retain the original projection order and FROM/WHERE clauses.
                 query = Tree('query', [Tree('select_core', [Tree('select_list', [a.children[1] for a in assignments]),
                         *(x for x in c[0].children if x is not projections)]), *c[1:]])
@@ -290,7 +445,7 @@ class Compiler:
             if len(c) != 3 or c[1].data != 'column_list' or c[2].data != 'values' or len(c[2].children) != 1:
                 raise UnsupportedSQL(node, 'INSERT with explicit columns and one VALUES row')
             table = unqualified_name(c[0]).lower()
-            renderer = Sql(self.types, self.bits)
+            renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
             columns = [identifier(x) for x in c[1].children[0].children]
             nodes = list(c[2].children[0].children)
             if len(columns) != len(nodes): raise UnsupportedSQL(node, 'one value per inserted column')
@@ -308,11 +463,11 @@ class Compiler:
                 values.append(f'(SELECT {copy["column"]} FROM {copy["parent"]} WHERE {copy["via"]} = '
                               + renderer.render(nodes[lowered.index(copy['via'])]) + ')')
             identity = self.identities.get(table)
-            if identity and identity not in columns:
+            if identity and identity.lower() not in [col.lower() for col in columns]:
                 columns.append(identity)
                 values.append('CAST(? AS INT)')
             else: identity = None
-            sql = f'INSERT INTO {table} (' + ', '.join(columns) + ') VALUES (' + ', '.join(values) + ')'
+            sql = 'INSERT INTO ' + renderer.table(c[0]) + ' (' + ', '.join(sql_identifier(x) for x in columns) + ') VALUES (' + ', '.join(values) + ')'
             return [*self.call('insert', sql, renderer.arguments, 2 if identity else 1, table=table, identity=identity, counter=counter_name(table) if identity else None),
                     *(['local.set $@@identity'] if identity else []), 'local.set $@@rowcount']
         if k in ('begin_transaction', 'commit_transaction', 'rollback_transaction'):
@@ -390,14 +545,16 @@ def compile_script(source, output, schema=None, denormalised=None):
         else: raise UnsupportedSQL(node, 'CREATE PROCEDURE batches with optional USE/guarded DROP scaffolding')
     identities = {}
     bits = bit_columns_in(schema) if schema else frozenset()
+    tables = {}
     if schema:
         for table in parse_sql(Path(schema).read_text()).find_data('create_table'):
+            tables[unqualified_name(table.children[0]).lower()] = [identifier(c.children[0]) for c in table.children[1:] if c.data == 'column_def']
             for col in table.children[1:]:
                 if col.data == 'column_def' and any(x.data == 'identity' for x in col.children[2:]):
                     identities[unqualified_name(table.children[0]).lower()] = identifier(col.children[0])
     signatures = {}
     for p in procedures:
-        name = unqualified_name(p.children[0])
+        name = unqualified_name(procedure_header(p)[0])
         if name in signatures: raise ValueError(f'Duplicate procedure {name}')
         params = next((x for x in p.children if x.data == 'parameters'), None)
         signatures[name] = [str(x.children[0])[1:].lower() for x in params.children] if params else []
@@ -405,7 +562,7 @@ def compile_script(source, output, schema=None, denormalised=None):
     # Validate everything before writing any artifact.
     compiled = []
     for p in procedures:
-        compiler = Compiler(p, identities, signatures, bits, denormalised)
+        compiler = Compiler(p, identities, signatures, tables, bits, denormalised)
         wat, abi, bindings = compiler.compile()
         wasm = wat2wasm(wat)
         Module.validate(Engine(), wasm)

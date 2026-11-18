@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "name": "stream-messages",
+  "parameters": [
+    "sleeptime",
+    "numberofloops"
+  ],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@sleeptime": {
+      "ase": "char",
+      "kind": "string",
+      "sql": "VARCHAR(8)",
+      "length": 8,
+      "fixed": true
+    },
+    "@numberofloops": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@index": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    }
+  },
+  "operations": {
+    "set_variable_0": {
+      "kind": "set_variable",
+      "arguments": [],
+      "results": 1,
+      "destinations": [
+        "@index"
+      ]
+    },
+    "condition_1": {
+      "kind": "condition",
+      "arguments": [
+        "@index",
+        "@numberofloops"
+      ],
+      "results": 1
+    },
+    "print_2": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    },
+    "set_variable_3": {
+      "kind": "set_variable",
+      "arguments": [
+        "@index"
+      ],
+      "results": 1,
+      "destinations": [
+        "@index"
+      ]
+    },
+    "wait_4": {
+      "kind": "wait",
+      "arguments": [
+        "@sleeptime"
+      ],
+      "results": 0
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

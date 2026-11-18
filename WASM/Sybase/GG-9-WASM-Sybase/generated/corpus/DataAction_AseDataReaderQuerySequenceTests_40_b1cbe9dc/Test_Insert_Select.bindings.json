@@ -1,0 +1,4 @@
+{
+  "insert_0": "INSERT INTO \"RECORDS_TESTS\" (\"DATA_FIELD\") VALUES (1)",
+  "result_set_1": "SELECT \"DATA_FIELD\" FROM \"RECORDS_TESTS\" LIMIT 1"
+}

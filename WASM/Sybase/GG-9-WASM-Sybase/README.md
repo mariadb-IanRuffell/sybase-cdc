@@ -292,9 +292,10 @@ locals and omitted output parameters are NULL. Defaults apply only to omitted in
 
 The mapping covers ordinary scalar transport and the six procedures, **not every
 ASE type's storage semantics**. ASE datetime tick rounding, smalldatetime minute
-rounding/ranges, server charset/collation, empty-string rules, text/image locators,
+rounding/ranges, server charset/collation, native text/image locator semantics,
 and automatic row-version updates for `timestamp` are not emulated. LOBs are
-buffered values, not streamed locators. User-defined datatypes need an explicit
+buffered values, not streamed locators. Empty strings normalize to one blank;
+`text_locator` accepts the materialized representation described below. User-defined datatypes need an explicit
 mapping and currently fail compilation. Input integer overflow, fractional integer
 inputs, excess decimal scale, invalid binary strings and oversized strings fail the
 job rather than silently losing data. Assignment decimal scaling uses HALF_UP;
@@ -328,7 +329,8 @@ Submit the same public Java compute descriptor as the inventory examples, with
 {"procedure":"sp_create_order","parameters":{"customer_id":1},"trace":true}
 ```
 
-Its WASM export returns `(status, order_id_handle)`. Java dereferences that handle:
+Its WASM export returns `(status, order_id_handle)`. Java dereferences that handle
+(the timing block is omitted from these response excerpts):
 
 ```json
 {"node":"sybase-wasm-node","status":0,"outputs":{"order_id":101},"result_sets":[],"messages":[]}
@@ -364,30 +366,34 @@ call; active explicit transactions are rolled back on exit.
 
 ## Transactions, identities and tracing in ABI v2
 
-BEGIN creates a public GridGain transaction; SQL callbacks use:
+SQL callbacks use the public API:
 
 ```java
 context.ignite().sql().execute(transaction, context.cancellationToken(), sql, args.toArray());
 ```
 
-COMMIT/ROLLBACK complete it. Statements outside an explicit transaction use implicit
-transactions. Returning with an open transaction is an error and rolls it back.
-`sp_complete_order` commits before calling `sp_recalc_loyalty_tier`, matching the
-source; failure of that later call does not undo the already committed order.
+The `gridgain-9.2.0` branch runs procedures containing BEGIN TRAN or nested EXEC in
+one read/write transaction from the start. COMMIT TRAN is deferred until the whole
+call succeeds; ROLLBACK undoes earlier writes in that call, including writes before
+BEGIN TRAN. A nested-call failure can therefore undo an earlier logical COMMIT.
+These boundaries differ from ASE. Returning with an open BEGIN is rejected and
+rolled back. Standalone SELECT callbacks use a short read/write transaction to
+observe writes made by another client immediately before job submission. Other
+standalone statements use implicit transactions.
 
-The ASE schema identifies the omitted identity columns. The wrapper appends the
-identity column/value to the INSERT. `WASM_IDENTITY` stores one counter per table.
-A separate committed transaction atomically increments and reads that counter, so
-concurrent jobs cannot allocate the same value. It never computes `MAX(id)+1` on
-an insert. Seed/import counters must be initialized to at least the existing maximum;
-the demo does this explicitly. Failed inserts can leave gaps. This mechanism supports
-the file's single-row INT identities, not triggers, multi-row identity INSERTs or
-arbitrary ASE identity/session settings.
+Identity INSERTs allocate from the shared `id_seq` table in zone `c360_ref`, using
+the same counter names as the phase2 jobs. A separate committed, retried transaction
+advances each counter; failed inserts can leave gaps. An absent counter begins at
+1,000,000,000 to avoid the CDC range. The isolated embedded fixtures explicitly
+seed their counters to the next available test ID, so their examples still return
+101. This supports single-row INT identities; it does not implement arbitrary ASE
+identity/session settings or triggers. Customer 360 INSERTs also supply the
+GridGain `customer_id` colocation key for `order_item` and `payment`.
 
 Tracing retains `[SYBASE-TRACE]` and adds typed details:
 
 - `SQL_START` shows the expanded SQL, decoded parameters and whether the call uses
-  an explicit transaction; `SQL_END` shows rows or `affected_rows`.
+  a supplied transaction (including wrapper-managed reads); `SQL_END` shows rows or `affected_rows`.
 - `HOST_RETURN.wasm_values` shows raw handles/counts. For assignment the tuple is
   `(assigned_handles..., rowcount)`; for an identity INSERT it is `(rowcount, identity_handle)`.
 - `ROWCOUNT_SET` observes WASM storing the raw affected count. IF reads that count
@@ -433,22 +439,22 @@ Both parity scripts stop the CDC reader, create open orders in Sybase, resync Gr
 both systems, resync again and restart the reader. Compared: return status, error number, output parameters, result
 sets and the rows left behind. They need the stack from the repository README (ASE reachable, cluster and CDC image up).
 
-Differences from the embedded demo, all needed because GridGain 9 is not Sybase:
+The cluster and embedded demo share these GridGain adaptations:
 
 - **`bit` columns are `BOOLEAN`.** `prepare.py` passes `01_schema.sql` to the compiler, which reads the `bit` columns
   and writes `active = 1` as `active = TRUE` (also in `SET` and `INSERT`). GridGain rejects `BOOLEAN = INTEGER`.
 - **Identity ids come from `id_seq`.** GridGain 9 has no identity columns. The host draws ids from the same `id_seq`
   counter rows the phase2 jobs use (`order_id`, `order_item_id`, `payment_id`, `loyalty_txn_id`), starting at
   1,000,000,000 so they cannot collide with ids CDC replicates. Each draw is a short retried transaction, so a rolled
-  back procedure leaves a gap, as ASE does. This replaces the `WASM_IDENTITY` table of the embedded fixture.
+  back procedure leaves a gap, as ASE does. The embedded fixture uses the same counter table with explicitly seeded small IDs.
 - **Colocation key.** The GridGain `order_item` and `payment` tables carry `customer_id`, which Sybase's do not. Inserts
   fill it with `(SELECT customer_id FROM orders WHERE order_id = ...)`. The mapping is `DENORMALISED` in `prepare.py`.
 - **Transactions.** GridGain autocommit reads can lag a committed write by about 1.5 s. A procedure with its own
   `BEGIN TRAN`, or one that calls another procedure, therefore runs in one read-write transaction from the start, so its
   reads are current. `COMMIT TRAN` is deferred to the end of the call, and `ROLLBACK TRAN` undoes everything the call
   wrote so far, including statements before `BEGIN TRAN` (ASE would keep those). A failure rolls back. Procedures
-  without either (`sp_customer_360`, `sp_score_customers`, ...) keep autocommit statements.
-- `Customer360Checks` and `ComputeDemo` need the embedded node, so `pom.xml` leaves them out of the unit jar.
+  without either (`sp_customer_360`, `sp_score_customers`, ...) use short read/write transactions for SELECT callbacks and autocommit DML.
+- `Customer360Checks`, `CorpusChecks` and `ComputeDemo` are embedded-demo harnesses, so `pom.xml` leaves them out of the unit jar.
 
 ## Performance: where a call's time goes, and what fixed it
 
@@ -468,8 +474,8 @@ cold on every call. That, not the SQL or the WASM interpreter, was almost all of
 | **`sp_customer_360` seen by the client** | **~96 ms** | **~18 ms** |
 
 The nodes already ship Jackson, so `pom.xml` marks it `provided`. Chicory is not on the nodes: `gridgain/fetch-ext-lib.sh` copies its two jars
-into `gridgain/ext-lib/` and `docker-compose.yml` mounts them into each node's `lib/`, so they load once and stay warm. The unit jar is now
-about 66 KB. On a cluster that does not have the jars the job fails with `NoClassDefFoundError`; change Chicory's scope in `pom.xml`
+into `gridgain/ext-lib/` and `docker-compose.yml` mounts them into each node's `lib/`, so they load once and stay warm. Before adding the downloaded corpus, the unit jar was
+about 66 KB; packaged corpus resources increase its size. On a cluster that does not have the jars the job fails with `NoClassDefFoundError`; change Chicory's scope in `pom.xml`
 back to `compile` to bundle it again, at a cost of ~14 ms per call.
 
 Median latency and throughput after the change, against the real procedures on ASE (same host, same workload, each thread on its own
@@ -485,3 +491,119 @@ ASE is much faster for a single call because it runs the procedure in-process. A
 sort buffers once at 16); GridGain's keeps growing with callers and passes ASE on the write-heavy `sp_score_customers` at 16.
 The first GridGain numbers had also been taken on nodes that were OOM-killed, which is why the storage region is now capped (see the
 repository README).
+
+## Run all 37 downloaded fixtures
+
+The pinned [corpus](../corpus/README.md) contains 37 procedure fixtures. **30 compile
+and execute through the Java wrapper; seven require ASE administration services and
+are rejected explicitly.** This is execution against GridGain, not an ASE parity
+claim. The downloaded SQL bodies remain unchanged.
+
+```sh
+cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase/GG-9-WASM-Sybase
+./run_corpus.sh
+```
+
+This runs the inventory and six Customer 360 regressions, all 37 fixture requests,
+and persistent-data checks after a node restart. It creates isolated fixture data
+in GridGain's `aipersist` storage, not Java maps. Tracing defaults to off for this
+run because the large-result test returns about 40 MB of text. Enable `trace: true`
+on a small individual fixture to inspect its SQL and WASM assignments.
+
+Expected completion:
+
+```text
+ALL CORPUS CHECKS PASSED (30 executed fixtures; 7 ASE-service rejections verified through the wrapper)
+ALL COMPUTE CHECKS PASSED (Customer 360, corpus and persistent data after restart)
+```
+
+[`CorpusChecks.java`](src/main/java/example/sybase/CorpusChecks.java) asserts output
+values, status, ordered results, messages, persisted DML, limits and temporary-table
+cleanup. The per-fixture evidence is written to `build/corpus-results.json`.
+[Saved evidence](../corpus/gridgain-results.json) and the [coverage table](../corpus/COVERAGE.md)
+include source, artifact and implementation hashes so stale evidence is not counted.
+
+Each fixture has its own resource directory. This matters because upstream tests
+reuse procedure names with different signatures. Select it using the manifest key:
+
+```json
+{
+  "fixture": "DataAction_EchoProcedureTests_18_20d8203b",
+  "parameters": {"nechovalue": -17},
+  "trace": true
+}
+```
+
+The same public Java `JobDescriptor` shown above returns this response (node and
+timing omitted):
+
+```json
+{
+  "status": -17,
+  "outputs": {"nechovaluereturn": -17},
+  "result_sets": [
+    {"columns": ["T1ECHO"], "rows": [[-17]]},
+    {"columns": ["T2ECHO"], "rows": [[-16]]}
+  ],
+  "messages": [],
+  "events": [
+    {"kind": "result_set", "index": 1},
+    {"kind": "result_set", "index": 2}
+  ]
+}
+```
+
+The fixture's SET computes a typed value through a SQL host call. WASM stores its
+handle in the output local. Each executed SELECT appends a result set; the final
+WASM return supplies status and output handles, which Java dereferences. DML host
+calls return GridGain's `affectedRows()` as an unboxed i32 for `@@rowcount`; SET and
+IF reset it. Empty SELECTs still append an empty result set.
+
+Corpus responses add `events`: one-based references into `messages` or `result_sets`,
+preserving their interleaving without duplicating rows. The message-order fixture
+returns five PRINT messages and three result sets, including an empty middle set.
+Its alternate branch skips all SELECTs while still producing messages. PRINT and
+RAISERROR trace as they execute; the response envelope itself is buffered.
+
+| Added coverage | Implementation and checks |
+| --- | --- |
+| Quoted/dbo names, CREATE OR REPLACE, SET | Shared AST; validated WASM exports and output assignments |
+| Character, binary, decimal, NULL | Fixed padding, exact decimal output, Unicode and parameterized values |
+| String expressions | REPLICATE → REPEAT, RTRIM, SUBSTRING, NULL-aware string `+`; empty strings become a single blank |
+| Temporary tables | Unique physical GridGain tables with a hidden UUID key; SELECT * exposes source columns; cleanup after success/failure |
+| PRINT and WAITFOR DELAY | Ordered messages and real cancellation-aware delays; one-second wait verified |
+| Large results | 1,000 and 10,000 rows × 4,000 characters; 100,000-row request fails at the row limit |
+| Text and text locators | Materialized text input/output, over 65,536 characters; actual database insertion |
+| Identity and SELECT * | `id_seq` allocation and persisted AllTypes/Person fixture queries |
+
+For `text_locator`, provide `{"text":"materialized value"}` as the parameter value.
+Raw ASE locator tokens are rejected. CREATE_LOCATOR wraps materialized text in an
+invocation-local Java value whose SQL binding is the text itself; this does not
+implement native ASE locator identity or transaction/query lifetime.
+
+## Remaining corpus limitations
+
+- `sp_#count`, `sp_#ls`, `sp_#ps`, `sp_#quickref`, `sp_#select`, `sp_#top` and
+  `sp_thresholdaction` need ASE catalogs, physical page/process/lock counters, DBCC,
+  DUMP or other ASE services. The compiler lists these dependencies and the wrapper
+  rejects them before SQL execution. They need a separate administration port.
+- Results/messages are buffered, not TDS streaming. Limits are 10,000 rows per SQL
+  result, 64 MiB cumulative accounted payload, 100,000 handles, 20,000 SQL callbacks,
+  nesting depth 32 and 60 seconds cumulative WAITFOR. The payload budget is not a
+  JVM peak-memory guarantee. The 100,000/500,000-row fixture branches exceed the limit.
+- Temporary-table DDL inside a transaction is rejected. Nested temp scopes and
+  SELECT INTO #temp in ABI v2 are unsupported. Normal failure/cancellation triggers
+  cleanup; process termination can leave a uniquely named `WASM_TMP_*` table.
+- RETURN NULL becomes status 0 with a warning. RAISERROR messages do not implement
+  the complete ASE severity/@@error protocol. Cursor @@rowcount is currently 1/0
+  per fetch, rather than ASE's cumulative count. Transaction differences are above.
+- Text locators use materialized invocation-local values. Character-set/collation,
+  mixed-type precedence, arbitrary SQL functions, user-defined types and full ASE
+  temporal rounding are not emulated. A parsed AST is not a guarantee of execution.
+- The downloaded fixtures have not been run against ASE in this change. Existing
+  Customer 360 parity scripts are separate; they were not rerun for this corpus.
+  The constant-result fixture's 53 parameters validate binding/type handling, not
+  an SQL round-trip of every parameter.
+
+The complete per-fixture status and dependency diagnostics are in
+[`../corpus/COVERAGE.md`](../corpus/COVERAGE.md). GridGain product source is unchanged.

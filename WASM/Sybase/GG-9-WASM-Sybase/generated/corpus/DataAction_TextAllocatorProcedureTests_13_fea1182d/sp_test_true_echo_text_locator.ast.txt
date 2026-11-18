@@ -1,0 +1,20 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_true_echo_text_locator]
+  parameters
+    parameter_decl
+      @input
+      datatype
+        object_name	text_locator
+    parameter_decl
+      @output
+      datatype
+        object_name	int
+      output_mode
+  statements
+    block
+      statements
+        set_variable
+          local_var	@output
+          integer	100

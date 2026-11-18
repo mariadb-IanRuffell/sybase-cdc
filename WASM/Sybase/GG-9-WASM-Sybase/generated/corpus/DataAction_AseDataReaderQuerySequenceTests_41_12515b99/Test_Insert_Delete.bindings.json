@@ -1,0 +1,4 @@
+{
+  "insert_0": "INSERT INTO \"RECORDS_TESTS\" (\"DATA_FIELD\") VALUES (1)",
+  "dml_1": "DELETE FROM \"RECORDS_TESTS\" WHERE (\"DATA_FIELD\" > 0)"
+}

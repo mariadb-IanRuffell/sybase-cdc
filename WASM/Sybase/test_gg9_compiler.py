@@ -5,7 +5,7 @@ from tempfile import TemporaryDirectory
 import unittest
 from wasmtime import Engine, Store, Module, Linker, Func, FuncType, ValType
 from ase_parser import parse_sql
-from gg9_compiler import compile_script, datatype
+from gg9_compiler import compile_script, datatype, ASECapabilityError
 ROOT = Path(__file__).resolve().parent
 REPO = ROOT.parents[1]
 
@@ -81,6 +81,53 @@ class GridGainCompilerTests(unittest.TestCase):
         for typ in ['numeric(39,2)','decimal(4,5)','varchar(0)','custom_type']:
             tree=parse_sql(f'create proc test @x {typ} as return 0')
             with self.assertRaises(ValueError,msg=typ): datatype(next(tree.find_data('datatype')))
+
+    def test_all_downloaded_fixtures_compile_or_name_their_ase_dependencies(self):
+        passed, blocked = 0, 0
+        with TemporaryDirectory() as temp:
+            for source in sorted((ROOT/'corpus/procedures').glob('*.sql')):
+                try:
+                    compile_script(source, Path(temp)/source.stem, ROOT/'GG-9-WASM-Sybase/sql/corpus_schema.sql')
+                    passed += 1
+                except ASECapabilityError as error:
+                    self.assertTrue(source.name.startswith('Hruodland_'), source)
+                    self.assertTrue(error.capabilities)
+                    self.assertFalse((Path(temp)/source.stem).exists())
+                    blocked += 1
+        self.assertEqual((passed, blocked), (30, 7))
+
+    def test_set_clears_rowcount_and_quoted_export_survives_wasm(self):
+        with TemporaryDirectory() as temp:
+            source = Path(temp)/'set.sql'
+            source.write_text("create or replace proc [dbo].[set-value] @v int output as begin set @v=9 return @@rowcount end")
+            compile_script(source,temp)
+            abi=json.loads((Path(temp)/'set-value.abi.json').read_text())
+            engine=Engine()
+            store=Store(engine)
+            module=Module(engine,(Path(temp)/'set-value.wasm').read_bytes())
+            linker=Linker(engine)
+            for name,op in abi['operations'].items():
+                def callback(*args, kind=op['kind']):
+                    if kind=='set_variable': return 123 # opaque handle, not integer 9
+                    self.assertEqual(args,(0,)) # SET must clear the row count
+                    return args[0]
+                fn=Func(store,FuncType([ValType.i32()]*len(op['arguments']),[ValType.i32()]*op['results']),callback)
+                linker.define(store,'ignite',name,fn)
+            instance=linker.instantiate(store,module)
+            self.assertEqual(instance.exports(store)['set-value'](store,0),[0,123])
+
+    def test_star_extra_projection_and_filtered_constant(self):
+        with TemporaryDirectory() as temp:
+            source=Path(temp)/'q.sql'
+            schema=Path(temp)/'schema.sql'
+            schema.write_text('create table t (a int, b varchar(5))')
+            source.write_text("create proc q as begin select *, 42 as extra from t select 'empty' where 1=2 end")
+            compile_script(source,temp,schema)
+            bindings=json.loads((Path(temp)/'q.bindings.json').read_text())
+            self.assertIn('"A", "B", 42 AS "EXTRA"', bindings['result_set_0'])
+            self.assertIn('FROM (VALUES (0))', bindings['result_set_1'])
+            source.write_text('create proc [../../escape] as return 0')
+            with self.assertRaises(ValueError): compile_script(source,temp)
 
 
 if __name__=='__main__': unittest.main()

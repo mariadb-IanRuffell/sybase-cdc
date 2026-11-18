@@ -1,0 +1,12 @@
+procedure
+  replace_option
+  object_name
+    dbo
+    Test_Update
+  statements
+    update
+      object_name	records_tests
+      assignments
+        assignment
+          object_name	data_field
+          integer	1

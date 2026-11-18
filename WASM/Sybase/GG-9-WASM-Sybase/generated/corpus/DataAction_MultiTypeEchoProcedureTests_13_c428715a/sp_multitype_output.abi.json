@@ -1,0 +1,82 @@
+{
+  "version": 2,
+  "name": "sp_multitype_output",
+  "parameters": [
+    "echochar",
+    "inbinary",
+    "echobinary"
+  ],
+  "outputs": [
+    "echochar",
+    "echobinary"
+  ],
+  "defaults": {
+    "echochar": null,
+    "echobinary": null
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@echochar": {
+      "ase": "char",
+      "kind": "string",
+      "sql": "VARCHAR(1)",
+      "length": 1,
+      "fixed": true
+    },
+    "@inbinary": {
+      "ase": "binary",
+      "kind": "binary",
+      "sql": "VARBINARY(16)",
+      "length": 16,
+      "fixed": true
+    },
+    "@echobinary": {
+      "ase": "binary",
+      "kind": "binary",
+      "sql": "VARBINARY(16)",
+      "length": 16,
+      "fixed": true
+    }
+  },
+  "operations": {
+    "set_variable_0": {
+      "kind": "set_variable",
+      "arguments": [],
+      "results": 1,
+      "destinations": [
+        "@echochar"
+      ]
+    },
+    "set_variable_1": {
+      "kind": "set_variable",
+      "arguments": [
+        "@inbinary"
+      ],
+      "results": 1,
+      "destinations": [
+        "@echobinary"
+      ]
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

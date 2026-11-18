@@ -1,0 +1,306 @@
+procedure
+  object_name	AseDataAdapterTests_Proc1
+  parameters
+    parameter_decl
+      @p1
+      datatype
+        object_name	INT
+    parameter_decl
+      @p2
+      datatype
+        object_name	INT
+      default_argument
+        null
+    parameter_decl
+      @p3
+      datatype
+        object_name	SMALLINT
+    parameter_decl
+      @p4
+      datatype
+        object_name	SMALLINT
+      default_argument
+        null
+    parameter_decl
+      @p5
+      datatype
+        object_name	BIGINT
+    parameter_decl
+      @p6
+      datatype
+        object_name	BIGINT
+      default_argument
+        null
+    parameter_decl
+      @p7
+      datatype
+        object_name	TINYINT
+    parameter_decl
+      @p8
+      datatype
+        object_name	TINYINT
+      default_argument
+        null
+    parameter_decl
+      @p9
+      datatype
+        unsigned_type	INT
+    parameter_decl
+      @p10
+      datatype
+        unsigned_type	INT
+      default_argument
+        null
+    parameter_decl
+      @p11
+      datatype
+        unsigned_type	SMALLINT
+    parameter_decl
+      @p12
+      datatype
+        unsigned_type	SMALLINT
+      default_argument
+        null
+    parameter_decl
+      @p13
+      datatype
+        unsigned_type	BIGINT
+    parameter_decl
+      @p14
+      datatype
+        unsigned_type	BIGINT
+      default_argument
+        null
+    parameter_decl
+      @p15
+      datatype
+        unsigned_type	TINYINT
+    parameter_decl
+      @p16
+      datatype
+        unsigned_type	TINYINT
+      default_argument
+        null
+    parameter_decl
+      @p17
+      datatype
+        object_name	REAL
+    parameter_decl
+      @p18
+      datatype
+        object_name	REAL
+      default_argument
+        null
+    parameter_decl
+      @p19
+      datatype
+        double_precision
+    parameter_decl
+      @p20
+      datatype
+        double_precision
+      default_argument
+        null
+    parameter_decl
+      @p21
+      datatype
+        object_name	NUMERIC
+        type_args
+          18
+          6
+    parameter_decl
+      @p22
+      datatype
+        object_name	NUMERIC
+        type_args
+          18
+          6
+      default_argument
+        null
+    parameter_decl
+      @p23
+      datatype
+        object_name	MONEY
+    parameter_decl
+      @p24
+      datatype
+        object_name	MONEY
+      default_argument
+        null
+    parameter_decl
+      @p25
+      datatype
+        object_name	SMALLMONEY
+    parameter_decl
+      @p26
+      datatype
+        object_name	SMALLMONEY
+      default_argument
+        null
+    parameter_decl
+      @p27
+      datatype
+        object_name	BIT
+    parameter_decl
+      @p28
+      datatype
+        object_name	BINARY
+        type_args	16
+    parameter_decl
+      @p29
+      datatype
+        object_name	BINARY
+        type_args	16
+      default_argument
+        null
+    parameter_decl
+      @p30
+      datatype
+        object_name	VARBINARY
+        type_args	16
+    parameter_decl
+      @p31
+      datatype
+        object_name	VARBINARY
+        type_args	16
+      default_argument
+        null
+    parameter_decl
+      @p32
+      datatype
+        object_name	IMAGE
+    parameter_decl
+      @p33
+      datatype
+        object_name	IMAGE
+      default_argument
+        null
+    parameter_decl
+      @p34
+      datatype
+        object_name	VARCHAR
+        type_args	512
+    parameter_decl
+      @p35
+      datatype
+        object_name	VARCHAR
+        type_args	512
+      default_argument
+        null
+    parameter_decl
+      @p36
+      datatype
+        char_type
+          char_kind	CHAR
+        type_args	512
+    parameter_decl
+      @p37
+      datatype
+        char_type
+          char_kind	CHAR
+        type_args	512
+      default_argument
+        null
+    parameter_decl
+      @p38
+      datatype
+        object_name	UNIVARCHAR
+        type_args	512
+    parameter_decl
+      @p39
+      datatype
+        object_name	UNIVARCHAR
+        type_args	512
+      default_argument
+        null
+    parameter_decl
+      @p40
+      datatype
+        object_name	UNICHAR
+        type_args	512
+    parameter_decl
+      @p41
+      datatype
+        object_name	UNICHAR
+        type_args	512
+      default_argument
+        null
+    parameter_decl
+      @p42
+      datatype
+        object_name	TEXT
+    parameter_decl
+      @p43
+      datatype
+        object_name	TEXT
+      default_argument
+        null
+    parameter_decl
+      @p44
+      datatype
+        object_name	UNITEXT
+    parameter_decl
+      @p45
+      datatype
+        object_name	UNITEXT
+      default_argument
+        null
+    parameter_decl
+      @p48
+      datatype
+        object_name	DATETIME
+    parameter_decl
+      @p49
+      datatype
+        object_name	DATETIME
+      default_argument
+        null
+    parameter_decl
+      @p50
+      datatype
+        object_name	SMALLDATETIME
+    parameter_decl
+      @p51
+      datatype
+        object_name	SMALLDATETIME
+      default_argument
+        null
+    parameter_decl
+      @p52
+      datatype
+        object_name	DATE
+    parameter_decl
+      @p53
+      datatype
+        object_name	DATE
+      default_argument
+        null
+    parameter_decl
+      @p56
+      datatype
+        time_type	TIME
+    parameter_decl
+      @p57
+      datatype
+        time_type	TIME
+      default_argument
+        null
+    parameter_decl
+      @o1
+      datatype
+        object_name	INT
+      output_mode
+  statements
+    block
+      statements
+        query
+          select_core
+            select_list
+              select_item
+                integer	1
+                column_alias	id
+              select_item
+                string	'something'
+                column_alias	description
+        return_status
+          integer	0

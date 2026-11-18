@@ -1,0 +1,160 @@
+{
+  "version": 2,
+  "name": "large-results",
+  "parameters": [
+    "numberofrecords"
+  ],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@numberofrecords": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@index": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@text": {
+      "ase": "char",
+      "kind": "string",
+      "sql": "VARCHAR(4000)",
+      "length": 4000,
+      "fixed": true
+    }
+  },
+  "operations": {
+    "set_variable_0": {
+      "kind": "set_variable",
+      "arguments": [],
+      "results": 1,
+      "destinations": [
+        "@index"
+      ]
+    },
+    "set_variable_1": {
+      "kind": "set_variable",
+      "arguments": [],
+      "results": 1,
+      "destinations": [
+        "@text"
+      ]
+    },
+    "create_temp_2": {
+      "kind": "create_temp",
+      "arguments": [],
+      "results": 0,
+      "temporary": "__WASM_TEMP_0__"
+    },
+    "condition_3": {
+      "kind": "condition",
+      "arguments": [
+        "@index"
+      ],
+      "results": 1
+    },
+    "insert_4": {
+      "kind": "insert",
+      "arguments": [
+        "@index",
+        "@text"
+      ],
+      "results": 1,
+      "table": "#thousand",
+      "identity": null,
+      "counter": null
+    },
+    "set_variable_5": {
+      "kind": "set_variable",
+      "arguments": [
+        "@index"
+      ],
+      "results": 1,
+      "destinations": [
+        "@index"
+      ]
+    },
+    "condition_6": {
+      "kind": "condition",
+      "arguments": [
+        "@numberofrecords"
+      ],
+      "results": 1
+    },
+    "result_set_7": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "condition_8": {
+      "kind": "condition",
+      "arguments": [
+        "@numberofrecords"
+      ],
+      "results": 1
+    },
+    "result_set_9": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "condition_10": {
+      "kind": "condition",
+      "arguments": [
+        "@numberofrecords"
+      ],
+      "results": 1
+    },
+    "result_set_11": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "condition_12": {
+      "kind": "condition",
+      "arguments": [
+        "@numberofrecords"
+      ],
+      "results": 1
+    },
+    "result_set_13": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "drop_temp_14": {
+      "kind": "drop_temp",
+      "arguments": [],
+      "results": 0,
+      "temporary": "__WASM_TEMP_0__"
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

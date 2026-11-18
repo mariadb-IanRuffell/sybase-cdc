@@ -1,0 +1,182 @@
+procedure
+  object_name
+    [dbo]
+    [large-results]
+  parameters
+    parameter_decl
+      @numberOfRecords
+      datatype
+        object_name	INT
+  statements
+    block
+      statements
+        declare_variables
+          variable_decl
+            @index
+            datatype
+              object_name	INT
+        set_variable
+          local_var	@index
+          integer	0
+        declare_variables
+          variable_decl
+            @text
+            datatype
+              char_type
+                char_kind	CHAR
+              type_args	4000
+        set_variable
+          local_var	@text
+          function_call
+            object_name	REPLICATE
+            expr_list
+              string	'X'
+              integer	4000
+        create_table
+          object_name	#thousand
+          column_def
+            Id
+            datatype
+              object_name	INT
+          column_def
+            Description0
+            datatype
+              object_name	TEXT
+        while_statement
+          comparison
+            local_var	@index
+            comparison_op	<
+            integer	1000
+          block
+            statements
+              insert
+                object_name	#thousand
+                column_list
+                  name_list
+                    Id
+                    Description0
+                values
+                  value_row
+                    local_var	@index
+                    local_var	@text
+              set_variable
+                local_var	@index
+                add
+                  local_var	@index
+                  integer	1
+        if_statement
+          comparison
+            local_var	@numberOfRecords
+            comparison_op	=
+            integer	1000
+          block
+            statements
+              query
+                select_core
+                  select_list
+                    select_item
+                      column
+                        object_name	Id
+                    select_item
+                      column
+                        object_name	Description0
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	#thousand
+        if_statement
+          comparison
+            local_var	@numberOfRecords
+            comparison_op	=
+            integer	10000
+          block
+            statements
+              query
+                select_core
+                  top_clause
+                    integer	10000
+                  select_list
+                    select_item
+                      column
+                        object_name
+                          t1
+                          Id
+                    select_item
+                      column
+                        object_name
+                          t1
+                          Description0
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	#thousand
+                        alias	t1
+                    joined_table
+                      table_reference
+                        object_name	#thousand
+                        alias	t2
+        if_statement
+          comparison
+            local_var	@numberOfRecords
+            comparison_op	=
+            integer	100000
+          block
+            statements
+              query
+                select_core
+                  top_clause
+                    integer	100000
+                  select_list
+                    select_item
+                      column
+                        object_name
+                          t1
+                          Id
+                    select_item
+                      column
+                        object_name
+                          t1
+                          Description0
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	#thousand
+                        alias	t1
+                    joined_table
+                      table_reference
+                        object_name	#thousand
+                        alias	t2
+        if_statement
+          comparison
+            local_var	@numberOfRecords
+            comparison_op	=
+            integer	500000
+          block
+            statements
+              query
+                select_core
+                  top_clause
+                    integer	500000
+                  select_list
+                    select_item
+                      column
+                        object_name
+                          t1
+                          Id
+                    select_item
+                      column
+                        object_name
+                          t1
+                          Description0
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name	#thousand
+                        alias	t1
+                    joined_table
+                      table_reference
+                        object_name	#thousand
+                        alias	t2
+        drop_object
+          object_kind	TABLE
+          object_name	#thousand

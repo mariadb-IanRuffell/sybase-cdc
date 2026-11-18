@@ -1,0 +1,7 @@
+{
+  "set_variable_0": "SELECT 0",
+  "condition_1": "SELECT CASE WHEN (CAST(? AS INT) < CAST(? AS INT)) THEN 1 ELSE 0 END",
+  "print_2": "SELECT 'General Kenobi'",
+  "set_variable_3": "SELECT (CAST(? AS INT) + 1)",
+  "wait_4": "SELECT CAST(? AS VARCHAR(8))"
+}

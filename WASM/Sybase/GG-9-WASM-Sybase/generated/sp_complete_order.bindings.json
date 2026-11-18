@@ -1,12 +1,12 @@
 {
-  "assign_0": "SELECT customer_id, total_amount FROM orders WHERE ((order_id = CAST(? AS INT)) AND (status = 'NEW'))",
+  "assign_0": "SELECT \"CUSTOMER_ID\", \"TOTAL_AMOUNT\" FROM \"ORDERS\" WHERE ((\"ORDER_ID\" = CAST(? AS INT)) AND (\"STATUS\" = 'NEW'))",
   "condition_1": "SELECT CASE WHEN (CAST(? AS INT) IS NULL) THEN 1 ELSE 0 END",
   "condition_3": "SELECT CASE WHEN (CAST(? AS DECIMAL(12,2)) <= 0) THEN 1 ELSE 0 END",
-  "assign_5": "SELECT loyalty_tier FROM customer WHERE (customer_id = CAST(? AS INT))",
-  "assign_6": "SELECT points_multiplier FROM loyalty_tier_rule WHERE (tier = CAST(? AS VARCHAR(10)))",
+  "assign_5": "SELECT \"LOYALTY_TIER\" FROM \"CUSTOMER\" WHERE (\"CUSTOMER_ID\" = CAST(? AS INT))",
+  "assign_6": "SELECT \"POINTS_MULTIPLIER\" FROM \"LOYALTY_TIER_RULE\" WHERE (\"TIER\" = CAST(? AS VARCHAR(10)))",
   "assign_7": "SELECT CAST(TRUNCATE((CAST(? AS DECIMAL(12,2)) * CAST(? AS DECIMAL(4,2))), 0) AS INT)",
-  "dml_9": "UPDATE orders SET status = 'COMPLETED' WHERE (order_id = CAST(? AS INT))",
-  "insert_10": "INSERT INTO payment (order_id, method, amount, status, paid_at, customer_id, payment_id) VALUES (CAST(? AS INT), CAST(? AS VARCHAR(10)), CAST(? AS DECIMAL(12,2)), 'CAPTURED', LOCALTIMESTAMP, (SELECT customer_id FROM orders WHERE order_id = CAST(? AS INT)), CAST(? AS INT))",
-  "insert_11": "INSERT INTO loyalty_txn (customer_id, order_id, points, reason, txn_date, txn_id) VALUES (CAST(? AS INT), CAST(? AS INT), CAST(? AS INT), 'PURCHASE', LOCALTIMESTAMP, CAST(? AS INT))",
-  "dml_12": "UPDATE customer SET loyalty_points = (loyalty_points + CAST(? AS INT)), updated_at = LOCALTIMESTAMP WHERE (customer_id = CAST(? AS INT))"
+  "dml_9": "UPDATE \"ORDERS\" SET \"STATUS\" = 'COMPLETED' WHERE (\"ORDER_ID\" = CAST(? AS INT))",
+  "insert_10": "INSERT INTO \"PAYMENT\" (\"ORDER_ID\", \"METHOD\", \"AMOUNT\", \"STATUS\", \"PAID_AT\", \"CUSTOMER_ID\", \"PAYMENT_ID\") VALUES (CAST(? AS INT), CAST(? AS VARCHAR(10)), CAST(? AS DECIMAL(12,2)), 'CAPTURED', LOCALTIMESTAMP, (SELECT customer_id FROM orders WHERE order_id = CAST(? AS INT)), CAST(? AS INT))",
+  "insert_11": "INSERT INTO \"LOYALTY_TXN\" (\"CUSTOMER_ID\", \"ORDER_ID\", \"POINTS\", \"REASON\", \"TXN_DATE\", \"TXN_ID\") VALUES (CAST(? AS INT), CAST(? AS INT), CAST(? AS INT), 'PURCHASE', LOCALTIMESTAMP, CAST(? AS INT))",
+  "dml_12": "UPDATE \"CUSTOMER\" SET \"LOYALTY_POINTS\" = (\"LOYALTY_POINTS\" + CAST(? AS INT)), \"UPDATED_AT\" = LOCALTIMESTAMP WHERE (\"CUSTOMER_ID\" = CAST(? AS INT))"
 }

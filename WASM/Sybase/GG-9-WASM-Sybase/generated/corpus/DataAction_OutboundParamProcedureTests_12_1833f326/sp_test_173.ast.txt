@@ -1,0 +1,19 @@
+procedure
+  object_name
+    dbo
+    sp_test_173
+  parameters
+    parameter_decl
+      @TotalValue
+      datatype
+        object_name	numeric
+        type_args
+          18
+          4
+      default_argument
+        integer	0
+      output_mode
+  statements
+    set_variable
+      local_var	@TotalValue
+      decimal	2819.0444

@@ -25,18 +25,18 @@ final class Customer360Checks {
         client.sql().executeScript("""
                 INSERT INTO loyalty_tier_rule VALUES ('BLUE',0,1),('SILVER',5000,1.25),('GOLD',20000,1.5),('PLATINUM',60000,2);
                 INSERT INTO customer VALUES
-                  (1,'Ada','Lovelace','ada@example.test',NULL,DATE '1990-01-01','GB','STANDARD','BLUE',0,1,'ACTIVE',LOCALTIMESTAMP,LOCALTIMESTAMP),
-                  (2,'Grace','Hopper','grace@example.test',NULL,NULL,'US','STANDARD','BLUE',0,0,'ACTIVE',LOCALTIMESTAMP,LOCALTIMESTAMP),
-                  (3,'Inactive','Customer','inactive@example.test',NULL,NULL,NULL,'STANDARD','BLUE',0,0,'INACTIVE',LOCALTIMESTAMP,LOCALTIMESTAMP);
-                INSERT INTO address VALUES (1,1,'HOME','Example road','Dubai',NULL,'AE',1);
-                INSERT INTO product VALUES (1,'SKU-1','Ticket','FLIGHT',75.25,10,1),(2,'SKU-2','Inactive','HOTEL',10,10,0);
+                  (1,'Ada','Lovelace','ada@example.test',NULL,DATE '1990-01-01','GB','STANDARD','BLUE',0,TRUE,'ACTIVE',LOCALTIMESTAMP,LOCALTIMESTAMP),
+                  (2,'Grace','Hopper','grace@example.test',NULL,NULL,'US','STANDARD','BLUE',0,FALSE,'ACTIVE',LOCALTIMESTAMP,LOCALTIMESTAMP),
+                  (3,'Inactive','Customer','inactive@example.test',NULL,NULL,NULL,'STANDARD','BLUE',0,FALSE,'INACTIVE',LOCALTIMESTAMP,LOCALTIMESTAMP);
+                INSERT INTO address VALUES (1,1,'HOME','Example road','Dubai',NULL,'AE',TRUE);
+                INSERT INTO product VALUES (1,'SKU-1','Ticket','FLIGHT',75.25,10,TRUE),(2,'SKU-2','Inactive','HOTEL',10,10,FALSE);
                 INSERT INTO orders VALUES (100,1,TIMESTAMPADD(DAY,-1,LOCALTIMESTAMP),'COMPLETED','WEB',4900,'AED');
-                INSERT INTO order_item VALUES (100,100,1,1,4900,4900);
+                INSERT INTO order_item VALUES (100,100,1,1,4900,4900,1);
                 INSERT INTO interaction VALUES (1,1,'EMAIL','ENQUIRY',NULL,-1,'OPEN',LOCALTIMESTAMP,NULL);
-                UPDATE WASM_IDENTITY SET next_id=100 WHERE table_name IN ('orders','order_item');
-                UPDATE WASM_IDENTITY SET next_id=3 WHERE table_name='customer';
-                UPDATE WASM_IDENTITY SET next_id=2 WHERE table_name='product';
-                UPDATE WASM_IDENTITY SET next_id=1 WHERE table_name IN ('address','interaction');
+                UPDATE id_seq SET next_id=101 WHERE name IN ('order_id','order_item_id');
+                UPDATE id_seq SET next_id=4 WHERE name='customer_id';
+                UPDATE id_seq SET next_id=3 WHERE name='product_id';
+                UPDATE id_seq SET next_id=2 WHERE name IN ('address_id','interaction_id');
                 """);
         JsonNode tier = call(client, evidence, "tier_before", "sp_recalc_loyalty_tier", Map.of("customer_id",1), 0);
         require(tier.path("outputs").path("new_tier").asText().equals("BLUE"), "initial string output");
@@ -60,11 +60,11 @@ final class Customer360Checks {
         number(client,"SELECT total_amount FROM orders WHERE order_id="+order,"150.50");
 
         // Force a real SQL failure after the stock UPDATE. The wrapper must roll it back.
-        client.sql().executeScript("UPDATE WASM_IDENTITY SET next_id=99 WHERE table_name='order_item';");
+        client.sql().executeScript("UPDATE id_seq SET next_id=100 WHERE name='order_item_id';");
         expectFailure(client,"sp_add_order_item",Map.of("order_id",order,"product_id",1,"qty",1),"duplicate identity");
         number(client,"SELECT stock_qty FROM product WHERE product_id=1","8");
         number(client,"SELECT total_amount FROM orders WHERE order_id="+order,"150.50");
-        client.sql().executeScript("UPDATE WASM_IDENTITY SET next_id=101 WHERE table_name='order_item';");
+        client.sql().executeScript("UPDATE id_seq SET next_id=102 WHERE name='order_item_id';");
 
         call(client,evidence,"complete","sp_complete_order",Map.of("order_id",order),0);
         number(client,"SELECT loyalty_points FROM customer WHERE customer_id=1","150");

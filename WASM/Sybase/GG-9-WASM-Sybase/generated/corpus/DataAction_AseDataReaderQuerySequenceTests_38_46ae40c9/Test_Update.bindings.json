@@ -1,0 +1,3 @@
+{
+  "dml_0": "UPDATE \"RECORDS_TESTS\" SET \"DATA_FIELD\" = 1"
+}

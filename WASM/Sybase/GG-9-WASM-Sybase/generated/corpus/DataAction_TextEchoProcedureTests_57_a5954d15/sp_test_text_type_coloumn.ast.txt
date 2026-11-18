@@ -1,0 +1,29 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_text_type_coloumn]
+  parameters
+    parameter_decl
+      @text_locator_input
+      datatype
+        object_name	text_locator
+    parameter_decl
+      @text_input
+      datatype
+        object_name	text
+    parameter_decl
+      @output
+      datatype
+        object_name	int
+      output_mode
+  statements
+    declare_variables
+      variable_decl
+        @sCommentTL
+        datatype
+          object_name	text_locator
+    block
+      statements
+        set_variable
+          local_var	@output
+          integer	10

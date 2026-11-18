@@ -1,0 +1,11 @@
+procedure
+  object_name	Person_SelectAll
+  statements
+    query
+      select_core
+        select_list
+          star
+        from_clause
+          joined_table
+            table_reference
+              object_name	Person

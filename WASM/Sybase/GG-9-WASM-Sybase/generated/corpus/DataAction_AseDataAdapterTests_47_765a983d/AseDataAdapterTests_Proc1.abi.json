@@ -1,0 +1,484 @@
+{
+  "version": 2,
+  "name": "AseDataAdapterTests_Proc1",
+  "parameters": [
+    "p1",
+    "p2",
+    "p3",
+    "p4",
+    "p5",
+    "p6",
+    "p7",
+    "p8",
+    "p9",
+    "p10",
+    "p11",
+    "p12",
+    "p13",
+    "p14",
+    "p15",
+    "p16",
+    "p17",
+    "p18",
+    "p19",
+    "p20",
+    "p21",
+    "p22",
+    "p23",
+    "p24",
+    "p25",
+    "p26",
+    "p27",
+    "p28",
+    "p29",
+    "p30",
+    "p31",
+    "p32",
+    "p33",
+    "p34",
+    "p35",
+    "p36",
+    "p37",
+    "p38",
+    "p39",
+    "p40",
+    "p41",
+    "p42",
+    "p43",
+    "p44",
+    "p45",
+    "p48",
+    "p49",
+    "p50",
+    "p51",
+    "p52",
+    "p53",
+    "p56",
+    "p57",
+    "o1"
+  ],
+  "outputs": [
+    "o1"
+  ],
+  "defaults": {
+    "p2": null,
+    "p4": null,
+    "p6": null,
+    "p8": null,
+    "p10": null,
+    "p12": null,
+    "p14": null,
+    "p16": null,
+    "p18": null,
+    "p20": null,
+    "p22": null,
+    "p24": null,
+    "p26": null,
+    "p29": null,
+    "p31": null,
+    "p33": null,
+    "p35": null,
+    "p37": null,
+    "p39": null,
+    "p41": null,
+    "p43": null,
+    "p45": null,
+    "p49": null,
+    "p51": null,
+    "p53": null,
+    "p57": null
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@p1": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@p2": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@p3": {
+      "ase": "smallint",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "-32768",
+      "maximum": "32767"
+    },
+    "@p4": {
+      "ase": "smallint",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "-32768",
+      "maximum": "32767"
+    },
+    "@p5": {
+      "ase": "bigint",
+      "kind": "integer",
+      "sql": "BIGINT",
+      "minimum": "-9223372036854775808",
+      "maximum": "9223372036854775807"
+    },
+    "@p6": {
+      "ase": "bigint",
+      "kind": "integer",
+      "sql": "BIGINT",
+      "minimum": "-9223372036854775808",
+      "maximum": "9223372036854775807"
+    },
+    "@p7": {
+      "ase": "tinyint",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "0",
+      "maximum": "255"
+    },
+    "@p8": {
+      "ase": "tinyint",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "0",
+      "maximum": "255"
+    },
+    "@p9": {
+      "ase": "unsigned int",
+      "kind": "integer",
+      "sql": "BIGINT",
+      "minimum": "0",
+      "maximum": "4294967295"
+    },
+    "@p10": {
+      "ase": "unsigned int",
+      "kind": "integer",
+      "sql": "BIGINT",
+      "minimum": "0",
+      "maximum": "4294967295"
+    },
+    "@p11": {
+      "ase": "unsigned smallint",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "0",
+      "maximum": "65535"
+    },
+    "@p12": {
+      "ase": "unsigned smallint",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "0",
+      "maximum": "65535"
+    },
+    "@p13": {
+      "ase": "unsigned bigint",
+      "kind": "integer",
+      "sql": "DECIMAL(20,0)",
+      "minimum": "0",
+      "maximum": "18446744073709551615"
+    },
+    "@p14": {
+      "ase": "unsigned bigint",
+      "kind": "integer",
+      "sql": "DECIMAL(20,0)",
+      "minimum": "0",
+      "maximum": "18446744073709551615"
+    },
+    "@p15": {
+      "ase": "unsigned tinyint",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "0",
+      "maximum": "255"
+    },
+    "@p16": {
+      "ase": "unsigned tinyint",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "0",
+      "maximum": "255"
+    },
+    "@p17": {
+      "ase": "real",
+      "kind": "float",
+      "sql": "REAL"
+    },
+    "@p18": {
+      "ase": "real",
+      "kind": "float",
+      "sql": "REAL"
+    },
+    "@p19": {
+      "ase": "double",
+      "kind": "float",
+      "sql": "DOUBLE"
+    },
+    "@p20": {
+      "ase": "double",
+      "kind": "float",
+      "sql": "DOUBLE"
+    },
+    "@p21": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(18,6)",
+      "precision": 18,
+      "scale": 6
+    },
+    "@p22": {
+      "ase": "numeric",
+      "kind": "decimal",
+      "sql": "DECIMAL(18,6)",
+      "precision": 18,
+      "scale": 6
+    },
+    "@p23": {
+      "ase": "money",
+      "kind": "decimal",
+      "sql": "DECIMAL(19,4)",
+      "precision": 19,
+      "scale": 4,
+      "minimum": "-922337203685477.5808",
+      "maximum": "922337203685477.5807"
+    },
+    "@p24": {
+      "ase": "money",
+      "kind": "decimal",
+      "sql": "DECIMAL(19,4)",
+      "precision": 19,
+      "scale": 4,
+      "minimum": "-922337203685477.5808",
+      "maximum": "922337203685477.5807"
+    },
+    "@p25": {
+      "ase": "smallmoney",
+      "kind": "decimal",
+      "sql": "DECIMAL(10,4)",
+      "precision": 10,
+      "scale": 4,
+      "minimum": "-214748.3648",
+      "maximum": "214748.3647"
+    },
+    "@p26": {
+      "ase": "smallmoney",
+      "kind": "decimal",
+      "sql": "DECIMAL(10,4)",
+      "precision": 10,
+      "scale": 4,
+      "minimum": "-214748.3648",
+      "maximum": "214748.3647"
+    },
+    "@p27": {
+      "ase": "bit",
+      "kind": "integer",
+      "sql": "SMALLINT",
+      "minimum": "0",
+      "maximum": "1"
+    },
+    "@p28": {
+      "ase": "binary",
+      "kind": "binary",
+      "sql": "VARBINARY(16)",
+      "length": 16,
+      "fixed": true
+    },
+    "@p29": {
+      "ase": "binary",
+      "kind": "binary",
+      "sql": "VARBINARY(16)",
+      "length": 16,
+      "fixed": true
+    },
+    "@p30": {
+      "ase": "varbinary",
+      "kind": "binary",
+      "sql": "VARBINARY(16)",
+      "length": 16,
+      "fixed": false
+    },
+    "@p31": {
+      "ase": "varbinary",
+      "kind": "binary",
+      "sql": "VARBINARY(16)",
+      "length": 16,
+      "fixed": false
+    },
+    "@p32": {
+      "ase": "image",
+      "kind": "binary",
+      "sql": "VARBINARY(2147483647)",
+      "length": 2147483647,
+      "fixed": false
+    },
+    "@p33": {
+      "ase": "image",
+      "kind": "binary",
+      "sql": "VARBINARY(2147483647)",
+      "length": 2147483647,
+      "fixed": false
+    },
+    "@p34": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(512)",
+      "length": 512,
+      "fixed": false
+    },
+    "@p35": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(512)",
+      "length": 512,
+      "fixed": false
+    },
+    "@p36": {
+      "ase": "char",
+      "kind": "string",
+      "sql": "VARCHAR(512)",
+      "length": 512,
+      "fixed": true
+    },
+    "@p37": {
+      "ase": "char",
+      "kind": "string",
+      "sql": "VARCHAR(512)",
+      "length": 512,
+      "fixed": true
+    },
+    "@p38": {
+      "ase": "univarchar",
+      "kind": "string",
+      "sql": "VARCHAR(512)",
+      "length": 512,
+      "fixed": false
+    },
+    "@p39": {
+      "ase": "univarchar",
+      "kind": "string",
+      "sql": "VARCHAR(512)",
+      "length": 512,
+      "fixed": false
+    },
+    "@p40": {
+      "ase": "unichar",
+      "kind": "string",
+      "sql": "VARCHAR(512)",
+      "length": 512,
+      "fixed": true
+    },
+    "@p41": {
+      "ase": "unichar",
+      "kind": "string",
+      "sql": "VARCHAR(512)",
+      "length": 512,
+      "fixed": true
+    },
+    "@p42": {
+      "ase": "text",
+      "kind": "string",
+      "sql": "VARCHAR(2147483647)",
+      "length": 2147483647,
+      "fixed": false
+    },
+    "@p43": {
+      "ase": "text",
+      "kind": "string",
+      "sql": "VARCHAR(2147483647)",
+      "length": 2147483647,
+      "fixed": false
+    },
+    "@p44": {
+      "ase": "unitext",
+      "kind": "string",
+      "sql": "VARCHAR(2147483647)",
+      "length": 2147483647,
+      "fixed": false
+    },
+    "@p45": {
+      "ase": "unitext",
+      "kind": "string",
+      "sql": "VARCHAR(2147483647)",
+      "length": 2147483647,
+      "fixed": false
+    },
+    "@p48": {
+      "ase": "datetime",
+      "kind": "datetime",
+      "sql": "TIMESTAMP(6)"
+    },
+    "@p49": {
+      "ase": "datetime",
+      "kind": "datetime",
+      "sql": "TIMESTAMP(6)"
+    },
+    "@p50": {
+      "ase": "smalldatetime",
+      "kind": "datetime",
+      "sql": "TIMESTAMP(6)"
+    },
+    "@p51": {
+      "ase": "smalldatetime",
+      "kind": "datetime",
+      "sql": "TIMESTAMP(6)"
+    },
+    "@p52": {
+      "ase": "date",
+      "kind": "date",
+      "sql": "DATE"
+    },
+    "@p53": {
+      "ase": "date",
+      "kind": "date",
+      "sql": "DATE"
+    },
+    "@p56": {
+      "ase": "time",
+      "kind": "time",
+      "sql": "TIME(6)"
+    },
+    "@p57": {
+      "ase": "time",
+      "kind": "time",
+      "sql": "TIME(6)"
+    },
+    "@o1": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    }
+  },
+  "operations": {
+    "result_set_0": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

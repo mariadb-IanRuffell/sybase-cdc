@@ -30,6 +30,7 @@ public class ComputeDemo {
     private static final String NODE = "sybase-wasm-node";
     private static final String REST = "http://127.0.0.1:10390/management/v1/deployment/";
     private static final DeploymentUnit UNIT = new DeploymentUnit("sybase-wasm-example", "1.0.0");
+    private static final boolean CORPUS = Boolean.parseBoolean(System.getenv().getOrDefault("SYBASE_CORPUS", "false"));
     private static final boolean CUSTOMER360 = Boolean.parseBoolean(System.getenv().getOrDefault("SYBASE_CUSTOMER360", "false"));
     private static final boolean TRACE = Boolean.parseBoolean(System.getenv().getOrDefault("SYBASE_TRACE", "true"));
 
@@ -115,6 +116,7 @@ public class ComputeDemo {
                         ]}
                         """));
                 if (CUSTOMER360) Customer360Checks.run(client, example, evidence);
+                if (CORPUS) CorpusChecks.run(client, example, evidence);
             }
         } finally {
             server.shutdown();
@@ -130,6 +132,7 @@ public class ComputeDemo {
                         ]}
                         """));
                 if (CUSTOMER360) Customer360Checks.afterRestart(client, evidence);
+                if (CORPUS) CorpusChecks.afterRestart(client);
             }
         } finally {
             server.shutdown();
@@ -138,7 +141,9 @@ public class ComputeDemo {
         String output = JSON.writerWithDefaultPrettyPrinter().writeValueAsString(evidence);
         Files.writeString(example.resolve("build/demo-results.json"), output + "\n");
         System.out.println(output);
-        System.out.println(CUSTOMER360
+        System.out.println(CORPUS
+                ? "ALL COMPUTE CHECKS PASSED (Customer 360, corpus and persistent data after restart)"
+                : CUSTOMER360
                 ? "ALL COMPUTE CHECKS PASSED (40 client calls: 34 responses + 6 expected failures; persistent data after restart)"
                 : "ALL COMPUTE CHECKS PASSED (3 native + 8 Java-wrapper calls, including persistent data after restart)");
     }

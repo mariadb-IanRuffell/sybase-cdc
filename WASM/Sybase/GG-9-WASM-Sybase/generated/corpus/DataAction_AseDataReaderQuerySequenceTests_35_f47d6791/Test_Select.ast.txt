@@ -1,0 +1,16 @@
+procedure
+  replace_option
+  object_name
+    dbo
+    Test_Select
+  statements
+    query
+      select_core
+        top_clause
+          integer	1
+        select_list
+          star
+        from_clause
+          joined_table
+            table_reference
+              object_name	records_tests

@@ -1,0 +1,6 @@
+{
+  "set_variable_0": "SELECT CAST(? AS INT)",
+  "result_set_1": "SELECT CAST(? AS INT) AS \"T1ECHO\"",
+  "result_set_2": "SELECT (CAST(? AS INT) + 1) AS \"T2ECHO\"",
+  "status_3": "SELECT CAST(? AS INT)"
+}

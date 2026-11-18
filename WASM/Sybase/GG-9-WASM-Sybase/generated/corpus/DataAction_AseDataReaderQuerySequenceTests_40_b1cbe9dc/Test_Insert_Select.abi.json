@@ -1,0 +1,46 @@
+{
+  "version": 2,
+  "name": "Test_Insert_Select",
+  "parameters": [],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    }
+  },
+  "operations": {
+    "insert_0": {
+      "kind": "insert",
+      "arguments": [],
+      "results": 1,
+      "table": "records_tests",
+      "identity": null,
+      "counter": null
+    },
+    "result_set_1": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

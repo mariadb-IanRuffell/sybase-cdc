@@ -22,6 +22,24 @@ GridGain checks and compatibility limits. The original Ignite 2 examples below
 retain their integer ABI. A separately downloaded [ASE procedure corpus](corpus/README.md)
 provides upstream fixtures and a parser/compiler coverage report.
 
+## Downloaded procedures on GridGain 9
+
+The [37-fixture corpus](corpus/README.md) now has **30 procedures compiled and
+executed through the Java wrapper**, plus seven explicitly rejected ASE
+administration procedures. The compiler adds SET, quoted names, string operations,
+temporary-table DDL, PRINT, bounded WAITFOR and materialized text-locator values.
+
+```sh
+cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase/GG-9-WASM-Sybase
+./run_corpus.sh
+```
+
+This also runs Customer 360 regressions and verifies persistent GridGain data after
+restart. See the [per-fixture evidence](corpus/COVERAGE.md) and
+[wrapper limitations](GG-9-WASM-Sybase/README.md#remaining-corpus-limitations).
+Native ASE locator semantics, TDS streaming and ASE administration services remain
+unsupported; the corpus was not compared against ASE in this change.
+
 ## Run the inventory summary and read its results
 
 With the local Ignite node running (see **Run it** below), run both result examples from this directory.

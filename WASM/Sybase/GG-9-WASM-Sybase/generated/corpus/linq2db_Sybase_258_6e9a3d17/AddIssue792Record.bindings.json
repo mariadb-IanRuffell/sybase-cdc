@@ -1,0 +1,3 @@
+{
+  "insert_0": "INSERT INTO \"ALLTYPES\" (\"CHAR20DATATYPE\", \"ID\") VALUES ('issue792', CAST(? AS INT))"
+}

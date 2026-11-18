@@ -54,10 +54,11 @@ for name in compile_script(HERE / 'sql/typed_roundtrip.sql', output):
 # Disposable demo schema, derived from the source column types/primary keys.
 # Foreign keys, indexes and ASE defaults are not a schema migration feature.
 from ase_parser import parse_sql
-from gg9_compiler import datatype, Sql
+from gg9_compiler import datatype, Sql, counter_name
 from compiler import unqualified_name, identifier
 schema = parse_sql((repository / 'sybase/sql/01_schema.sql').read_text())
-statements = ['CREATE TABLE WASM_IDENTITY (table_name VARCHAR(128) PRIMARY KEY, next_id BIGINT NOT NULL)']
+statements = ["CREATE ZONE IF NOT EXISTS c360_ref STORAGE PROFILES ['default']",
+              'CREATE TABLE id_seq (name VARCHAR(40) PRIMARY KEY, next_id BIGINT) ZONE c360_ref']
 for table in schema.find_data('create_table'):
     name = unqualified_name(table.children[0])
     columns = []
@@ -67,11 +68,42 @@ for table in schema.find_data('create_table'):
             column, typ, *options = node.children
             identity |= any(x.data == 'identity' for x in options)
             notnull = any(x.data in ('not_null', 'identity') for x in options)
-            columns.append(f'{identifier(column)} {datatype(typ)["sql"]}' + (' NOT NULL' if notnull else ''))
+            target = datatype(typ)
+            sql_type = "BOOLEAN" if target["ase"] == "bit" else target["sql"]
+            columns.append(f'{identifier(column)} {sql_type}' + (' NOT NULL' if notnull else ''))
         elif node.data == 'table_constraint' and any(x.data == 'primary_key' for x in node.children):
             keys = next(x for x in node.children if x.data == 'column_list')
             columns.append('PRIMARY KEY ' + Sql({}).render(keys))
+    if name in DENORMALISED:
+        columns.append(DENORMALISED[name]['column'] + ' INT NOT NULL')
     statements.append(f'CREATE TABLE {name} (' + ', '.join(columns) + ')')
     if identity:
-        statements.append(f"INSERT INTO WASM_IDENTITY VALUES ('{name}', 0)")
+        statements.append(f"INSERT INTO id_seq VALUES ('{counter_name(name)}', 1)")
 (output / 'customer360-schema.sql').write_text(';\n'.join(statements)+';\n')
+
+# Compile each upstream fixture separately: two files can define the same procedure
+# with different signatures. Never rewrite the downloaded SQL to improve coverage.
+from gg9_compiler import ASECapabilityError, procedure_header
+from gg9_compiler import unqualified_name as typed_name
+import hashlib
+from corpus.extract_and_audit import execution_digest, artifact_digest
+runtime_digest = execution_digest()
+corpus_manifest = {}
+for fixture in sorted((HERE.parent / 'corpus/procedures').glob('*.sql')):
+    key = fixture.stem
+    procedure = next(parse_sql(fixture.read_text()).find_data('procedure'))
+    name = typed_name(procedure_header(procedure)[0])
+    prefix = 'corpus/' + key + '/'
+    record = dict(procedure=name, source=fixture.name, sha256=hashlib.sha256(fixture.read_bytes()).hexdigest(),
+                  resource_prefix=prefix, compiled=False, runtime_digest=runtime_digest)
+    try:
+        compile_script(fixture, output / prefix, HERE / 'sql/corpus_schema.sql')
+        record['compiled'] = True
+        record['artifact_digest'] = artifact_digest(output / prefix, name)
+    except ASECapabilityError as error:
+        record.update(capabilities=error.capabilities, diagnostic=str(error))
+    # Any ordinary compiler error is a build failure; only enumerated ASE-service
+    # dependencies may appear as blocked entries in the deployed manifest.
+    corpus_manifest[key] = record
+(output / 'corpus-manifest.json').write_text(json.dumps(corpus_manifest, indent=2)+'\n')
+print(f'Corpus: {sum(r["compiled"] for r in corpus_manifest.values())}/{len(corpus_manifest)} compiled; remaining fixtures require ASE services')

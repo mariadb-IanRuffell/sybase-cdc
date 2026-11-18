@@ -1,0 +1,36 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_echo]
+  parameters
+    parameter_decl
+      @nEchoValue
+      datatype
+        object_name	int
+    parameter_decl
+      @nEchoValueReturn
+      datatype
+        object_name	int
+      output_mode
+  statements
+    block
+      statements
+        set_variable
+          local_var	@nEchoValueReturn
+          local_var	@nEchoValue
+        query
+          select_core
+            select_list
+              select_item
+                local_var	@nEchoValue
+                column_alias	t1Echo
+        query
+          select_core
+            select_list
+              select_item
+                add
+                  local_var	@nEchoValue
+                  integer	1
+                column_alias	t2Echo
+        return_status
+          local_var	@nEchoValue

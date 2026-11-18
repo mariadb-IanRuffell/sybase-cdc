@@ -1,0 +1,3 @@
+{
+  "result_set_0": "SELECT (COALESCE((COALESCE(CAST(? AS VARCHAR(256)), '') || COALESCE(' ', '')), '') || COALESCE(CAST(? AS VARCHAR(256)), '')) AS \"VALUE\""
+}

@@ -1,0 +1,81 @@
+{
+  "version": 2,
+  "name": "sp_test_true_echo_text_locator",
+  "parameters": [
+    "input",
+    "output"
+  ],
+  "outputs": [
+    "output"
+  ],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@input": {
+      "ase": "text_locator",
+      "kind": "text_locator",
+      "sql": "VARCHAR(2147483647)",
+      "length": 2147483647,
+      "scope": "materialized-invocation"
+    },
+    "@output": {
+      "ase": "text",
+      "kind": "string",
+      "sql": "VARCHAR(2147483647)",
+      "length": 2147483647,
+      "fixed": false
+    },
+    "@scommenttl": {
+      "ase": "text_locator",
+      "kind": "text_locator",
+      "sql": "VARCHAR(2147483647)",
+      "length": 2147483647,
+      "scope": "materialized-invocation"
+    }
+  },
+  "operations": {
+    "assign_0": {
+      "kind": "assign",
+      "arguments": [
+        "@input",
+        "@scommenttl"
+      ],
+      "results": 2,
+      "destinations": [
+        "@scommenttl"
+      ],
+      "sql_arguments": 1
+    },
+    "set_variable_1": {
+      "kind": "set_variable",
+      "arguments": [
+        "@input"
+      ],
+      "results": 1,
+      "destinations": [
+        "@output"
+      ]
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

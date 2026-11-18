@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "name": "EchoParameter",
+  "parameters": [
+    "parameter1",
+    "parameter2"
+  ],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@parameter1": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(256)",
+      "length": 256,
+      "fixed": false
+    },
+    "@parameter2": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(256)",
+      "length": 256,
+      "fixed": false
+    }
+  },
+  "operations": {
+    "result_set_0": {
+      "kind": "result_set",
+      "arguments": [
+        "@parameter1",
+        "@parameter2"
+      ],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

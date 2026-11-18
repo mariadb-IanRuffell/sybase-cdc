@@ -1,0 +1,8 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_simple]
+  statements
+    block
+      statements
+        return_status

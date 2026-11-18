@@ -1,0 +1,38 @@
+{
+  "version": 2,
+  "name": "Test_Select",
+  "parameters": [],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    }
+  },
+  "operations": {
+    "result_set_0": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

@@ -1,0 +1,70 @@
+{
+  "version": 2,
+  "name": "sp_insert_test_echo_text",
+  "parameters": [
+    "input",
+    "output"
+  ],
+  "outputs": [
+    "output"
+  ],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@input": {
+      "ase": "text",
+      "kind": "string",
+      "sql": "VARCHAR(2147483647)",
+      "length": 2147483647,
+      "fixed": false
+    },
+    "@output": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    }
+  },
+  "operations": {
+    "insert_0": {
+      "kind": "insert",
+      "arguments": [
+        "@input"
+      ],
+      "results": 1,
+      "table": "test_text_table",
+      "identity": null,
+      "counter": null
+    },
+    "set_variable_1": {
+      "kind": "set_variable",
+      "arguments": [],
+      "results": 1,
+      "destinations": [
+        "@output"
+      ]
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

@@ -1,8 +1,8 @@
 {
-  "assign_0": "SELECT loyalty_tier FROM customer WHERE (customer_id = CAST(? AS INT))",
+  "assign_0": "SELECT \"LOYALTY_TIER\" FROM \"CUSTOMER\" WHERE (\"CUSTOMER_ID\" = CAST(? AS INT))",
   "condition_1": "SELECT CASE WHEN (CAST(? AS VARCHAR(10)) IS NULL) THEN 1 ELSE 0 END",
-  "assign_3": "SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE (((customer_id = CAST(? AS INT)) AND (status = 'COMPLETED')) AND (order_date >= TIMESTAMPADD(DAY, (-365), LOCALTIMESTAMP)))",
-  "assign_4": "SELECT tier FROM loyalty_tier_rule WHERE (min_spend = (SELECT MAX(min_spend) FROM loyalty_tier_rule WHERE (min_spend <= CAST(? AS DECIMAL(14,2)))))",
+  "assign_3": "SELECT COALESCE(SUM(\"TOTAL_AMOUNT\"), 0) FROM \"ORDERS\" WHERE (((\"CUSTOMER_ID\" = CAST(? AS INT)) AND (\"STATUS\" = 'COMPLETED')) AND (\"ORDER_DATE\" >= TIMESTAMPADD(DAY, (-365), LOCALTIMESTAMP)))",
+  "assign_4": "SELECT \"TIER\" FROM \"LOYALTY_TIER_RULE\" WHERE (\"MIN_SPEND\" = (SELECT MAX(\"MIN_SPEND\") FROM \"LOYALTY_TIER_RULE\" WHERE (\"MIN_SPEND\" <= CAST(? AS DECIMAL(14,2)))))",
   "condition_5": "SELECT CASE WHEN (CAST(? AS VARCHAR(10)) <> CAST(? AS VARCHAR(10))) THEN 1 ELSE 0 END",
-  "dml_6": "UPDATE customer SET loyalty_tier = CAST(? AS VARCHAR(10)), updated_at = LOCALTIMESTAMP WHERE (customer_id = CAST(? AS INT))"
+  "dml_6": "UPDATE \"CUSTOMER\" SET \"LOYALTY_TIER\" = CAST(? AS VARCHAR(10)), \"UPDATED_AT\" = LOCALTIMESTAMP WHERE (\"CUSTOMER_ID\" = CAST(? AS INT))"
 }

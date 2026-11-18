@@ -1,0 +1,36 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_true_echo_text_locator]
+  parameters
+    parameter_decl
+      @input
+      datatype
+        object_name	text_locator
+    parameter_decl
+      @output
+      datatype
+        object_name	text
+      output_mode
+  statements
+    declare_variables
+      variable_decl
+        @sCommentTL
+        datatype
+          object_name	text_locator
+    block
+      statements
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@sCommentTL
+                function_call
+                  object_name	create_locator
+                  expr_list
+                    column
+                      object_name	text_locator
+                    local_var	@input
+        set_variable
+          local_var	@output
+          local_var	@input

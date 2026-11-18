@@ -53,6 +53,20 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
             trace.enabled = request.path("trace").asBoolean(false);
             trace.procedure = name;
             trace.node = context.ignite().name();
+            if (request.has("fixture")) {
+                String fixture = request.get("fixture").asText();
+                JsonNode manifest = JSON.readTree(resource("corpus-manifest.json"));
+                JsonNode bundled = manifest.path(fixture);
+                if (bundled.isMissingNode()) throw new IllegalArgumentException("Unknown corpus fixture " + fixture);
+                trace.procedure = bundled.get("procedure").asText();
+                if (!bundled.get("compiled").asBoolean()) {
+                    trace.event("UNSUPPORTED_CAPABILITY", Map.of("fixture", fixture, "capabilities", bundled.get("capabilities")));
+                    throw new UnsupportedOperationException(bundled.get("diagnostic").asText());
+                }
+                if (request.has("procedure") && !name.equals(trace.procedure)) throw new IllegalArgumentException("Fixture/procedure mismatch");
+                return CompletableFuture.completedFuture(new TypedWasmRuntime(context, bundled.get("resource_prefix").asText())
+                        .execute(trace.procedure, request.path("parameters"), trace));
+            }
             if (!PROCEDURES.contains(name)) {
                 throw new IllegalArgumentException("Unknown bundled procedure " + name);
             }

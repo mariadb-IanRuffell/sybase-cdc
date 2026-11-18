@@ -24,7 +24,8 @@ tasks.register('jobJar', Jar) {
     archiveFileName = 'sybase-wasm-jobs.jar'
     from sourceSets.main.output
     include 'example/sybase/SybaseWasmJob*.class', 'example/sybase/TypedWasmRuntime*.class'
-    include '*.wasm', '*.abi.json', '*.bindings.json'
+    include '*.wasm', '*.abi.json', '*.bindings.json', 'corpus-manifest.json'
+    include 'corpus/**/*.wasm', 'corpus/**/*.abi.json', 'corpus/**/*.bindings.json'
 }
 
 tasks.named('run', JavaExec) {

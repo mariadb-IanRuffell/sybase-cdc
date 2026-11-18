@@ -71,26 +71,45 @@ On 2026-11-18:
 | --- | ---: |
 | Downloaded source/license files verified by SHA-256 | 64 / 64 |
 | Extracted procedure fixtures accepted by the Lark parser | 37 / 37 |
-| Fixtures compiled to validated typed WASM | 1 / 37 |
-| Downloaded fixtures executed on ASE | 0 |
-| Downloaded fixtures executed on GridGain | 0 |
+| Fixtures compiled to validated typed WASM | 30 / 37 |
+| Downloaded fixtures executed through the Java wrapper on GridGain | 30 / 37 |
+| ASE-service rejections checked through the Java wrapper | 7 / 7 |
+| Downloaded fixtures executed on ASE in this change | 0 |
 
-See [`COVERAGE.md`](COVERAGE.md) for every fixture and its first diagnostic, and
-[`coverage.json`](coverage.json) for machine-readable results and AST node kinds.
-The one compiled fixture is `Person_SelectAll`; compilation alone does not prove
-its required `Person` table or SQL behavior at runtime.
+See [`COVERAGE.md`](COVERAGE.md) for every fixture and its capability diagnostics,
+[`coverage.json`](coverage.json) for AST kinds and execution checks, and
+[`gridgain-results.json`](gridgain-results.json) for the saved Java harness evidence.
+The audit verifies the fixture source hash, freshly compiled artifact digest and
+compiler/wrapper/harness fingerprint before accepting saved execution results.
 
-Many initial compiler failures are currently qualified/delimited names and
-`CREATE OR REPLACE` in the typed backend. Further gaps include SET assignment,
-locator types, temporary-table DDL, streaming/waits, dynamic SQL and ASE catalog or
-administration calls. Only the **first** failing construct is reported per fixture;
-fixing that construct does not establish complete support. The broader parser can
-represent constructs that the execution backend deliberately rejects.
+Run the actual GridGain checks and refresh the saved report:
 
-The six procedures in this repository's `sybase/sql/03_procs.sql` are a separate,
-working target: all six compile and execute through the
-[GridGain 9 wrapper demo](../GG-9-WASM-Sybase/README.md#run-every-procedure-in-03_procssql).
-Their real GridGain execution checks are independent of this downloaded corpus.
+```sh
+cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase/GG-9-WASM-Sybase
+./run_corpus.sh
+cp build/corpus-results.json ../corpus/gridgain-results.json
+../.venv/bin/python ../corpus/extract_and_audit.py
+```
+
+The runner compiles each fixture separately, submits it as a Java compute job,
+asserts results and stored data, verifies cleanup, and checks persistence after
+restarting the isolated GridGain node. Its SELECTs and DML use public GridGain APIs.
+The seven Hruodland administration procedures require ASE-specific catalogs,
+physical counters, DBCC/DUMP and session services. They fail explicitly before any
+SQL; they are not counted as successful WASM executions.
+
+Added support includes SET, delimited/dbo names, CREATE OR REPLACE, string
+operations, temporary-table DDL, ordered PRINT/result events and bounded WAITFOR.
+The text-locator examples use **materialized invocation-local text**, not native
+ASE tokens. The large-result fixture is checked at 1,000 and 10,000 rows; its
+100,000-row branch is tested for the explicit buffering-limit failure. There is
+no TDS streaming or full ASE error/transaction/collation emulation.
+
+See the [wrapper README](../GG-9-WASM-Sybase/README.md#run-all-37-downloaded-fixtures)
+for requests, output parameters, multiple result sets and remaining limitations.
+All six Customer 360 procedures are also rerun as regressions. The downloaded
+fixtures were not compared with an ASE server; the existing Customer 360 parity
+scripts are separate from this corpus verification. GridGain source is unchanged.
 
 ## Licenses and SAP's own samples
 

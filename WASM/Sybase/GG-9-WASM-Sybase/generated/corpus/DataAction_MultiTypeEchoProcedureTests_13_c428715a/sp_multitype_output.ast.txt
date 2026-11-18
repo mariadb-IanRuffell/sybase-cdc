@@ -1,0 +1,36 @@
+procedure
+  object_name
+    [dbo]
+    [sp_multitype_output]
+  parameters
+    parameter_decl
+      @echoChar
+      datatype
+        char_type
+          char_kind	char
+        type_args	1
+      default_argument
+        null
+      output_mode
+    parameter_decl
+      @inBinary
+      datatype
+        object_name	binary
+        type_args	16
+    parameter_decl
+      @echoBinary
+      datatype
+        object_name	binary
+        type_args	16
+      default_argument
+        null
+      output_mode
+  statements
+    block
+      statements
+        set_variable
+          local_var	@echoChar
+          string	'X'
+        set_variable
+          local_var	@echoBinary
+          local_var	@inBinary

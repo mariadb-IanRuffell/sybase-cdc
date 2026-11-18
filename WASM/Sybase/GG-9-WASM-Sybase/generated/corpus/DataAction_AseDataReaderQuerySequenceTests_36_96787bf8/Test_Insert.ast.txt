@@ -1,0 +1,13 @@
+procedure
+  replace_option
+  object_name
+    dbo
+    Test_Insert
+  statements
+    insert
+      object_name	records_tests
+      column_list
+        name_list	data_field
+      values
+        value_row
+          integer	1

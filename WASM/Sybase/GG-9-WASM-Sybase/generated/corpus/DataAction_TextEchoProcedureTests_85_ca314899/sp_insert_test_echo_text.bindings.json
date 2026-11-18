@@ -1,0 +1,4 @@
+{
+  "insert_0": "INSERT INTO \"TEST_TEXT_TABLE\" (\"FRAGMENT\") VALUES (CAST(? AS VARCHAR(2147483647)))",
+  "set_variable_1": "SELECT 10"
+}

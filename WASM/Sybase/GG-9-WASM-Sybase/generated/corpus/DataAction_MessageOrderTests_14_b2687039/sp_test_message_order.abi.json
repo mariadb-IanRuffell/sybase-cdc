@@ -1,0 +1,126 @@
+{
+  "version": 2,
+  "name": "sp_test_message_order",
+  "parameters": [
+    "runselect",
+    "status"
+  ],
+  "outputs": [
+    "status"
+  ],
+  "defaults": {
+    "runselect": "Y"
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@runselect": {
+      "ase": "char",
+      "kind": "string",
+      "sql": "VARCHAR(1)",
+      "length": 1,
+      "fixed": true
+    },
+    "@status": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(10)",
+      "length": 10,
+      "fixed": false
+    }
+  },
+  "operations": {
+    "print_0": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    },
+    "print_1": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    },
+    "condition_2": {
+      "kind": "condition",
+      "arguments": [
+        "@runselect"
+      ],
+      "results": 1
+    },
+    "result_set_3": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "print_4": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    },
+    "condition_5": {
+      "kind": "condition",
+      "arguments": [
+        "@runselect"
+      ],
+      "results": 1
+    },
+    "result_set_6": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "print_7": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    },
+    "condition_8": {
+      "kind": "condition",
+      "arguments": [
+        "@runselect"
+      ],
+      "results": 1
+    },
+    "result_set_9": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "print_10": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    },
+    "assign_11": {
+      "kind": "assign",
+      "arguments": [
+        "@status"
+      ],
+      "results": 2,
+      "destinations": [
+        "@status"
+      ],
+      "sql_arguments": 0
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

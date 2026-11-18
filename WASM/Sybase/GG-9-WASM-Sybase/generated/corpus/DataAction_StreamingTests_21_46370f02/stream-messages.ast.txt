@@ -1,0 +1,44 @@
+procedure
+  object_name
+    [dbo]
+    [stream-messages]
+  parameters
+    parameter_decl
+      @sleepTime
+      datatype
+        char_type
+          char_kind	CHAR
+        type_args	8
+    parameter_decl
+      @numberOfLoops
+      datatype
+        object_name	INT
+  statements
+    block
+      statements
+        declare_variables
+          variable_decl
+            @index
+            datatype
+              object_name	INT
+        set_variable
+          local_var	@index
+          integer	0
+        while_statement
+          comparison
+            local_var	@index
+            comparison_op	<
+            local_var	@numberOfLoops
+          block
+            statements
+              print_statement
+                expr_list
+                  string	'General Kenobi'
+              set_variable
+                local_var	@index
+                add
+                  local_var	@index
+                  integer	1
+              wait_for
+                wait_kind	DELAY
+                local_var	@sleepTime

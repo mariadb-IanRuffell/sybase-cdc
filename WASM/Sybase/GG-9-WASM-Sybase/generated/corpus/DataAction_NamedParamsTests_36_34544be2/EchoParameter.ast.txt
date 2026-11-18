@@ -1,0 +1,26 @@
+procedure
+  object_name	[EchoParameter]
+  parameters
+    parameter_decl
+      @parameter1
+      datatype
+        object_name	VARCHAR
+        type_args	256
+    parameter_decl
+      @parameter2
+      datatype
+        object_name	VARCHAR
+        type_args	256
+  statements
+    block
+      statements
+        query
+          select_core
+            select_list
+              select_item
+                add
+                  add
+                    local_var	@parameter1
+                    string	' '
+                  local_var	@parameter2
+                column_alias	Value

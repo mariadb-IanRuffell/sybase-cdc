@@ -1,0 +1,21 @@
+procedure
+  replace_option
+  object_name
+    dbo
+    Test_Insert_Delete
+  statements
+    insert
+      object_name	records_tests
+      column_list
+        name_list	data_field
+      values
+        value_row
+          integer	1
+    delete
+      object_name	records_tests
+      where_clause
+        comparison
+          column
+            object_name	data_field
+          comparison_op	>
+          integer	0

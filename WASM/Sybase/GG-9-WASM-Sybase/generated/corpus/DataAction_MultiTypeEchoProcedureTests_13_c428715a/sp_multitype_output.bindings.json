@@ -1,0 +1,4 @@
+{
+  "set_variable_0": "SELECT 'X'",
+  "set_variable_1": "SELECT CAST(? AS VARBINARY(16))"
+}

@@ -1,0 +1,4 @@
+{
+  "assign_0": "SELECT CAST(? AS VARCHAR(2147483647))",
+  "set_variable_1": "SELECT CAST(? AS VARCHAR(2147483647))"
+}

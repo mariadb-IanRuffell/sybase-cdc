@@ -1,0 +1,14 @@
+procedure
+  replace_option
+  object_name	AddIssue792Record
+  statements
+    insert
+      object_name
+        dbo
+        AllTypes
+      column_list
+        name_list	char20DataType
+      values
+        value_row
+          string	'issue792'
+    return_status

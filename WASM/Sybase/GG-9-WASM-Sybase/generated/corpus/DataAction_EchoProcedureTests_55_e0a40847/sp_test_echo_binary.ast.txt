@@ -1,0 +1,22 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_echo_binary]
+  parameters
+    parameter_decl
+      @input
+      datatype
+        object_name	binary
+        type_args	255
+    parameter_decl
+      @output
+      datatype
+        object_name	binary
+        type_args	255
+      output_mode
+  statements
+    block
+      statements
+        set_variable
+          local_var	@output
+          local_var	@input

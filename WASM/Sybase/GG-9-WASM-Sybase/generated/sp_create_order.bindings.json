@@ -1,5 +1,5 @@
 {
-  "condition_0": "SELECT CASE WHEN (NOT EXISTS (SELECT 1 FROM customer WHERE ((customer_id = CAST(? AS INT)) AND (status = 'ACTIVE')))) THEN 1 ELSE 0 END",
-  "insert_2": "INSERT INTO orders (customer_id, order_date, status, channel, total_amount, currency, order_id) VALUES (CAST(? AS INT), LOCALTIMESTAMP, 'NEW', CAST(? AS VARCHAR(10)), 0, 'AED', CAST(? AS INT))",
+  "condition_0": "SELECT CASE WHEN (NOT EXISTS (SELECT 1 FROM \"CUSTOMER\" WHERE ((\"CUSTOMER_ID\" = CAST(? AS INT)) AND (\"STATUS\" = 'ACTIVE')))) THEN 1 ELSE 0 END",
+  "insert_2": "INSERT INTO \"ORDERS\" (\"CUSTOMER_ID\", \"ORDER_DATE\", \"STATUS\", \"CHANNEL\", \"TOTAL_AMOUNT\", \"CURRENCY\", \"ORDER_ID\") VALUES (CAST(? AS INT), LOCALTIMESTAMP, 'NEW', CAST(? AS VARCHAR(10)), 0, 'AED', CAST(? AS INT))",
   "assign_3": "SELECT CAST(? AS INT)"
 }

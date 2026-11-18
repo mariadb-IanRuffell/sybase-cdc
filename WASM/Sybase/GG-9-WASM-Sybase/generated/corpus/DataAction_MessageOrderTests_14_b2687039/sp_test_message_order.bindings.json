@@ -1,0 +1,14 @@
+{
+  "print_0": "SELECT 'Report Header'",
+  "print_1": "SELECT 'Table 1 Header'",
+  "condition_2": "SELECT CASE WHEN (CAST(? AS VARCHAR(1)) = 'Y') THEN 1 ELSE 0 END",
+  "result_set_3": "SELECT 'value1'",
+  "print_4": "SELECT 'Empty Table 2 Header'",
+  "condition_5": "SELECT CASE WHEN (CAST(? AS VARCHAR(1)) = 'Y') THEN 1 ELSE 0 END",
+  "result_set_6": "SELECT 'value2' FROM (VALUES (0)) AS __WASM_ONE_ROW(__VALUE) WHERE (1 = 2)",
+  "print_7": "SELECT 'Table 3 Header'",
+  "condition_8": "SELECT CASE WHEN (CAST(? AS VARCHAR(1)) = 'Y') THEN 1 ELSE 0 END",
+  "result_set_9": "SELECT 'value3'",
+  "print_10": "SELECT 'Report Trailer'",
+  "assign_11": "SELECT 'OK'"
+}

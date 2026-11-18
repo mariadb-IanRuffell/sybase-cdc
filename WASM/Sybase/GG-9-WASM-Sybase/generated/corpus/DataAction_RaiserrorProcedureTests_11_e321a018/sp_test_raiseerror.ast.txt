@@ -1,0 +1,12 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_raiseerror]
+  statements
+    block
+      statements
+        raise_error
+          integer	100000
+          string	'BAD BAD BAD'
+        return_status
+          null

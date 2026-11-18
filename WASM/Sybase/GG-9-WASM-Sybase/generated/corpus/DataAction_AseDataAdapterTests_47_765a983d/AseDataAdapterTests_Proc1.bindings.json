@@ -1,0 +1,3 @@
+{
+  "result_set_0": "SELECT 1 AS \"ID\", 'something' AS \"DESCRIPTION\""
+}

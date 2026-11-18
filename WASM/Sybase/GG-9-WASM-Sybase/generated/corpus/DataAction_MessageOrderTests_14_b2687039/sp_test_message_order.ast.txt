@@ -1,0 +1,83 @@
+procedure
+  object_name
+    [dbo]
+    [sp_test_message_order]
+  parameters
+    parameter_decl
+      @runSelect
+      datatype
+        char_type
+          char_kind	char
+      default_argument
+        string	'Y'
+    parameter_decl
+      @status
+      datatype
+        object_name	varchar
+        type_args	10
+      output_mode
+  statements
+    block
+      statements
+        print_statement
+          expr_list
+            string	'Report Header'
+        print_statement
+          expr_list
+            string	'Table 1 Header'
+        if_statement
+          comparison
+            local_var	@runSelect
+            comparison_op	=
+            string	'Y'
+          block
+            statements
+              query
+                select_core
+                  select_list
+                    select_item
+                      string	'value1'
+        print_statement
+          expr_list
+            string	'Empty Table 2 Header'
+        if_statement
+          comparison
+            local_var	@runSelect
+            comparison_op	=
+            string	'Y'
+          block
+            statements
+              query
+                select_core
+                  select_list
+                    select_item
+                      string	'value2'
+                  where_clause
+                    comparison
+                      integer	1
+                      comparison_op	=
+                      integer	2
+        print_statement
+          expr_list
+            string	'Table 3 Header'
+        if_statement
+          comparison
+            local_var	@runSelect
+            comparison_op	=
+            string	'Y'
+          block
+            statements
+              query
+                select_core
+                  select_list
+                    select_item
+                      string	'value3'
+        print_statement
+          expr_list
+            string	'Report Trailer'
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@status
+                string	'OK'

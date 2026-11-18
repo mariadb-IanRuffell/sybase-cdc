@@ -1,0 +1,3 @@
+{
+  "result_set_0": "SELECT \"DATA_FIELD\" FROM \"RECORDS_TESTS\" LIMIT 1"
+}
