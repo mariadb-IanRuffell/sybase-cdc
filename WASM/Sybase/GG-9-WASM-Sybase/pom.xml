@@ -58,7 +58,7 @@
         <version>3.13.0</version>
         <configuration>
           <!-- ComputeDemo embeds a node (ignite-runner); only the job goes in the unit -->
-          <excludes><exclude>**/ComputeDemo.java</exclude><exclude>**/Customer360Checks.java</exclude><exclude>**/CorpusChecks.java</exclude></excludes>
+          <excludes><exclude>**/ComputeDemo.java</exclude><exclude>**/Customer360Checks.java</exclude><exclude>**/CorpusChecks.java</exclude><exclude>**/ExecuteSqlDemo.java</exclude></excludes>
         </configuration>
       </plugin>
       <plugin>

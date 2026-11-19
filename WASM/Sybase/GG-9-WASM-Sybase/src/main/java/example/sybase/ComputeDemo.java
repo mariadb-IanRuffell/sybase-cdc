@@ -162,7 +162,7 @@ public class ComputeDemo {
         return result;
     }
 
-    private static void deploy(HttpClient http, Path... files) throws Exception {
+    static void deploy(HttpClient http, Path... files) throws Exception {
         String boundary = "sybase-" + UUID.randomUUID();
         ByteArrayOutputStream body = new ByteArrayOutputStream();
         for (Path file : files) {

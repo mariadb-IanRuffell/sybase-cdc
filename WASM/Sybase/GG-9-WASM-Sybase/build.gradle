@@ -17,7 +17,7 @@ java {
 }
 
 sourceSets.main.resources.srcDir 'generated'
-application.mainClass = 'example.sybase.ComputeDemo'
+application.mainClass = System.getProperty('sybase.main') ?: 'example.sybase.ComputeDemo'
 
 tasks.register('jobJar', Jar) {
     dependsOn classes
