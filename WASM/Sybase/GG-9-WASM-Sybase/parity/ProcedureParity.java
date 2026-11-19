@@ -52,7 +52,7 @@ public class ProcedureParity {
         int withItems = Integer.parseInt(a[1]), empty = Integer.parseInt(a[2]);
         gg = DriverManager.getConnection(env("GG_JDBC", "jdbc:ignite:thin://127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802"));
         gg.setAutoCommit(false);
-        client = IgniteClient.builder().addresses("127.0.0.1:11800", "127.0.0.1:11801", "127.0.0.1:11802").build();
+        client = IgniteClient.builder().addresses(env("GG_ADDRS", "127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802").split(",")).build();
         try {
             customer360();
             recalc(withItems);
@@ -169,7 +169,7 @@ public class ProcedureParity {
 
     static Result gridgain(String procedure, String parameters, Object unused) throws Exception {
         var d = JobDescriptor.<String, String>builder("example.sybase.SybaseWasmJob")
-                .units(new DeploymentUnit("sybase-wasm-example", "latest"))
+                .units(System.getenv("NO_UNIT") != null ? new DeploymentUnit[0] : new DeploymentUnit[] {new DeploymentUnit("sybase-wasm-example", "latest")})
                 .options(JobExecutionOptions.builder().maxRetries(0).build()).build();
         String reply = client.compute().execute(JobTarget.anyNode(client.cluster().nodes()), d,
                 "{\"procedure\":\"" + procedure + "\",\"parameters\":" + parameters + "}");

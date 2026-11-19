@@ -708,3 +708,34 @@ values, and unchanged fixture rows. Existing application fixtures and persistenc
 checks still run. Saved coverage separates **30 original executions, three metadata
 adaptations, one mock and three rejections**; the mock is not counted as a real
 GridGain procedure adaptation.
+
+### Which reads get their own transaction (`_read_mode`)
+
+An autocommit read in a compute job is a snapshot that can predate a write the client made a moment earlier. By default every autocommit
+SELECT therefore runs in its own short read/write transaction, so reads are current. That costs a transaction per SELECT and takes read
+locks, which collide with concurrent writers: a closing summary query over a table the procedure also updates (`sp_score_customers`) made
+about 1 in 8 calls fail with `Retriable transaction exception` at 4 to 16 concurrent callers, and every procedure was 1.5 to 3 times
+slower than with plain reads. The mode can be switched per node at runtime with the `_read_mode` pseudo procedure
+(`{"procedure":"_read_mode","parameters":{"mode":"all|written|none|now"}}`) or at start with `-Dsybase.wasm.readMode=`:
+
+| Mode | Behaviour | `sp_recalc_loyalty_tier` median | `sp_score_customers` median, errors at 16 callers | Client's latest write seen |
+|---|---|---|---|---|
+| `all` (default) | every SELECT in a read/write transaction | 7.1 ms | 11.3 ms, 115 | 40 of 40 |
+| `written` | only tables the call writes, and temporary tables | 4.8 ms | 8.4 ms, 115 | 18 of 40 |
+| `none` | plain snapshot reads | 2.3 ms | 4.5 ms, none | 19 of 40 |
+| `now` | plain snapshot reads after advancing the job's timestamp trackers to the node clock | 4.3 ms | 9.2 ms, none | 40 of 40 |
+
+The last column comes from a test that gives a customer a recent order through the client and calls `sp_score_customers` straight away,
+alternating add and remove: with plain reads it acts on the previous state about half the time. `written` does not fix the failures,
+because the summary reads a table the call writes. Procedures that use `BEGIN TRAN` or `EXEC` run in one read/write transaction in every
+mode. Procedures that only read use one shared read/write transaction, or in `now` mode one read-only transaction (no locks).
+
+**Why plain reads go stale, and what `now` does.** A read-only or autocommit read runs as a snapshot at the timestamp held by a tracker
+(`observableTimestampTracker`) behind the job's `sql()` and `transactions()`. The thin client's last write never reaches that tracker, so
+the snapshot can be older than a write that finished before the job was called. `ObservableTime` advances both trackers to the node's hybrid
+clock before a plain read, which makes the snapshot at least as new as anything committed before the call. There is no public API for this:
+it reaches GridGain internals by reflection (`ignite.delegate.delegate.clockService`, `transactions.transactions.observableTimestampTracker`,
+`sql.delegate.observableTimestampTracker`), so it is tied to the 9.2.0-b1 object layout and switches itself off with one log line on stderr
+if the layout differs (reads then stay plain snapshots). The guarantee is also only as good as the clocks: a write committed through a node
+whose clock runs ahead of the job's node by up to the cluster's maximum clock skew can still be missed. On one host that is not a concern.
+Ask GridGain whether a supported way to pass the client's observable timestamp into a job exists before relying on `now` in production.

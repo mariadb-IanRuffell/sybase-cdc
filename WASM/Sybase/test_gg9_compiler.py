@@ -57,7 +57,8 @@ class GridGainCompilerTests(unittest.TestCase):
                     linker.define(store,'ignite',name,fn)
                 instance=linker.instantiate(store,module)
                 self.assertEqual(instance.exports(store)['test'](store,12,42),expected)
-                self.assertEqual(calls,['dml','condition']+(['assign'] if affected else []))
+                # `@@rowcount=0` is a raw i32 compared inside WASM: no 'condition' host call (SQL round trip) any more
+                self.assertEqual(calls,['dml']+(['assign'] if affected else []))
 
     def test_null_defaults_and_unsupported_statements(self):
         with TemporaryDirectory() as temp:

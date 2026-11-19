@@ -45,6 +45,66 @@ final class TypedWasmRuntime {
     private final List<Map<String, Object>> events = new ArrayList<>();
     private long bufferedBytes;
     private long waitedMillis;
+    /**
+     * Parsed ABI, bindings and WASM modules, kept for the life of the node. They are read-only, so calls share them. This only
+     * pays off when this class is on the node's classpath (gridgain/ext-lib): classes of a deployment unit are reloaded for every job,
+     * which empties these maps each time.
+     */
+    private static final Map<String, JsonNode> JSON_CACHE = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final Map<String, com.dylibso.chicory.wasm.WasmModule> MODULES = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static JsonNode cachedJson(String resource) {
+        return JSON_CACHE.computeIfAbsent(resource, key -> {
+            try { return JSON.readTree(SybaseWasmJob.resource(key)); } catch (Exception error) { throw new IllegalStateException(error); }
+        });
+    }
+
+    private static com.dylibso.chicory.wasm.WasmModule cachedModule(String resource) {
+        return MODULES.computeIfAbsent(resource, key -> {
+            try { return Parser.parse(SybaseWasmJob.resource(key)); } catch (Exception error) { throw new IllegalStateException(error); }
+        });
+    }
+
+    /**
+     * Which autocommit SELECTs run in their own short read/write transaction. A plain read is a snapshot that can predate a
+     * write made a moment earlier, so reading a table this same call writes needs the read/write transaction; reading anything
+     * else does not, and a read/write transaction takes read locks that collide with concurrent writers and costs a round trip.
+     *   all (default)  every SELECT: reads are always current, at the price above
+     *   written        only SELECTs of a table the call (or a procedure it executes) writes, and of temporary tables. Faster, but a
+     *                  procedure can then miss a client's latest write to a table it only reads (measured: 18 of 40 calls stale)
+     *   none           no SELECT (plain snapshot reads)
+     *   now            plain snapshot reads, after advancing the job's timestamp trackers to the node clock (see ObservableTime)
+     * Switchable at runtime per node with the _read_mode pseudo procedure.
+     */
+    static volatile String READ_MODE = System.getProperty("sybase.wasm.readMode", "all");
+    private static final java.util.regex.Pattern READ_TABLE = java.util.regex.Pattern.compile("(?i)\\b(?:FROM|JOIN)\\s+\"?([A-Za-z_][A-Za-z_0-9]*)\"?");
+    private static final java.util.regex.Pattern WRITE_TABLE = java.util.regex.Pattern.compile("(?i)^\\s*(?:INSERT\\s+INTO|UPDATE|DELETE\\s+FROM)\\s+\"?([A-Za-z_][A-Za-z_0-9]*)\"?");
+    private final java.util.Set<String> writtenTables = new java.util.HashSet<>();
+
+    private static java.util.Set<String> tablesRead(String sql) {
+        java.util.Set<String> tables = new java.util.HashSet<>();
+        var matcher = READ_TABLE.matcher(sql);
+        while (matcher.find()) tables.add(matcher.group(1).toLowerCase());
+        return tables;
+    }
+
+    private boolean needsFreshRead(String statement) {
+        switch (READ_MODE) {
+            case "all": return true;
+            case "none": return false;
+            case "now": return false;   // plain reads, but sqlRun first advances the job's timestamp trackers to the node clock
+            default:
+                for (String table : tablesRead(statement)) {
+                    if (writtenTables.contains(table) || table.startsWith(tempPrefix.toLowerCase())) return true;
+                }
+                return false;
+        }
+    }
+    private static final boolean SHARED_READ_TRANSACTION = !Boolean.getBoolean("sybase.wasm.noSharedReadTx");
+    /** Operation kinds that never write; a procedure made only of these can share one transaction across its statements. */
+    private static final java.util.Set<String> READ_KINDS = java.util.Set.of("condition", "status", "assign", "result_set",
+            "open_cursor", "fetch_cursor", "close_cursor", "deallocate_cursor", "raise_error", "print", "set_variable");
+
     private final List<Object> values = new ArrayList<>();
     private final List<Map<String, Object>> resultSets = new ArrayList<>();
     private final List<Map<String, Object>> messages = new ArrayList<>();
@@ -77,13 +137,28 @@ final class TypedWasmRuntime {
             // (or calls another procedure) would act on stale rows before BEGIN TRAN. Run such a call in one read-write
             // transaction from the start: reads are then current, COMMIT TRAN is deferred to the end of the call, and
             // ROLLBACK TRAN undoes everything the call wrote so far (ASE would keep the statements before BEGIN TRAN).
-            for (var operation : JSON.readTree(SybaseWasmJob.resource(resourcePrefix + name + ".abi.json")).path("operations")) {
-                String kind = operation.path("kind").asText();
-                if (kind.equals("begin_transaction") || kind.equals("execute_procedure")) implicitTransaction = true;
-            }
-            if (implicitTransaction) {
+            java.util.Set<String> kinds = new java.util.HashSet<>();
+            collectKinds(name, kinds, new java.util.HashSet<>());
+            boolean needsTransaction = kinds.contains("begin_transaction") || kinds.contains("execute_procedure");
+            boolean onlyReads = READ_KINDS.containsAll(kinds);
+            boolean temporaryDdl = kinds.contains("create_temp") || kinds.contains("drop_temp");
+            // Temporary-table DDL cannot run inside a transaction, so those procedures keep the transaction-per-statement behaviour.
+            if (!temporaryDdl && needsTransaction) {
+                implicitTransaction = true;
                 transaction = context.ignite().transactions().begin();
                 trace.event("TRANSACTION", Map.of("action", "begin_implicit"));
+            } else if (!temporaryDdl && onlyReads && SHARED_READ_TRANSACTION) {
+                // A procedure that only reads shares one read/write transaction (reads are current, unlike a read-only snapshot,
+                // which can predate a client's last write) instead of paying for a transaction per statement.
+                implicitTransaction = true;
+                if (READ_MODE.equals("now") && ObservableTime.advance(context.ignite())) {
+                    // After advancing the trackers a read-only snapshot is current, and it takes no locks.
+                    transaction = context.ignite().transactions().begin(new org.apache.ignite.tx.TransactionOptions().readOnly(true));
+                    trace.event("TRANSACTION", Map.of("action", "begin_shared_read_only"));
+                } else {
+                    transaction = context.ignite().transactions().begin();
+                    trace.event("TRANSACTION", Map.of("action", "begin_shared_read"));
+                }
             }
             FrameResult returned = invoke(name, input, trace);
             if (explicitBegun) throw new IllegalStateException("Procedure returned with an open transaction");
@@ -145,12 +220,29 @@ final class TypedWasmRuntime {
         Cursor(Rows data) { this.data = data; }
     }
 
+    /** Operation kinds used by a procedure and, transitively, by the procedures it executes. */
+    private void collectKinds(String name, java.util.Set<String> kinds, java.util.Set<String> seen) {
+        if (!seen.add(name)) return;
+        JsonNode bindings = cachedJson(resourcePrefix + name + ".bindings.json");
+        var operations = cachedJson(resourcePrefix + name + ".abi.json").path("operations");
+        for (var entry = operations.fields(); entry.hasNext(); ) {
+            var named = entry.next();
+            var operation = named.getValue();
+            kinds.add(operation.path("kind").asText());
+            if (operation.path("kind").asText().equals("dml") || operation.path("kind").asText().equals("insert")) {
+                var target = WRITE_TABLE.matcher(bindings.path(named.getKey()).asText());
+                if (target.find()) writtenTables.add(target.group(1).toLowerCase());
+            }
+            if (operation.path("kind").asText().equals("execute_procedure")) collectKinds(operation.path("procedure").asText(), kinds, seen);
+        }
+    }
+
     private FrameResult invoke(String name, JsonNode input, SybaseWasmJob.Trace trace) throws Exception {
         if (++depth > 32) throw new IllegalStateException("Maximum procedure call depth exceeded");
         try {
-            JsonNode abi = JSON.readTree(SybaseWasmJob.resource(resourcePrefix + name + ".abi.json"));
+            JsonNode abi = cachedJson(resourcePrefix + name + ".abi.json");
             if (abi.path("version").asInt() != 2) throw new IllegalArgumentException("Expected typed ABI v2");
-            JsonNode bindings = JSON.readTree(SybaseWasmJob.resource(resourcePrefix + name + ".bindings.json"));
+            JsonNode bindings = cachedJson(resourcePrefix + name + ".bindings.json");
             List<String> parameters = SybaseWasmJob.names(abi.get("parameters"));
             List<String> outputs = SybaseWasmJob.names(abi.get("outputs"));
             if (!input.isMissingNode() && !input.isObject()) throw new IllegalArgumentException("parameters must be an object");
@@ -195,7 +287,7 @@ final class TypedWasmRuntime {
                         }));
             });
             long loadStart = System.nanoTime();
-            var module = Parser.parse(SybaseWasmJob.resource(resourcePrefix + name + ".wasm"));
+            var module = cachedModule(resourcePrefix + name + ".wasm");
             var builder = Instance.builder(module).withImportValues(
                     ImportValues.builder().addFunction(functions.toArray(HostFunction[]::new)).build());
             loadNanos += System.nanoTime() - loadStart;
@@ -464,8 +556,9 @@ final class TypedWasmRuntime {
 
     private Rows sqlRun(String statement, List<Object> args, Transaction tx, SybaseWasmJob.Trace trace, String operation) {
         // Server-local implicit read-only snapshots can predate the thin client's last write.
-        // A short read/write transaction reads the latest committed data across that boundary.
-        if (tx == null && statement.stripLeading().startsWith("SELECT")) {
+        // A short read/write transaction reads the latest committed data across that boundary (see READ_MODE for when).
+        if (tx == null && READ_MODE.equals("now") && statement.stripLeading().startsWith("SELECT")) ObservableTime.advance(context.ignite());
+        if (tx == null && statement.stripLeading().startsWith("SELECT") && needsFreshRead(statement)) {
             Transaction read = context.ignite().transactions().begin();
             try {
                 Rows result = sqlRun(statement, args, read, trace, operation);

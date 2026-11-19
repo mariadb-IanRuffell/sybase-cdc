@@ -129,27 +129,20 @@
       ],
       "results": 1
     },
-    "condition_9": {
-      "kind": "condition",
-      "arguments": [
-        "@@rowcount"
-      ],
-      "results": 1
-    },
-    "rollback_transaction_10": {
+    "rollback_transaction_9": {
       "kind": "rollback_transaction",
       "arguments": [],
       "results": 0,
       "name": "add_item"
     },
-    "raise_error_11": {
+    "raise_error_10": {
       "kind": "raise_error",
       "arguments": [],
       "results": 0,
       "number": 20003,
       "message": "Insufficient stock"
     },
-    "insert_12": {
+    "insert_11": {
       "kind": "insert",
       "arguments": [
         "@order_id",
@@ -165,7 +158,7 @@
       "identity": "order_item_id",
       "counter": "order_item_id"
     },
-    "dml_13": {
+    "dml_12": {
       "kind": "dml",
       "arguments": [
         "@price",
@@ -174,7 +167,7 @@
       ],
       "results": 1
     },
-    "commit_transaction_14": {
+    "commit_transaction_13": {
       "kind": "commit_transaction",
       "arguments": [],
       "results": 0,

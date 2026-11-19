@@ -360,7 +360,32 @@ class Compiler:
         sql = renderer.render(node)
         return self.call(kind, sql, renderer.arguments, **metadata)
 
+    NATIVE_OPS = {'=': 'i32.eq', '<>': 'i32.ne', '!=': 'i32.ne', '<': 'i32.lt_s', '>': 'i32.gt_s', '<=': 'i32.le_s', '>=': 'i32.ge_s'}
+
+    def native_condition(self, node):
+        """WASM instructions for a condition built only from @@rowcount, @@sqlstatus and integer literals (raw i32s, never
+        SQL NULL), so it costs no SQL round trip. None when the condition needs the SQL engine."""
+        k, c = node.data, node.children
+        def operand(n):
+            if n.data == 'system_variable' and str(n.children[0]).lower() in ('@@rowcount', '@@sqlstatus'):
+                return [f'local.get ${str(n.children[0]).lower()}']
+            if n.data == 'integer': return [f'i32.const {int(n.children[0])}']
+            return None
+        if k == 'comparison':
+            op = ' '.join(str(x).upper() for x in c[1].children)
+            left, right = operand(c[0]), operand(c[2])
+            if op in self.NATIVE_OPS and left and right: return [*left, *right, self.NATIVE_OPS[op]]
+        if k == 'logical_not':
+            inner = self.native_condition(c[0])
+            if inner: return [*inner, 'i32.eqz']
+        if k in ('logical_and', 'logical_or'):
+            left, right = self.native_condition(c[0]), self.native_condition(c[1])
+            if left and right: return [*left, *right, 'i32.and' if k == 'logical_and' else 'i32.or']
+        return None
+
     def condition(self, node):
+        native = self.native_condition(node)
+        if native: return native
         renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
         sql = 'SELECT CASE WHEN ' + renderer.render(node) + ' THEN 1 ELSE 0 END'
         return self.call('condition', sql, renderer.arguments)

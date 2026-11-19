@@ -46,6 +46,14 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
                 throw new IllegalArgumentException("Supply a JSON request object");
             }
             String name = request.path("procedure").asText();
+            if (name.equals("_read_mode")) {   // toggle which SELECTs get a read/write transaction on this node (see TypedWasmRuntime.READ_MODE)
+                String mode = request.path("parameters").path("mode").asText("");
+                if (!mode.isEmpty()) {
+                    if (!Set.of("all", "written", "none", "now").contains(mode)) throw new IllegalArgumentException("mode is all, written, none or now");
+                    TypedWasmRuntime.READ_MODE = mode;
+                }
+                return CompletableFuture.completedFuture("{\"read_mode\":\"" + TypedWasmRuntime.READ_MODE + "\"}");
+            }
             if (name.equals("_noop")) {   // measures job submission overhead alone
                 return CompletableFuture.completedFuture("{\"noop\":true}");
             }

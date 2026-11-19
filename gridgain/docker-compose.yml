@@ -29,6 +29,7 @@ services:
       - node1-work:/opt/gridgain/work
       - ./ext-lib/chicory-runtime-1.6.1.jar:/opt/gridgain/lib/chicory-runtime-1.6.1.jar:ro
       - ./ext-lib/chicory-wasm-1.6.1.jar:/opt/gridgain/lib/chicory-wasm-1.6.1.jar:ro
+      - ./ext-lib/sybase-wasm-jobs.jar:/opt/gridgain/lib/sybase-wasm-jobs.jar:ro
   gridgain2:
     <<: *node
     container_name: gridgain2
@@ -40,6 +41,7 @@ services:
       - node2-work:/opt/gridgain/work
       - ./ext-lib/chicory-runtime-1.6.1.jar:/opt/gridgain/lib/chicory-runtime-1.6.1.jar:ro
       - ./ext-lib/chicory-wasm-1.6.1.jar:/opt/gridgain/lib/chicory-wasm-1.6.1.jar:ro
+      - ./ext-lib/sybase-wasm-jobs.jar:/opt/gridgain/lib/sybase-wasm-jobs.jar:ro
   gridgain3:
     <<: *node
     container_name: gridgain3
@@ -51,6 +53,7 @@ services:
       - node3-work:/opt/gridgain/work
       - ./ext-lib/chicory-runtime-1.6.1.jar:/opt/gridgain/lib/chicory-runtime-1.6.1.jar:ro
       - ./ext-lib/chicory-wasm-1.6.1.jar:/opt/gridgain/lib/chicory-wasm-1.6.1.jar:ro
+      - ./ext-lib/sybase-wasm-jobs.jar:/opt/gridgain/lib/sybase-wasm-jobs.jar:ro
 
 volumes:
   node1-work:

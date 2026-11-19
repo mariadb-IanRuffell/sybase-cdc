@@ -142,14 +142,7 @@
         "@column"
       ]
     },
-    "condition_8": {
-      "kind": "condition",
-      "arguments": [
-        "@@sqlstatus"
-      ],
-      "results": 1
-    },
-    "set_variable_9": {
+    "set_variable_8": {
       "kind": "set_variable",
       "arguments": [
         "@column"
@@ -159,12 +152,22 @@
         "@line"
       ]
     },
-    "condition_10": {
+    "condition_9": {
       "kind": "condition",
       "arguments": [
         "@position"
       ],
       "results": 1
+    },
+    "set_variable_10": {
+      "kind": "set_variable",
+      "arguments": [
+        "@line"
+      ],
+      "results": 1,
+      "destinations": [
+        "@line"
+      ]
     },
     "set_variable_11": {
       "kind": "set_variable",
@@ -176,17 +179,7 @@
         "@line"
       ]
     },
-    "set_variable_12": {
-      "kind": "set_variable",
-      "arguments": [
-        "@line"
-      ],
-      "results": 1,
-      "destinations": [
-        "@line"
-      ]
-    },
-    "insert_13": {
+    "insert_12": {
       "kind": "insert",
       "arguments": [
         "@position",
@@ -197,7 +190,7 @@
       "identity": null,
       "counter": null
     },
-    "set_variable_14": {
+    "set_variable_13": {
       "kind": "set_variable",
       "arguments": [
         "@position"
@@ -207,7 +200,7 @@
         "@position"
       ]
     },
-    "fetch_cursor_15": {
+    "fetch_cursor_14": {
       "kind": "fetch_cursor",
       "arguments": [
         "@column"
@@ -218,19 +211,19 @@
         "@column"
       ]
     },
-    "close_cursor_16": {
+    "close_cursor_15": {
       "kind": "close_cursor",
       "arguments": [],
       "results": 0,
       "cursor": "columns_cursor"
     },
-    "deallocate_cursor_17": {
+    "deallocate_cursor_16": {
       "kind": "deallocate_cursor",
       "arguments": [],
       "results": 0,
       "cursor": "columns_cursor"
     },
-    "set_variable_18": {
+    "set_variable_17": {
       "kind": "set_variable",
       "arguments": [
         "@schema",
@@ -241,7 +234,7 @@
         "@line"
       ]
     },
-    "insert_19": {
+    "insert_18": {
       "kind": "insert",
       "arguments": [
         "@position",
@@ -252,12 +245,12 @@
       "identity": null,
       "counter": null
     },
-    "result_set_20": {
+    "result_set_19": {
       "kind": "result_set",
       "arguments": [],
       "results": 1
     },
-    "drop_temp_21": {
+    "drop_temp_20": {
       "kind": "drop_temp",
       "arguments": [],
       "results": 0,

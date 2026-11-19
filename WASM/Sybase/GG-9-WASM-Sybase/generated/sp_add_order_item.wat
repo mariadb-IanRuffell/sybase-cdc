@@ -8,12 +8,11 @@
   (import "ignite" "raise_error_6" (func $raise_error_6))
   (import "ignite" "begin_transaction_7" (func $begin_transaction_7))
   (import "ignite" "dml_8" (func $dml_8 (param i32 i32 i32) (result i32)))
-  (import "ignite" "condition_9" (func $condition_9 (param i32) (result i32)))
-  (import "ignite" "rollback_transaction_10" (func $rollback_transaction_10))
-  (import "ignite" "raise_error_11" (func $raise_error_11))
-  (import "ignite" "insert_12" (func $insert_12 (param i32 i32 i32 i32 i32 i32 i32) (result i32 i32)))
-  (import "ignite" "dml_13" (func $dml_13 (param i32 i32 i32) (result i32)))
-  (import "ignite" "commit_transaction_14" (func $commit_transaction_14))
+  (import "ignite" "rollback_transaction_9" (func $rollback_transaction_9))
+  (import "ignite" "raise_error_10" (func $raise_error_10))
+  (import "ignite" "insert_11" (func $insert_11 (param i32 i32 i32 i32 i32 i32 i32) (result i32 i32)))
+  (import "ignite" "dml_12" (func $dml_12 (param i32 i32 i32) (result i32)))
+  (import "ignite" "commit_transaction_13" (func $commit_transaction_13))
   (func (export "sp_add_order_item") (param $order_id i32) (param $product_id i32) (param $qty i32) (result i32)
     (local $@@rowcount i32)
     (local $@@sqlstatus i32)
@@ -66,14 +65,15 @@
     call $dml_8
     local.set $@@rowcount
     local.get $@@rowcount
-    call $condition_9
+    i32.const 0
+    i32.eq
     i32.const 0
     local.set $@@rowcount
     if
-    call $rollback_transaction_10
+    call $rollback_transaction_9
     i32.const 0
     local.set $@@rowcount
-    call $raise_error_11
+    call $raise_error_10
     i32.const 0
     local.set $@@rowcount
     i32.const -3
@@ -86,15 +86,15 @@
     local.get $price
     local.get $qty
     local.get $order_id
-    call $insert_12
+    call $insert_11
     local.set $@@identity
     local.set $@@rowcount
     local.get $price
     local.get $qty
     local.get $order_id
-    call $dml_13
+    call $dml_12
     local.set $@@rowcount
-    call $commit_transaction_14
+    call $commit_transaction_13
     i32.const 0
     local.set $@@rowcount
     i32.const 0

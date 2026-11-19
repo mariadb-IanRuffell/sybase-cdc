@@ -7,20 +7,19 @@
   (import "ignite" "set_variable_5" (func $set_variable_5 (result i32)))
   (import "ignite" "open_cursor_6" (func $open_cursor_6 (param i32 i32) (result i32)))
   (import "ignite" "fetch_cursor_7" (func $fetch_cursor_7 (param i32) (result i32 i32 i32)))
-  (import "ignite" "condition_8" (func $condition_8 (param i32) (result i32)))
-  (import "ignite" "set_variable_9" (func $set_variable_9 (param i32) (result i32)))
-  (import "ignite" "condition_10" (func $condition_10 (param i32) (result i32)))
+  (import "ignite" "set_variable_8" (func $set_variable_8 (param i32) (result i32)))
+  (import "ignite" "condition_9" (func $condition_9 (param i32) (result i32)))
+  (import "ignite" "set_variable_10" (func $set_variable_10 (param i32) (result i32)))
   (import "ignite" "set_variable_11" (func $set_variable_11 (param i32) (result i32)))
-  (import "ignite" "set_variable_12" (func $set_variable_12 (param i32) (result i32)))
-  (import "ignite" "insert_13" (func $insert_13 (param i32 i32) (result i32)))
-  (import "ignite" "set_variable_14" (func $set_variable_14 (param i32) (result i32)))
-  (import "ignite" "fetch_cursor_15" (func $fetch_cursor_15 (param i32) (result i32 i32 i32)))
-  (import "ignite" "close_cursor_16" (func $close_cursor_16))
-  (import "ignite" "deallocate_cursor_17" (func $deallocate_cursor_17))
-  (import "ignite" "set_variable_18" (func $set_variable_18 (param i32 i32) (result i32)))
-  (import "ignite" "insert_19" (func $insert_19 (param i32 i32) (result i32)))
-  (import "ignite" "result_set_20" (func $result_set_20 (result i32)))
-  (import "ignite" "drop_temp_21" (func $drop_temp_21))
+  (import "ignite" "insert_12" (func $insert_12 (param i32 i32) (result i32)))
+  (import "ignite" "set_variable_13" (func $set_variable_13 (param i32) (result i32)))
+  (import "ignite" "fetch_cursor_14" (func $fetch_cursor_14 (param i32) (result i32 i32 i32)))
+  (import "ignite" "close_cursor_15" (func $close_cursor_15))
+  (import "ignite" "deallocate_cursor_16" (func $deallocate_cursor_16))
+  (import "ignite" "set_variable_17" (func $set_variable_17 (param i32 i32) (result i32)))
+  (import "ignite" "insert_18" (func $insert_18 (param i32 i32) (result i32)))
+  (import "ignite" "result_set_19" (func $result_set_19 (result i32)))
+  (import "ignite" "drop_temp_20" (func $drop_temp_20))
   (func (export "sp_#select") (param $table i32) (param $schema i32) (result i32)
     (local $@@rowcount i32)
     (local $@@sqlstatus i32)
@@ -69,69 +68,70 @@
     block $done0
     loop $loop0
     local.get $@@sqlstatus
-    call $condition_8
+    i32.const 0
+    i32.eq
     i32.const 0
     local.set $@@rowcount
     i32.eqz
     br_if $done0
     local.get $column
-    call $set_variable_9
+    call $set_variable_8
     local.set $line
     i32.const 0
     local.set $@@rowcount
     local.get $position
-    call $condition_10
+    call $condition_9
     i32.const 0
     local.set $@@rowcount
     if
     local.get $line
-    call $set_variable_11
+    call $set_variable_10
     local.set $line
     i32.const 0
     local.set $@@rowcount
     else
     local.get $line
-    call $set_variable_12
+    call $set_variable_11
     local.set $line
     i32.const 0
     local.set $@@rowcount
     end
     local.get $position
     local.get $line
-    call $insert_13
+    call $insert_12
     local.set $@@rowcount
     local.get $position
-    call $set_variable_14
+    call $set_variable_13
     local.set $position
     i32.const 0
     local.set $@@rowcount
     local.get $column
-    call $fetch_cursor_15
+    call $fetch_cursor_14
     local.set $@@rowcount
     local.set $@@sqlstatus
     local.set $column
     br $loop0
     end
     end
-    call $close_cursor_16
+    call $close_cursor_15
     i32.const 0
     local.set $@@rowcount
-    call $deallocate_cursor_17
+    call $deallocate_cursor_16
     i32.const 0
     local.set $@@rowcount
     local.get $schema
     local.get $table
-    call $set_variable_18
+    call $set_variable_17
     local.set $line
     i32.const 0
     local.set $@@rowcount
     local.get $position
     local.get $line
-    call $insert_19
+    call $insert_18
     local.set $@@rowcount
-    call $result_set_20
+    call $result_set_19
     local.set $@@rowcount
-    call $drop_temp_21
+    call $drop_temp_20
     i32.const 0
     local.set $@@rowcount
     i32.const 0

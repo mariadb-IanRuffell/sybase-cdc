@@ -136,14 +136,7 @@
         "@cid"
       ]
     },
-    "condition_4": {
-      "kind": "condition",
-      "arguments": [
-        "@@sqlstatus"
-      ],
-      "results": 1
-    },
-    "assign_5": {
+    "assign_4": {
       "kind": "assign",
       "arguments": [
         "@as_of",
@@ -159,7 +152,7 @@
       ],
       "sql_arguments": 3
     },
-    "assign_6": {
+    "assign_5": {
       "kind": "assign",
       "arguments": [
         "@orders_12m",
@@ -171,7 +164,7 @@
       ],
       "sql_arguments": 1
     },
-    "assign_7": {
+    "assign_6": {
       "kind": "assign",
       "arguments": [
         "@cid",
@@ -183,7 +176,7 @@
       ],
       "sql_arguments": 1
     },
-    "assign_8": {
+    "assign_7": {
       "kind": "assign",
       "arguments": [
         "@cid",
@@ -196,7 +189,7 @@
       ],
       "sql_arguments": 2
     },
-    "assign_9": {
+    "assign_8": {
       "kind": "assign",
       "arguments": [
         "@last_order",
@@ -210,7 +203,7 @@
       ],
       "sql_arguments": 3
     },
-    "assign_10": {
+    "assign_9": {
       "kind": "assign",
       "arguments": [
         "@recency",
@@ -230,14 +223,14 @@
       ],
       "sql_arguments": 9
     },
-    "condition_11": {
+    "condition_10": {
       "kind": "condition",
       "arguments": [
         "@score"
       ],
       "results": 1
     },
-    "assign_12": {
+    "assign_11": {
       "kind": "assign",
       "arguments": [
         "@score"
@@ -248,7 +241,7 @@
       ],
       "sql_arguments": 0
     },
-    "assign_13": {
+    "assign_12": {
       "kind": "assign",
       "arguments": [
         "@score",
@@ -261,7 +254,7 @@
       ],
       "sql_arguments": 2
     },
-    "dml_14": {
+    "dml_13": {
       "kind": "dml",
       "arguments": [
         "@score",
@@ -271,14 +264,7 @@
       ],
       "results": 1
     },
-    "condition_15": {
-      "kind": "condition",
-      "arguments": [
-        "@@rowcount"
-      ],
-      "results": 1
-    },
-    "insert_16": {
+    "insert_14": {
       "kind": "insert",
       "arguments": [
         "@cid",
@@ -291,7 +277,7 @@
       "identity": null,
       "counter": null
     },
-    "fetch_cursor_17": {
+    "fetch_cursor_15": {
       "kind": "fetch_cursor",
       "arguments": [
         "@cid"
@@ -302,19 +288,19 @@
         "@cid"
       ]
     },
-    "close_cursor_18": {
+    "close_cursor_16": {
       "kind": "close_cursor",
       "arguments": [],
       "results": 0,
       "cursor": "cust_cur"
     },
-    "deallocate_cursor_19": {
+    "deallocate_cursor_17": {
       "kind": "deallocate_cursor",
       "arguments": [],
       "results": 0,
       "cursor": "cust_cur"
     },
-    "result_set_20": {
+    "result_set_18": {
       "kind": "result_set",
       "arguments": [
         "@as_of"

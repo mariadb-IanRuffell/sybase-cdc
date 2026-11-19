@@ -39,7 +39,7 @@ public class AddOrderItemParity {
         int oid = Integer.parseInt(a[1]);
         gg = DriverManager.getConnection(env("GG_JDBC", "jdbc:ignite:thin://127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802"));
         gg.setAutoCommit(false);
-        client = IgniteClient.builder().addresses("127.0.0.1:11800", "127.0.0.1:11801", "127.0.0.1:11802").build();
+        client = IgniteClient.builder().addresses(env("GG_ADDRS", "127.0.0.1:11800,127.0.0.1:11801,127.0.0.1:11802").split(",")).build();
         try {
             System.out.println("== sp_add_order_item on Sybase vs its WASM compilation on GridGain 9 (order " + oid + ")");
             same("GridGain holds the order Sybase created", oid);
@@ -74,7 +74,7 @@ public class AddOrderItemParity {
         }
         // GridGain 9: the WASM export, as a compute job
         var d = JobDescriptor.<String, String>builder("example.sybase.SybaseWasmJob")
-                .units(new DeploymentUnit("sybase-wasm-example", "latest"))
+                .units(System.getenv("NO_UNIT") != null ? new DeploymentUnit[0] : new DeploymentUnit[] {new DeploymentUnit("sybase-wasm-example", "latest")})
                 .options(JobExecutionOptions.builder().maxRetries(0).build()).build();
         String reply = client.compute().execute(JobTarget.anyNode(client.cluster().nodes()), d,
                 "{\"procedure\":\"sp_add_order_item\",\"parameters\":{\"order_id\":" + oid + ",\"product_id\":" + product + ",\"qty\":" + qty + "}}");

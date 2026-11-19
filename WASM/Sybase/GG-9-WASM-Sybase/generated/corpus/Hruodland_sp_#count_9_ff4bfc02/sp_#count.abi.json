@@ -88,14 +88,7 @@
         "@table"
       ]
     },
-    "condition_3": {
-      "kind": "condition",
-      "arguments": [
-        "@@sqlstatus"
-      ],
-      "results": 1
-    },
-    "metadata_count_4": {
+    "metadata_count_3": {
       "kind": "metadata_count",
       "arguments": [
         "@schema",
@@ -106,7 +99,7 @@
         "@rows"
       ]
     },
-    "insert_5": {
+    "insert_4": {
       "kind": "insert",
       "arguments": [
         "@schema",
@@ -118,7 +111,7 @@
       "identity": null,
       "counter": null
     },
-    "fetch_cursor_6": {
+    "fetch_cursor_5": {
       "kind": "fetch_cursor",
       "arguments": [
         "@table"
@@ -129,29 +122,29 @@
         "@table"
       ]
     },
-    "close_cursor_7": {
+    "close_cursor_6": {
       "kind": "close_cursor",
       "arguments": [],
       "results": 0,
       "cursor": "tables_cursor"
     },
-    "deallocate_cursor_8": {
+    "deallocate_cursor_7": {
       "kind": "deallocate_cursor",
       "arguments": [],
       "results": 0,
       "cursor": "tables_cursor"
     },
-    "print_9": {
+    "print_8": {
       "kind": "print",
       "arguments": [],
       "results": 0
     },
-    "result_set_10": {
+    "result_set_9": {
       "kind": "result_set",
       "arguments": [],
       "results": 1
     },
-    "drop_temp_11": {
+    "drop_temp_10": {
       "kind": "drop_temp",
       "arguments": [],
       "results": 0,
