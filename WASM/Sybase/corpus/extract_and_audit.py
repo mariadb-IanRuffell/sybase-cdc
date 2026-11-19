@@ -14,7 +14,7 @@ from urllib.parse import quote
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent))
 from ase_parser import mask_comments, parse_sql
-from gg9_compiler import compile_script, ASECapabilityError
+from gg9_compiler import compile_script, ASECapabilityError, ase_capabilities
 
 CS = re.compile(r'//[^\n]*|/\*.*?\*/|(?P<vp>\$?@|@\$)"(?P<v>(?:""|[^"])*)"|(?P<np>\$?)"(?P<n>(?:\\.|[^"\\])*)"', re.S)
 CREATE = re.compile(r'(?im)^\s*create\s+(?:or\s+replace\s+)?proc(?:edure)?\b')
@@ -50,12 +50,28 @@ def procedure_batches(sql):
             yield text, sql.count('\n', 0, begin)+1
 
 
+# Explicit ports: the pinned upstream definitions stay untouched and still fail direct compilation.
+ADAPTATIONS = {
+    'Hruodland_sp_#count_9_ff4bfc02': ('sp_count.sql', 'metadata'),
+    'Hruodland_sp_#ls_9_5cde633a': ('sp_ls.sql', 'metadata'),
+    'Hruodland_sp_#select_11_113525f1': ('sp_select.sql', 'metadata'),
+    'Hruodland_sp_thresholdaction_9_2484538a': ('sp_thresholdaction.sql', 'mock'),
+}
+
+
+def fixture_source(fixture):
+    port = ADAPTATIONS.get(fixture.stem)
+    return HERE.parent/'GG-9-WASM-Sybase/sql/metadata'/port[0] if port else fixture
+
+
 def execution_digest():
     """Invalidate saved execution evidence when the compiler, wrapper or harness changes."""
     root = HERE.parent
     example = root/'GG-9-WASM-Sybase'
     paths = [root/name for name in ('gg9_compiler.py', 'compiler.py', 'ase_parser.py', 'ase.lark', 'requirements.txt')]
     paths += [example/name for name in ('prepare.py', 'build.gradle', 'source-build.gradle', 'sql/corpus_schema.sql')]
+    paths += [Path(__file__)]
+    paths += sorted((example/'sql').rglob('*.sql'))
     paths += sorted((example/'src/main/java/example/sybase').glob('*.java'))
     digest = hashlib.sha256()
     for path in paths:
@@ -98,12 +114,18 @@ def main():
                 record = {'file':str(local), 'source':item['local'], 'upstream_url':item['url'], 'line':original_line,
                           'license':item['license'], 'sql_sha256':digest, 'parsed':False, 'compiled':False,
                           'executed_on_ase':False, 'executed_on_gridgain':False}
+                selected = fixture_source(target)
+                if selected != target:
+                    record.update(adaptation=str(selected.relative_to(HERE.parent)),
+                                  adaptation_kind=ADAPTATIONS[target.stem][1],
+                                  adaptation_sha256=hashlib.sha256(selected.read_bytes()).hexdigest())
                 try:
                     ast=parse_sql(sql)
                     record['parsed']=True
+                    record['original_capabilities']=ase_capabilities(ast)
                     record['ast_kinds']=sorted({str(n.data) for n in ast.iter_subtrees()})
                     with TemporaryDirectory() as temp:
-                        record['procedures']=compile_script(target,temp,schema)
+                        record['procedures']=compile_script(selected,temp,schema)
                         record['artifact_digest']=artifact_digest(temp, record['procedures'][0])
                     record['compiled']=True
                 except Exception as error:
@@ -112,10 +134,12 @@ def main():
                 saved = evidence.get(target.stem, {})
                 matches = (saved.get('source_sha256') == hashlib.sha256(target.read_bytes()).hexdigest()
                            and saved.get('runtime_digest') == runtime_digest
+                           and saved.get('adaptation_sha256') == record.get('adaptation_sha256')
                            and saved.get('artifact_digest', '') == record.get('artifact_digest', ''))
                 if matches:
                     record['wrapper_state'] = saved.get('state')
-                    record['executed_on_gridgain'] = record['compiled'] and saved.get('state') == 'passed'
+                    record['wasm_executed'] = record['compiled'] and saved.get('state') in ('passed', 'adapted', 'mocked')
+                    record['executed_on_gridgain'] = record['compiled'] and saved.get('state') in ('passed', 'adapted')
                     record['wrapper_rejection_verified'] = (not record['compiled'] and saved.get('state') == 'blocked'
                                                             and saved.get('capabilities') == record.get('capabilities'))
                     record['wrapper_checks'] = saved.get('checks', [])
@@ -123,17 +147,20 @@ def main():
     summary = {'upstream_files':len(manifest['files']), 'extracted':sum('file' in r for r in records),
                'parsed':sum(r.get('parsed',False) for r in records),
                'compiled':sum(r.get('compiled',False) for r in records),
+               'compiled_original':sum(r.get('compiled',False) and not r.get('adaptation') for r in records),
+               'metadata_adapted':sum(r.get('wrapper_state') == 'adapted' for r in records),
+               'mocked':sum(r.get('wrapper_state') == 'mocked' for r in records),
                'executed_on_ase':0, 'executed_on_gridgain':sum(r.get('executed_on_gridgain',False) for r in records),
                'wrapper_rejections_verified':sum(r.get('wrapper_rejection_verified',False) for r in records)}
     (HERE/'coverage.json').write_text(json.dumps({'summary':summary,'procedures':records},indent=2)+'\n')
     lines=['# Downloaded ASE procedure coverage','',
            'Generated by `extract_and_audit.py`. Live results come from [gridgain-results.json](gridgain-results.json), checked against source, artifact and runtime hashes. They are not ASE equivalence tests.',
-           '',f"Upstream files: {summary['upstream_files']}; extracted fixtures: {summary['extracted']}; parsed: {summary['parsed']}; compiled: {summary['compiled']}; executed on ASE/GridGain: {summary['executed_on_ase']}/{summary['executed_on_gridgain']}; verified wrapper rejections: {summary['wrapper_rejections_verified']}.",
-           '', '| Fixture | Parsed | Compiled | Java wrapper | First diagnostic |', '| --- | --- | --- | --- | --- |']
+           '',f"Upstream files: {summary['upstream_files']}; extracted fixtures: {summary['extracted']}; parsed: {summary['parsed']}; compiled: {summary['compiled']}; executed on ASE/GridGain: {summary['executed_on_ase']}/{summary['executed_on_gridgain']}; metadata adaptations: {summary['metadata_adapted']}; mocked procedures: {summary['mocked']}; verified wrapper rejections: {summary['wrapper_rejections_verified']}.",
+           '', '| Fixture | Parsed | Compiled target | Java wrapper | Adaptation / diagnostic |', '| --- | --- | --- | --- | --- |']
     for r in records:
         if 'file' not in r: continue
         file=r['file']
-        message=r.get('diagnostic','').replace('|','\\|').replace('\n',' ')
+        message=(('Explicit ' + r['adaptation_kind'] + ' port: ' + r['adaptation']) if r.get('adaptation') else r.get('diagnostic','')).replace('|','\\|').replace('\n',' ')
         lines.append(f"| [{Path(file).name}]({quote(file)}) | {r['parsed']} | {r['compiled']} | {r.get('wrapper_state', 'not verified')} | {message} |")
     (HERE/'COVERAGE.md').write_text('\n'.join(lines)+'\n')
     print(json.dumps(summary))

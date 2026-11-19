@@ -41,10 +41,21 @@ final class CorpusChecks {
                 CREATE TABLE Person (PersonID INT PRIMARY KEY, FirstName VARCHAR(50), LastName VARCHAR(50), MiddleName VARCHAR(50), Gender VARCHAR(1));
                 INSERT INTO Person VALUES (1,'John','Pupkin',NULL,'M'),(4,'Jürgen','König','Ko','M');
                 INSERT INTO id_seq VALUES ('alltypes_id',1);
+                CREATE TABLE META_TARGET (z INT, a VARCHAR(20), id INT PRIMARY KEY);
+                INSERT INTO META_TARGET VALUES (30,'third',3),(10,'first',1),(20,'second',2);
+                CREATE TABLE META_EMPTY (id INT PRIMARY KEY);
+                CREATE TABLE META_SINGLE (id INT PRIMARY KEY);
+                INSERT INTO META_SINGLE VALUES (42);
+                CREATE SCHEMA META_OTHER;
+                CREATE TABLE META_OTHER.META_TARGET (id INT PRIMARY KEY, note VARCHAR(20));
+                INSERT INTO META_OTHER.META_TARGET VALUES (8,'other');
+                CREATE TABLE "Meta"" Odd;--" (id INT PRIMARY KEY, "a""quoted" INT, "select" VARCHAR(10));
+                INSERT INTO "Meta"" Odd;--" VALUES (7,99,'safe');
                 """);
         JsonNode manifest = JSON.readTree(Files.readString(example.resolve("generated/corpus-manifest.json")));
         Map<String, Object> results = new LinkedHashMap<>();
-        int passed = 0, blocked = 0, failed = 0;
+        int passed = 0, adapted = 0, mocked = 0, blocked = 0, failed = 0;
+        Map<String, Object> dbcc = checkDbccMock();
         var entries = manifest.fields();
         while (entries.hasNext()) {
             var entry = entries.next();
@@ -54,6 +65,11 @@ final class CorpusChecks {
             Map<String, Object> record = new LinkedHashMap<>();
             record.put("procedure", spec.get("procedure").asText());
             record.put("source_sha256", spec.get("sha256").asText());
+            if (spec.has("adaptation")) {
+                record.put("adaptation", spec.get("adaptation").asText());
+                record.put("adaptation_kind", spec.get("adaptation_kind").asText());
+                record.put("adaptation_sha256", spec.get("adaptation_sha256").asText());
+            }
             record.put("runtime_digest", spec.get("runtime_digest").asText());
             record.put("artifact_digest", spec.path("artifact_digest").asText());
             try {
@@ -66,11 +82,21 @@ final class CorpusChecks {
                     JsonNode abi = JSON.readTree(Files.readString(example.resolve("generated/" + spec.get("resource_prefix").asText()
                             + spec.get("procedure").asText() + ".abi.json")));
                     exercise(spec.get("procedure").asText(), abi);
-                    record.put("state", "passed");
+                    record.put("state", switch (spec.path("adaptation_kind").asText()) {
+                        case "metadata" -> "adapted";
+                        case "mock" -> "mocked";
+                        default -> "passed";
+                    });
                     record.put("executed_wasm", true);
                 }
                 require(noTemporaryTables(), "temporary tables leaked after " + fixture);
-                if (spec.get("compiled").asBoolean()) passed++; else blocked++;
+                switch (record.get("state").toString()) {
+                    case "passed" -> passed++;
+                    case "adapted" -> adapted++;
+                    case "mocked" -> mocked++;
+                    case "blocked" -> blocked++;
+                    default -> throw new AssertionError(record);
+                }
                 System.out.println("CORPUS " + record.get("state") + " " + fixture + " (" + checks.size() + " calls)");
             } catch (Exception | AssertionError error) {
                 record.put("state", "failed");
@@ -82,11 +108,12 @@ final class CorpusChecks {
             results.put(fixture, record);
         }
         var report = Map.of("fixtures", results, "passed", passed, "blocked", blocked, "failed", failed,
-                "scope", "Java wrapper execution on GridGain; not an ASE equivalence test");
+                "adapted", adapted, "mocked", mocked, "dbcc_mock", dbcc,
+                "scope", "Java wrapper execution: originals, explicit metadata ports and explicit mocks; not an ASE equivalence test");
         Files.writeString(example.resolve("build/corpus-results.json"), JSON.writerWithDefaultPrettyPrinter().writeValueAsString(report) + "\n");
-        evidence.put("corpus", Map.of("passed", passed, "blocked", blocked, "failed", failed));
-        require(failed == 0 && passed == 30 && blocked == 7, "Corpus results: " + passed + " passed, " + blocked + " blocked, " + failed + " failed");
-        System.out.println("ALL CORPUS CHECKS PASSED (30 executed fixtures; 7 ASE-service rejections verified through the wrapper)");
+        evidence.put("corpus", Map.of("passed", passed, "adapted", adapted, "mocked", mocked, "blocked", blocked, "failed", failed));
+        require(failed == 0 && passed == 30 && adapted == 3 && mocked == 1 && blocked == 3, "Corpus results: " + passed + " passed, " + adapted + " adapted, " + mocked + " mocked, " + blocked + " blocked, " + failed + " failed");
+        System.out.println("ALL CORPUS CHECKS PASSED (30 original + 3 metadata adaptations + 1 mock; 3 ASE-service rejections; DBCC no-op verified)");
     }
 
     private void exercise(String name, JsonNode abi) throws Exception {
@@ -230,14 +257,117 @@ final class CorpusChecks {
                 List<String> expected=List.of("[1,\"John\",\"Pupkin\",null,\"M\"]","[4,\"Jürgen\",\"König\",\"Ko\",\"M\"]");
                 require(actual.stream().sorted().toList().equals(expected.stream().sorted().toList()),"all Person columns/rows"); break;
             }
+            case "sp_#count": metadataCounts(); break;
+            case "sp_#ls": metadataObjects(); break;
+            case "sp_#select": metadataSelect(); break;
+            case "sp_thresholdaction": {
+                long before=scalar("SELECT COUNT(*) FROM META_TARGET").longValue();
+                for (int status : new int[]{0,1}) {
+                    JsonNode r=invokeNamed("sp_thresholdaction",Map.of("dbname","'; DROP TABLE META_TARGET;--", "segmentname","logsegment",
+                            "space_left",0,"status",status),"mock threshold status " + status);
+                    ok(r,0,0);
+                    require(r.path("messages").size()==1 && r.path("messages").get(0).path("message").asText().startsWith("MOCK sp_thresholdaction:"),"visible threshold mock");
+                }
+                require(scalar("SELECT COUNT(*) FROM META_TARGET").longValue()==before,"threshold mock did not change data");
+                break;
+            }
             default: throw new AssertionError("No executable test for " + name);
         }
     }
 
-    private JsonNode invoke(Object parameters, String label) throws Exception {
+    private void metadataCounts() throws Exception {
+        JsonNode r=invokeNamed("sp_#count",Map.of("objname","META%"),"exact populated/empty counts and NULL sizes");
+        ok(r,0,1);
+        rows(r,0,"[[\"PUBLIC\",\"META_EMPTY\",\"0\",null,null,null],[\"PUBLIC\",\"META_SINGLE\",\"1\",null,null,null],[\"PUBLIC\",\"META_TARGET\",\"3\",null,null,null]]");
+        require(r.path("messages").get(0).path("message").asText().contains("size fields are NULL"),"unavailable physical sizes disclosed");
+        r=invoke(Map.of("schema","META_OTHER","objname","META_TARGET"),"schema-isolated counts");
+        rows(r,0,"[[\"META_OTHER\",\"META_TARGET\",\"1\",null,null,null]]");
+        r=invoke(Map.of("objname","Meta%"),"quote metadata identifiers for COUNT");
+        require(r.path("result_sets").get(0).path("rows").get(0).get(2).asText().equals("1"),"quoted table counted");
+        client.sql().executeScript("INSERT INTO META_TARGET VALUES (40,'fourth',4);");
+        r=invoke(Map.of("objname","META_TARGET"),"fresh count after thin-client write");
+        require(r.path("result_sets").get(0).path("rows").get(0).get(2).asText().equals("4"),"fresh count");
+        client.sql().executeScript("DELETE FROM META_TARGET WHERE id=4;");
+        r=invoke(Map.of("objname","DOES_NOT_EXIST"),"empty table filter"); ok(r,0,1); rows(r,0,"[]");
+        r=invoke(Map.of(),"default schema enumeration excludes work tables"); ok(r,0,1);
+        for(JsonNode row:r.path("result_sets").get(0).path("rows")) {
+            require(row.get(0).asText().equals("PUBLIC") && !row.get(1).asText().startsWith("WASM_TMP_"),"table scope");
+            require(row.get(3).isNull() && row.get(4).isNull() && row.get(5).isNull(),"no fabricated physical sizes");
+        }
+    }
+
+    private void metadataObjects() throws Exception {
+        JsonNode r=invokeNamed("sp_#ls",Map.of("objname","META"),"table substring filtering"); ok(r,0,1);
+        rows(r,0,"[[\"META_EMPTY\",\"TABLE\",\"PUBLIC\",null,null],[\"META_SINGLE\",\"TABLE\",\"PUBLIC\",null,null],[\"META_TARGET\",\"TABLE\",\"PUBLIC\",null,null]]");
+        r=invoke(Map.of("objname","U","schema","META_OTHER"),"table type and schema filter");
+        rows(r,0,"[[\"META_TARGET\",\"TABLE\",\"META_OTHER\",null,null]]");
+        r=invoke(Map.of("objname","S"),"GridGain system views"); ok(r,0,1);
+        boolean found=false;
+        for(JsonNode row:r.path("result_sets").get(0).path("rows")) {
+            found |= row.get(0).asText().equals("TABLE_COLUMNS");
+            require(row.get(1).asText().equals("SYSTEM_VIEW") && row.get(2).asText().equals("SYSTEM"),"system view identity");
+            require(row.get(3).isNull() && row.get(4).isNull(),"no fabricated ownership/timestamps");
+        }
+        require(found,"actual TABLE_COLUMNS system view listed");
+        for(String type:List.of("D","P","TR","V","R","SP")) {
+            r=invoke(Map.of("objname",type),"unsupported category " + type); ok(r,1,0);
+            require(r.path("messages").size()==1,"unsupported type explained");
+        }
+        r=invoke(Map.of("objname","'; DROP TABLE META_TARGET;--"),"object filter stays data"); ok(r,0,1); rows(r,0,"[]");
+        r=invoke(Map.of(),"default object pattern"); ok(r,0,1);
+        require(r.path("result_sets").get(0).path("rows").size()>3,"default includes public tables");
+    }
+
+    private void metadataSelect() throws Exception {
+        JsonNode r=invokeNamed("sp_#select",Map.of("table","META_TARGET"),"alphabetical SELECT command"); ok(r,0,1);
+        String command=selectCommand(r);
+        require(command.equals("SELECT\n \"A\"\n,\"ID\"\n,\"Z\"\nFROM \"PUBLIC\".\"META_TARGET\""),"alphabetical generated SQL: " + command);
+        try(var rs=client.sql().execute((Transaction)null,command+" ORDER BY \"ID\"")) {
+            var row=rs.next(); require(row.stringValue(0).equals("first") && row.intValue(1)==1 && row.intValue(2)==10,"generated query executes");
+        }
+        r=invoke(Map.of("table","META_SINGLE"),"single-column command");
+        require(!selectCommand(r).contains(","),"no leading or trailing comma for one column");
+        r=invoke(Map.of("schema","META_OTHER","table","META_TARGET"),"schema-qualified command");
+        require(selectCommand(r).contains("\"META_OTHER\".\"META_TARGET\""),"explicit schema");
+        r=invoke(Map.of("table","Meta\" Odd;--"),"quoted table and reserved/quoted columns");
+        try(var rs=client.sql().execute((Transaction)null,selectCommand(r))) {
+            var row=rs.next(); require(row.intValue(0)==7 && row.intValue(1)==99 && row.stringValue(2).equals("safe"),"identifier escaping");
+        }
+        for(String table:List.of("DOES_NOT_EXIST","'; DROP TABLE META_TARGET;--","PUBLIC.META_TARGET")) {
+            r=invoke(Map.of("table",table),"missing/literal name " + table); ok(r,1,0);
+            require(r.path("messages").get(0).path("message").asText().equals("Table is undefined."),"missing table status");
+        }
+        r=invoke(JSON.readTree("{\"table\":null}"),"NULL table name"); ok(r,1,0);
+        require(scalar("SELECT COUNT(*) FROM META_TARGET").intValue()==3,"SELECT generator is read only");
+    }
+
+    private static String selectCommand(JsonNode response) {
+        List<String> lines=new ArrayList<>();
+        for(JsonNode row:response.path("result_sets").get(0).path("rows")) lines.add(row.get(0).asText());
+        return String.join("\n",lines);
+    }
+
+    private Map<String,Object> checkDbccMock() throws Exception {
         String response=client.compute().execute(JobTarget.anyNode(client.cluster().nodes()),JOB,
-                JSON.writeValueAsString(Map.of("fixture",fixture,"parameters",parameters,
-                        "trace",Boolean.parseBoolean(System.getenv().getOrDefault("SYBASE_TRACE","false")))));
+                JSON.writeValueAsString(Map.of("procedure","dbcc_noop","parameters",Map.of("database","'; DROP TABLE META_TARGET;--"),"trace",true)));
+        JsonNode r=JSON.readTree(response); ok(r,0,0);
+        require(r.path("messages").size()==2 && r.path("timing").path("sql_statements").asInt(-1)==0,"DBCC performs zero SQL calls");
+        for(JsonNode message:r.path("messages")) require(message.path("kind").asText().equals("mock"),"DBCC mock identified");
+        require(scalar("SELECT COUNT(*) FROM META_TARGET").intValue()==3,"DBCC did not alter rows");
+        return Map.of("status",0,"sql_statements",0,"messages",r.path("messages"),"data_unchanged",true);
+    }
+
+    private JsonNode invoke(Object parameters, String label) throws Exception {
+        return submit(Map.of("fixture",fixture,"parameters",parameters,
+                "trace",Boolean.parseBoolean(System.getenv().getOrDefault("SYBASE_TRACE","false"))),label);
+    }
+
+    private JsonNode invokeNamed(String name, Object parameters, String label) throws Exception {
+        return submit(Map.of("procedure",name,"parameters",parameters,"trace",true),label+" (direct name)");
+    }
+
+    private JsonNode submit(Map<String,?> request, String label) throws Exception {
+        String response=client.compute().execute(JobTarget.anyNode(client.cluster().nodes()),JOB,JSON.writeValueAsString(request));
         JsonNode result=JSON.readTree(response);
         List<Integer> rowCounts=new ArrayList<>();
         for(JsonNode set:result.path("result_sets")) rowCounts.add(set.path("rows").size());

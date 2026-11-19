@@ -1,0 +1,24 @@
+procedure
+  object_name	dbcc_noop
+  parameters
+    parameter_decl
+      @database
+      datatype
+        object_name	varchar
+        type_args	128
+  statements
+    block
+      statements
+        dbcc
+          checkdb
+          expr_list
+            function_call
+              object_name	db_id
+              expr_list
+                local_var	@database
+        dbcc
+          checktable
+          expr_list
+            string	'this_table_does_not_exist'
+        return_status
+          integer	0

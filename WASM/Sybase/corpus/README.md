@@ -71,16 +71,19 @@ On 2026-11-18:
 | --- | ---: |
 | Downloaded source/license files verified by SHA-256 | 64 / 64 |
 | Extracted procedure fixtures accepted by the Lark parser | 37 / 37 |
-| Fixtures compiled to validated typed WASM | 30 / 37 |
-| Downloaded fixtures executed through the Java wrapper on GridGain | 30 / 37 |
-| ASE-service rejections checked through the Java wrapper | 7 / 7 |
+| Compiled targets (30 originals + 3 metadata ports + 1 explicit mock) | 34 / 37 |
+| Real executions through the Java wrapper (30 originals + 3 ports) | 33 / 37 |
+| Threshold-action success mock verified separately | 1 |
+| Remaining ASE-service rejections checked through the Java wrapper | 3 / 3 |
 | Downloaded fixtures executed on ASE in this change | 0 |
 
 See [`COVERAGE.md`](COVERAGE.md) for every fixture and its capability diagnostics,
 [`coverage.json`](coverage.json) for AST kinds and execution checks, and
 [`gridgain-results.json`](gridgain-results.json) for the saved Java harness evidence.
 The audit verifies the fixture source hash, freshly compiled artifact digest and
-compiler/wrapper/harness fingerprint before accepting saved execution results.
+compiler/wrapper/harness fingerprint and adaptation source hash before accepting
+saved execution results. The states `passed`, `adapted`, `mocked` and `blocked`
+are distinct; mocked success is excluded from the real-execution count.
 
 Run the actual GridGain checks and refresh the saved report:
 
@@ -94,9 +97,12 @@ cp build/corpus-results.json ../corpus/gridgain-results.json
 The runner compiles each fixture separately, submits it as a Java compute job,
 asserts results and stored data, verifies cleanup, and checks persistence after
 restarting the isolated GridGain node. Its SELECTs and DML use public GridGain APIs.
-The seven Hruodland administration procedures require ASE-specific catalogs,
-physical counters, DBCC/DUMP and session services. They fail explicitly before any
-SQL; they are not counted as successful WASM executions.
+Three Hruodland helpers (`sp_#count`, `sp_#ls`, `sp_#select`) now select explicit
+GridGain metadata adaptations. `sp_thresholdaction` selects a clearly marked
+success mock. The original files remain unchanged and direct compilation still
+rejects their ASE dependencies. `sp_#ps`, `sp_#quickref` and `sp_#top` remain rejected
+before SQL because they need ASE services. DBCC statements themselves are visible
+no-ops in the typed backend, tested separately with zero SQL calls.
 
 Added support includes SET, delimited/dbo names, CREATE OR REPLACE, string
 operations, temporary-table DDL, ordered PRINT/result events and bounded WAITFOR.
@@ -117,7 +123,9 @@ Preserve [DataAction's Apache-2.0 license](upstream/DataAction/LICENSE),
 [linq2db's MIT license](upstream/linq2db/MIT-LICENSE.txt), and
 [Hruodland's MIT license and per-file notices](upstream/Hruodland/LICENSE) when
 redistributing these fixtures. Extracted files identify their upstream source and
-license; no SQL bodies have been rewritten to make the coverage numbers improve.
+license. The pinned SQL bodies remain unchanged. Explicit ports and mocks live
+under `../GG-9-WASM-Sybase/sql/metadata/`, retain attribution, and are identified
+separately in the manifest and coverage report.
 
 SAP also documents `installpubs2`, `installpubs3` and `installpix2` in its
 [ASE 16 installation guide](https://help.sap.com/doc/a6167530bc2b1014a88ec21bab8c671f/16.0.4.6/en-US/SAP_ASE_Installation_Guide_Linux_en.pdf).

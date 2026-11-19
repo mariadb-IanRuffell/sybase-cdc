@@ -1,0 +1,183 @@
+procedure
+  replace_option
+  object_name	sp_#count
+  parameters
+    parameter_decl
+      @schema
+      datatype
+        object_name	varchar
+        type_args	128
+      default_argument
+        string	'PUBLIC'
+    parameter_decl
+      @objname
+      datatype
+        object_name	varchar
+        type_args	255
+      default_argument
+        string	'%'
+  statements
+    block
+      statements
+        set_options
+          nocount
+          on_off	on
+        declare_variables
+          variable_decl
+            @table
+            datatype
+              object_name	varchar
+              type_args	255
+          variable_decl
+            @rows
+            datatype
+              object_name	bigint
+        declare_cursor
+          tables_cursor
+          query
+            select_core
+              select_list
+                select_item
+                  column
+                    object_name	table_name
+              from_clause
+                joined_table
+                  table_reference
+                    object_name
+                      SYSTEM
+                      TABLES
+              where_clause
+                logical_and
+                  logical_and
+                    comparison
+                      column
+                        object_name	schema_name
+                      comparison_op	=
+                      local_var	@schema
+                    like
+                      column
+                        object_name	table_name
+                      local_var	@objname
+                  comparison
+                    function_call
+                      object_name	substring
+                      expr_list
+                        column
+                          object_name	table_name
+                        integer	1
+                        integer	9
+                    comparison_op	<>
+                    string	'WASM_TMP_'
+            order_by
+              order_item
+                column
+                  object_name	table_name
+        open_cursor	tables_cursor
+        create_table
+          object_name	#counts
+          column_def
+            schema_name
+            datatype
+              object_name	varchar
+              type_args	128
+          column_def
+            table_name
+            datatype
+              object_name	varchar
+              type_args	255
+          column_def
+            row_count
+            datatype
+              object_name	bigint
+        fetch_cursor
+          tables_cursor
+          local_var	@table
+        while_statement
+          comparison
+            system_variable	@@sqlstatus
+            comparison_op	=
+            integer	0
+          block
+            statements
+              set_variable
+                local_var	@rows
+                function_call
+                  object_name	GG_ROW_COUNT
+                  expr_list
+                    local_var	@schema
+                    local_var	@table
+              insert
+                object_name	#counts
+                column_list
+                  name_list
+                    schema_name
+                    table_name
+                    row_count
+                values
+                  value_row
+                    local_var	@schema
+                    local_var	@table
+                    local_var	@rows
+              fetch_cursor
+                tables_cursor
+                local_var	@table
+        close_cursor	tables_cursor
+        deallocate_cursor	tables_cursor
+        print_statement
+          expr_list
+            string	'GridGain physical table/index sizes are unavailable; size fields are NULL.'
+        query
+          select_core
+            select_list
+              select_item
+                column
+                  object_name	schema_name
+              select_item
+                column
+                  object_name	table_name
+              select_item
+                column
+                  object_name	row_count
+              select_item
+                cast_expr
+                  null
+                  datatype
+                    object_name	decimal
+                    type_args
+                      18
+                      3
+                column_alias	data_mb
+              select_item
+                cast_expr
+                  null
+                  datatype
+                    object_name	decimal
+                    type_args
+                      18
+                      3
+                column_alias	index_mb
+              select_item
+                cast_expr
+                  null
+                  datatype
+                    object_name	decimal
+                    type_args
+                      18
+                      3
+                column_alias	total_mb
+            from_clause
+              joined_table
+                table_reference
+                  object_name	#counts
+          order_by
+            order_item
+              column
+                object_name	schema_name
+            order_item
+              column
+                object_name	table_name
+        drop_object
+          object_kind	table
+          object_name	#counts
+        return_status
+          integer	0

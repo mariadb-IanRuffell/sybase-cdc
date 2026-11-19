@@ -1,0 +1,54 @@
+{
+  "version": 2,
+  "name": "dbcc_noop",
+  "parameters": [
+    "database"
+  ],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@database": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(128)",
+      "length": 128,
+      "fixed": false
+    }
+  },
+  "operations": {
+    "mock_admin_0": {
+      "kind": "mock_admin",
+      "arguments": [],
+      "results": 0,
+      "operation": "DBCC CHECKDB"
+    },
+    "mock_admin_1": {
+      "kind": "mock_admin",
+      "arguments": [],
+      "results": 0,
+      "operation": "DBCC CHECKTABLE"
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

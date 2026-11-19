@@ -3,10 +3,13 @@
     "upstream_files": 64,
     "extracted": 37,
     "parsed": 37,
-    "compiled": 30,
+    "compiled": 34,
+    "compiled_original": 30,
+    "metadata_adapted": 3,
+    "mocked": 1,
     "executed_on_ase": 0,
-    "executed_on_gridgain": 30,
-    "wrapper_rejections_verified": 7
+    "executed_on_gridgain": 33,
+    "wrapper_rejections_verified": 3
   },
   "procedures": [
     {
@@ -20,6 +23,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -53,21 +57,22 @@
       ],
       "artifact_digest": "28007a374264b1ea719a1988643870c1325e76607871e711662d8ee7ed143f89",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
+          "status": 0,
+          "case": "all parameter families",
           "row_counts": [
             1
           ],
-          "case": "all parameter families",
-          "status": 0
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -82,6 +87,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "from_clause",
@@ -104,21 +110,22 @@
       ],
       "artifact_digest": "30b66bc94cced9c6784f6c079f12207929096d5acae8f2e311316ed40abaa7f5",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
+          "status": 0,
+          "case": "statement sequence",
           "row_counts": [
             1
           ],
-          "case": "statement sequence",
-          "status": 0
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -133,6 +140,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "column_list",
@@ -152,14 +160,15 @@
       ],
       "artifact_digest": "1ceca4f968a40cedfbc1e7c3f63220a20d9a0978696e5c5ecd7185519827f64c",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "statement sequence",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -174,6 +183,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "column",
@@ -193,14 +203,15 @@
       ],
       "artifact_digest": "382cb7747fa76b39b46f9d8c04b00e73b5c1b385e3aebff3531006a6ed6a35ef",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "statement sequence",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -215,6 +226,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "assignment",
         "assignments",
@@ -232,14 +244,15 @@
       ],
       "artifact_digest": "fb155a8b877c4acd03fc3893f4f7602578efbfbd5a7ef9e5b47af797f4675d00",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "statement sequence",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -254,6 +267,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "column_list",
@@ -281,21 +295,22 @@
       ],
       "artifact_digest": "f13599d8063fd568b1c3bf7a1e8adf4fce9d09898f0a6729b8c001ae75c0652e",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
+          "status": 0,
+          "case": "statement sequence",
           "row_counts": [
             1
           ],
-          "case": "statement sequence",
-          "status": 0
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -310,6 +325,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "column_list",
@@ -337,21 +353,22 @@
       ],
       "artifact_digest": "2432dd7996368add020c9a12c63dcd875831cdd19343070a744c0b42f7f03438",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
+          "status": 0,
+          "case": "statement sequence",
           "row_counts": [
             1
           ],
-          "case": "statement sequence",
-          "status": 0
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -366,6 +383,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "column",
@@ -390,14 +408,15 @@
       ],
       "artifact_digest": "2e0ca32823e45a4c2d70f12041d6d9d5f1c9222b7c722f7e9640273c3ad64b69",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "statement sequence",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -412,6 +431,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "add",
         "batch",
@@ -439,26 +459,27 @@
       ],
       "artifact_digest": "f76279af8ffca2ee976179f2aab1d0ab2bd7db9b09462b342ca287653e52334e",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            },
-            {
-              "index": 2,
-              "kind": "result_set"
-            }
-          ],
+          "status": -17,
+          "case": "signed status and two result sets",
           "row_counts": [
             1,
             1
           ],
-          "case": "signed status and two result sets",
-          "status": -17
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            },
+            {
+              "kind": "result_set",
+              "index": 2
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -473,6 +494,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -495,28 +517,29 @@
       ],
       "artifact_digest": "2fb35b2f9f5a7ce8d9edbbae71112ba53eab62954e4664e9956b6d7d944d6c23",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "CHAR output",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         },
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "empty CHAR",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         },
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "NULL output",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -531,6 +554,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -553,14 +577,15 @@
       ],
       "artifact_digest": "614bc625a9290511a61b8115032e1cade445d35f0f67891eaee7b65bc82935bf",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "fixed CHAR padding",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -575,6 +600,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -595,14 +621,15 @@
       ],
       "artifact_digest": "fb22344fa42f8558d643d985652877b1b0d7342c9330e4455be58c3ea5a66258",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "fixed binary padding",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -617,6 +644,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "add",
         "alias",
@@ -668,39 +696,40 @@
       ],
       "artifact_digest": "7737631020f592426f522613abc78637121557df0e600f4bdf0cdeba846223f2",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
+          "status": 0,
+          "case": "temporary table and 1000 rows",
           "row_counts": [
             1000
           ],
-          "case": "temporary table and 1000 rows",
-          "status": 0
-        },
-        {
-          "message_count": 0,
           "events": [
             {
-              "index": 1,
-              "kind": "result_set"
+              "kind": "result_set",
+              "index": 1
             }
           ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
+          "case": "cross join and 10000 rows",
           "row_counts": [
             10000
           ],
-          "case": "cross join and 10000 rows",
-          "status": 0
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         },
         {
-          "expected_failure": "Buffered row limit exceeded",
-          "case": "bounded large results"
+          "case": "bounded large results",
+          "expected_failure": "Buffered row limit exceeded"
         }
       ]
     },
@@ -715,6 +744,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -750,79 +780,80 @@
       ],
       "artifact_digest": "8b382d12f204f826e60c392ade579c28fc88bd8dbc7de8aada46b9baa857ce43",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 5,
-          "events": [
-            {
-              "index": 1,
-              "kind": "message"
-            },
-            {
-              "index": 2,
-              "kind": "message"
-            },
-            {
-              "index": 1,
-              "kind": "result_set"
-            },
-            {
-              "index": 3,
-              "kind": "message"
-            },
-            {
-              "index": 2,
-              "kind": "result_set"
-            },
-            {
-              "index": 4,
-              "kind": "message"
-            },
-            {
-              "index": 3,
-              "kind": "result_set"
-            },
-            {
-              "index": 5,
-              "kind": "message"
-            }
-          ],
+          "status": 0,
+          "case": "interleaved PRINT/results",
           "row_counts": [
             1,
             0,
             1
           ],
-          "case": "interleaved PRINT/results",
-          "status": 0
-        },
-        {
-          "message_count": 5,
           "events": [
             {
-              "index": 1,
-              "kind": "message"
+              "kind": "message",
+              "index": 1
             },
             {
-              "index": 2,
-              "kind": "message"
+              "kind": "message",
+              "index": 2
             },
             {
-              "index": 3,
-              "kind": "message"
+              "kind": "result_set",
+              "index": 1
             },
             {
-              "index": 4,
-              "kind": "message"
+              "kind": "message",
+              "index": 3
             },
             {
-              "index": 5,
-              "kind": "message"
+              "kind": "result_set",
+              "index": 2
+            },
+            {
+              "kind": "message",
+              "index": 4
+            },
+            {
+              "kind": "result_set",
+              "index": 3
+            },
+            {
+              "kind": "message",
+              "index": 5
             }
           ],
-          "row_counts": [],
+          "message_count": 5
+        },
+        {
+          "status": 0,
           "case": "skipped result sets",
-          "status": 0
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            },
+            {
+              "kind": "message",
+              "index": 2
+            },
+            {
+              "kind": "message",
+              "index": 3
+            },
+            {
+              "kind": "message",
+              "index": 4
+            },
+            {
+              "kind": "message",
+              "index": 5
+            }
+          ],
+          "message_count": 5
         }
       ]
     },
@@ -837,6 +868,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -862,14 +894,15 @@
       ],
       "artifact_digest": "6aaadbcb96e00144269f69b3e411babf02c771f747eac9c205717502319d554d",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "character and binary outputs",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -884,6 +917,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "add",
         "batch",
@@ -909,49 +943,50 @@
       ],
       "artifact_digest": "9c2299b75c76aa0d4c79362b7d516d27fae1ef4cce75103607c62f5ac66cd53d",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
-          "row_counts": [
-            1
-          ],
+          "status": 0,
           "case": "named inputs and string plus",
-          "status": 0
-        },
-        {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
           "row_counts": [
             1
           ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
           "case": "NULL concatenation",
-          "status": 0
-        },
-        {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
           "row_counts": [
             1
           ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
           "case": "SQL injection stays data",
-          "status": 0
+          "row_counts": [
+            1
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -966,6 +1001,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "add",
         "batch",
@@ -991,49 +1027,50 @@
       ],
       "artifact_digest": "9c2299b75c76aa0d4c79362b7d516d27fae1ef4cce75103607c62f5ac66cd53d",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
-          "row_counts": [
-            1
-          ],
+          "status": 0,
           "case": "named inputs and string plus",
-          "status": 0
-        },
-        {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
           "row_counts": [
             1
           ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
           "case": "NULL concatenation",
-          "status": 0
-        },
-        {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
           "row_counts": [
             1
           ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
           "case": "SQL injection stays data",
-          "status": 0
+          "row_counts": [
+            1
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -1048,6 +1085,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "datatype",
@@ -1070,14 +1108,15 @@
       ],
       "artifact_digest": "824d7e45b672f7f91af5bfcce183ae011eac13eba497321e8e82c460771d3c34",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "exact SET decimal output",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -1092,6 +1131,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1110,23 +1150,24 @@
       ],
       "artifact_digest": "77d7896b70ba2fce70cb80d384e89e6f0903d0862651ade8d3a2e7ee6b5dd703",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 2,
+          "status": 0,
+          "case": "RAISERROR and NULL return contract",
+          "row_counts": [],
           "events": [
             {
-              "index": 1,
-              "kind": "message"
+              "kind": "message",
+              "index": 1
             },
             {
-              "index": 2,
-              "kind": "message"
+              "kind": "message",
+              "index": 2
             }
           ],
-          "row_counts": [],
-          "case": "RAISERROR and NULL return contract",
-          "status": 0
+          "message_count": 2
         }
       ]
     },
@@ -1141,6 +1182,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1155,14 +1197,15 @@
       ],
       "artifact_digest": "a96f87c8916e6527d8b97767ccd1ecaa27a48bb53b749b3625beab0aac3e8425",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "bare RETURN",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -1177,6 +1220,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "add",
         "batch",
@@ -1210,43 +1254,44 @@
       ],
       "artifact_digest": "c10384d7f365c1a8a7e6907acd9a5b49906f7cb5ea263c726f39de73640c884b",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 3,
-          "events": [
-            {
-              "index": 1,
-              "kind": "message"
-            },
-            {
-              "index": 2,
-              "kind": "message"
-            },
-            {
-              "index": 3,
-              "kind": "message"
-            }
-          ],
-          "row_counts": [],
+          "status": 0,
           "case": "buffered PRINT loop",
-          "status": 0
-        },
-        {
-          "message_count": 1,
+          "row_counts": [],
           "events": [
             {
-              "index": 1,
-              "kind": "message"
+              "kind": "message",
+              "index": 1
+            },
+            {
+              "kind": "message",
+              "index": 2
+            },
+            {
+              "kind": "message",
+              "index": 3
             }
           ],
-          "row_counts": [],
-          "case": "actual WAITFOR delay",
-          "status": 0
+          "message_count": 3
         },
         {
-          "expected_failure": "WAITFOR budget exceeded",
-          "case": "bounded WAITFOR"
+          "status": 0,
+          "case": "actual WAITFOR delay",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "case": "bounded WAITFOR",
+          "expected_failure": "WAITFOR budget exceeded"
         }
       ]
     },
@@ -1261,6 +1306,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1281,18 +1327,19 @@
       ],
       "artifact_digest": "1de7f5af3135560b46fb9811a63cac432218bd325cd47039453b33885b594af1",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "materialized locator input",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         },
         {
-          "expected_failure": "text_locator requires",
-          "case": "reject raw ASE locator token"
+          "case": "reject raw ASE locator token",
+          "expected_failure": "text_locator requires"
         }
       ]
     },
@@ -1307,6 +1354,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1326,14 +1374,15 @@
       ],
       "artifact_digest": "359d70b40f5a724284eb9954ecfe13b98979d77db6d376a5840c1d0a881b0488",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "text above 64 KiB",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -1348,6 +1397,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1368,18 +1418,19 @@
       ],
       "artifact_digest": "199d8cbfb403d5f007e3c85446408e39e6c6bb99cac4798ecc19b32879bc8935",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "materialized locator input",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         },
         {
-          "expected_failure": "text_locator requires",
-          "case": "reject raw ASE locator token"
+          "case": "reject raw ASE locator token",
+          "expected_failure": "text_locator requires"
         }
       ]
     },
@@ -1394,6 +1445,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1422,18 +1474,19 @@
       ],
       "artifact_digest": "743e2fdbcc4108daf8e44d5eded2688f1ddf90abfbd34093a6a13329e7a6fee8",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "materialized locator input",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         },
         {
-          "expected_failure": "text_locator requires",
-          "case": "reject raw ASE locator token"
+          "case": "reject raw ASE locator token",
+          "expected_failure": "text_locator requires"
         }
       ]
     },
@@ -1448,6 +1501,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1470,14 +1524,15 @@
       ],
       "artifact_digest": "bfaa917a69a2c2f7eb7f7348894822b0b0afdbd8d756358dd6711065a76d8c8d",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "text/locator parameters",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -1492,6 +1547,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1512,14 +1568,15 @@
       ],
       "artifact_digest": "361f7849457e6fea2f0f6432c28b6797e1cbfa4014a20e32b09ecc8291a4c835",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "text input",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -1534,6 +1591,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "block",
@@ -1559,14 +1617,15 @@
       ],
       "artifact_digest": "749c2334f8f10bd7f504d788de90152f9f271a79b92106cde741c2d98d388894",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "text INSERT into GridGain",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -1581,6 +1640,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "column_list",
@@ -1601,14 +1661,15 @@
       ],
       "artifact_digest": "cebce7bf16e01af450eb9428687cab6820596520f8f048e9f357c512461d36dd",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [],
-          "row_counts": [],
+          "status": 0,
           "case": "identity INSERT",
-          "status": 0
+          "row_counts": [],
+          "events": [],
+          "message_count": 0
         }
       ]
     },
@@ -1623,6 +1684,7 @@
       "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": true,
+      "original_capabilities": [],
       "ast_kinds": [
         "batch",
         "from_clause",
@@ -1642,21 +1704,22 @@
       ],
       "artifact_digest": "246f19fdc684a7785eaf548fe3242fb3576fb1d7a84d925664234061ab8498f9",
       "wrapper_state": "passed",
+      "wasm_executed": true,
       "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "message_count": 0,
-          "events": [
-            {
-              "index": 1,
-              "kind": "result_set"
-            }
-          ],
+          "status": 0,
+          "case": "schema-based SELECT star",
           "row_counts": [
             2
           ],
-          "case": "schema-based SELECT star",
-          "status": 0
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -1668,9 +1731,21 @@
       "license": "MIT; see per-file notices",
       "sql_sha256": "ff4bfc02630f3f6e3a0935defa4789f67c36c1b9daac39206ac99bbe3e32a7ee",
       "parsed": true,
-      "compiled": false,
+      "compiled": true,
       "executed_on_ase": false,
-      "executed_on_gridgain": false,
+      "executed_on_gridgain": true,
+      "adaptation": "GG-9-WASM-Sybase/sql/metadata/sp_count.sql",
+      "adaptation_kind": "metadata",
+      "adaptation_sha256": "bc6b04629bbe657e3f2aa90ba268865369b3f5a21ccaf61a4841d3d2a53fee22",
+      "original_capabilities": [
+        "ASE catalog sysindexes",
+        "ASE catalog sysobjects",
+        "ASE function data_pages",
+        "ASE function db_id",
+        "ASE function object_name",
+        "ASE function row_count",
+        "ASE session variable @@pagesize"
+      ],
       "ast_kinds": [
         "add",
         "alias",
@@ -1718,22 +1793,121 @@
         "variable_decl",
         "where_clause"
       ],
-      "capabilities": [
-        "ASE catalog sysindexes",
-        "ASE catalog sysobjects",
-        "ASE function data_pages",
-        "ASE function db_id",
-        "ASE function object_name",
-        "ASE function row_count",
-        "ASE session variable @@pagesize"
+      "procedures": [
+        "sp_#count"
       ],
-      "diagnostic": "Requires unavailable ASE services: ASE catalog sysindexes, ASE catalog sysobjects, ASE function data_pages, ASE function db_id, ASE function object_name, ASE function row_count, ASE session variable @@pagesize",
-      "wrapper_state": "blocked",
-      "wrapper_rejection_verified": true,
+      "artifact_digest": "36e76a70077a9737010629ab5664af7d7388877939e9b212a94aab675f7824f2",
+      "wrapper_state": "adapted",
+      "wasm_executed": true,
+      "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "expected_failure": "Requires unavailable ASE services",
-          "case": "ASE service rejection"
+          "status": 0,
+          "case": "exact populated/empty counts and NULL sizes (direct name)",
+          "row_counts": [
+            3
+          ],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            },
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 0,
+          "case": "schema-isolated counts",
+          "row_counts": [
+            1
+          ],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            },
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 0,
+          "case": "quote metadata identifiers for COUNT",
+          "row_counts": [
+            1
+          ],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            },
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 0,
+          "case": "fresh count after thin-client write",
+          "row_counts": [
+            1
+          ],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            },
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 0,
+          "case": "empty table filter",
+          "row_counts": [
+            0
+          ],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            },
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 0,
+          "case": "default schema enumeration excludes work tables",
+          "row_counts": [
+            20
+          ],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            },
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 1
         }
       ]
     },
@@ -1745,9 +1919,17 @@
       "license": "MIT; see per-file notices",
       "sql_sha256": "5cde633aa1208128c45b8050d51e863409358d4af6c74531d283a9a4310380fd",
       "parsed": true,
-      "compiled": false,
+      "compiled": true,
       "executed_on_ase": false,
-      "executed_on_gridgain": false,
+      "executed_on_gridgain": true,
+      "adaptation": "GG-9-WASM-Sybase/sql/metadata/sp_ls.sql",
+      "adaptation_kind": "metadata",
+      "adaptation_sha256": "10f24f2a49317f3a2aaf272d2f8c5ab3131dcfd2ffcc9880f29004ba31dc3460",
+      "original_capabilities": [
+        "ASE catalog sybsystemprocs.sysobjects",
+        "ASE catalog sysobjects",
+        "ASE function user_name"
+      ],
       "ast_kinds": [
         "add",
         "batch",
@@ -1791,18 +1973,155 @@
         "type_args",
         "where_clause"
       ],
-      "capabilities": [
-        "ASE catalog sybsystemprocs.sysobjects",
-        "ASE catalog sysobjects",
-        "ASE function user_name"
+      "procedures": [
+        "sp_#ls"
       ],
-      "diagnostic": "Requires unavailable ASE services: ASE catalog sybsystemprocs.sysobjects, ASE catalog sysobjects, ASE function user_name",
-      "wrapper_state": "blocked",
-      "wrapper_rejection_verified": true,
+      "artifact_digest": "a8e66d28ceecc49797b1ba19eb47b9ebdbc1cbeca789b920e497e70035ec79c1",
+      "wrapper_state": "adapted",
+      "wasm_executed": true,
+      "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "expected_failure": "Requires unavailable ASE services",
-          "case": "ASE service rejection"
+          "status": 0,
+          "case": "table substring filtering (direct name)",
+          "row_counts": [
+            3
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
+          "case": "table type and schema filter",
+          "row_counts": [
+            1
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
+          "case": "GridGain system views",
+          "row_counts": [
+            23
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 1,
+          "case": "unsupported category D",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 1,
+          "case": "unsupported category P",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 1,
+          "case": "unsupported category TR",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 1,
+          "case": "unsupported category V",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 1,
+          "case": "unsupported category R",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 1,
+          "case": "unsupported category SP",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 0,
+          "case": "object filter stays data",
+          "row_counts": [
+            0
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
+          "case": "default object pattern",
+          "row_counts": [
+            20
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
         }
       ]
     },
@@ -1817,6 +2136,18 @@
       "compiled": false,
       "executed_on_ase": false,
       "executed_on_gridgain": false,
+      "original_capabilities": [
+        "ASE catalog master.spt_values",
+        "ASE catalog master.syslocks",
+        "ASE catalog master.syslogins",
+        "ASE catalog master.sysprocesses",
+        "ASE catalog master.systransactions",
+        "ASE function db_name",
+        "ASE function object_name",
+        "ASE function suser_name",
+        "ASE session variable @@error",
+        "ASE session variable @@spid"
+      ],
       "ast_kinds": [
         "alias",
         "arithmetic_option",
@@ -1879,11 +2210,12 @@
       ],
       "diagnostic": "Requires unavailable ASE services: ASE catalog master.spt_values, ASE catalog master.syslocks, ASE catalog master.syslogins, ASE catalog master.sysprocesses, ASE catalog master.systransactions, ASE function db_name, ASE function object_name, ASE function suser_name, ASE session variable @@error, ASE session variable @@spid",
       "wrapper_state": "blocked",
+      "wasm_executed": false,
       "wrapper_rejection_verified": true,
       "wrapper_checks": [
         {
-          "expected_failure": "Requires unavailable ASE services",
-          "case": "ASE service rejection"
+          "case": "ASE service rejection",
+          "expected_failure": "Requires unavailable ASE services"
         }
       ]
     },
@@ -1898,6 +2230,10 @@
       "compiled": false,
       "executed_on_ase": false,
       "executed_on_gridgain": false,
+      "original_capabilities": [
+        "ASE function db_id",
+        "ASE session variable @@version"
+      ],
       "ast_kinds": [
         "add",
         "batch",
@@ -1955,11 +2291,12 @@
       ],
       "diagnostic": "Requires unavailable ASE services: ASE function db_id, ASE session variable @@version",
       "wrapper_state": "blocked",
+      "wasm_executed": false,
       "wrapper_rejection_verified": true,
       "wrapper_checks": [
         {
-          "expected_failure": "Requires unavailable ASE services",
-          "case": "ASE service rejection"
+          "case": "ASE service rejection",
+          "expected_failure": "Requires unavailable ASE services"
         }
       ]
     },
@@ -1971,9 +2308,16 @@
       "license": "MIT; see per-file notices",
       "sql_sha256": "113525f14525720120bb4718d79d3409d464d23f81355a19b7e4fddc85e6dfbf",
       "parsed": true,
-      "compiled": false,
+      "compiled": true,
       "executed_on_ase": false,
-      "executed_on_gridgain": false,
+      "executed_on_gridgain": true,
+      "adaptation": "GG-9-WASM-Sybase/sql/metadata/sp_select.sql",
+      "adaptation_kind": "metadata",
+      "adaptation_sha256": "d99be867c0ac60345897e21434a1f83fd246bce2e792e06a97ade4491113ff38",
+      "original_capabilities": [
+        "ASE catalog syscolumns",
+        "ASE function object_id"
+      ],
       "ast_kinds": [
         "add",
         "batch",
@@ -2026,17 +2370,117 @@
         "where_clause",
         "while_statement"
       ],
-      "capabilities": [
-        "ASE catalog syscolumns",
-        "ASE function object_id"
+      "procedures": [
+        "sp_#select"
       ],
-      "diagnostic": "Requires unavailable ASE services: ASE catalog syscolumns, ASE function object_id",
-      "wrapper_state": "blocked",
-      "wrapper_rejection_verified": true,
+      "artifact_digest": "819e9d7b2319204a2f0eaa9ece290d9076a99520970b226366c1f5d3fd10dba4",
+      "wrapper_state": "adapted",
+      "wasm_executed": true,
+      "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "expected_failure": "Requires unavailable ASE services",
-          "case": "ASE service rejection"
+          "status": 0,
+          "case": "alphabetical SELECT command (direct name)",
+          "row_counts": [
+            5
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
+          "case": "single-column command",
+          "row_counts": [
+            3
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
+          "case": "schema-qualified command",
+          "row_counts": [
+            4
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 0,
+          "case": "quoted table and reserved/quoted columns",
+          "row_counts": [
+            5
+          ],
+          "events": [
+            {
+              "kind": "result_set",
+              "index": 1
+            }
+          ],
+          "message_count": 0
+        },
+        {
+          "status": 1,
+          "case": "missing/literal name DOES_NOT_EXIST",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 1,
+          "case": "missing/literal name '; DROP TABLE META_TARGET;--",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 1,
+          "case": "missing/literal name PUBLIC.META_TARGET",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 1,
+          "case": "NULL table name",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
         }
       ]
     },
@@ -2051,6 +2495,13 @@
       "compiled": false,
       "executed_on_ase": false,
       "executed_on_gridgain": false,
+      "original_capabilities": [
+        "ASE catalog master.syslogins",
+        "ASE catalog master.sysprocesses",
+        "ASE function db_name",
+        "ASE function proc_role",
+        "ASE function suser_name"
+      ],
       "ast_kinds": [
         "add",
         "batch",
@@ -2115,20 +2566,20 @@
         "while_statement"
       ],
       "capabilities": [
-        "ASE DBCC",
         "ASE catalog master.syslogins",
         "ASE catalog master.sysprocesses",
         "ASE function db_name",
         "ASE function proc_role",
         "ASE function suser_name"
       ],
-      "diagnostic": "Requires unavailable ASE services: ASE DBCC, ASE catalog master.syslogins, ASE catalog master.sysprocesses, ASE function db_name, ASE function proc_role, ASE function suser_name",
+      "diagnostic": "Requires unavailable ASE services: ASE catalog master.syslogins, ASE catalog master.sysprocesses, ASE function db_name, ASE function proc_role, ASE function suser_name",
       "wrapper_state": "blocked",
+      "wasm_executed": false,
       "wrapper_rejection_verified": true,
       "wrapper_checks": [
         {
-          "expected_failure": "Requires unavailable ASE services",
-          "case": "ASE service rejection"
+          "case": "ASE service rejection",
+          "expected_failure": "Requires unavailable ASE services"
         }
       ]
     },
@@ -2140,9 +2591,29 @@
       "license": "MIT; see per-file notices",
       "sql_sha256": "2484538a494a2d6876c0728332825bc29eb847f20f358612a2a0ebdea0833175",
       "parsed": true,
-      "compiled": false,
+      "compiled": true,
       "executed_on_ase": false,
       "executed_on_gridgain": false,
+      "adaptation": "GG-9-WASM-Sybase/sql/metadata/sp_thresholdaction.sql",
+      "adaptation_kind": "mock",
+      "adaptation_sha256": "4c6b92585aa9e720c48595147037a1ad96e88512a55c7dbc14caac94d6736508",
+      "original_capabilities": [
+        "ASE catalog master.sysdatabases",
+        "ASE catalog master.syslogshold",
+        "ASE catalog master.sysprocesses",
+        "ASE catalog master.syssegments",
+        "ASE catalog master.systransactions",
+        "ASE database/log DUMP",
+        "ASE function db_id",
+        "ASE function lct_admin",
+        "ASE function loginfo",
+        "ASE function object_id",
+        "ASE function reserved_pages",
+        "ASE session variable @@error",
+        "ASE session variable @@pagesize",
+        "ASE session variable @@thresh_hysteresis",
+        "dynamic EXEC"
+      ],
       "ast_kinds": [
         "add",
         "alias",
@@ -2206,30 +2677,37 @@
         "variable_decl",
         "where_clause"
       ],
-      "capabilities": [
-        "ASE catalog master.sysdatabases",
-        "ASE catalog master.syslogshold",
-        "ASE catalog master.sysprocesses",
-        "ASE catalog master.syssegments",
-        "ASE catalog master.systransactions",
-        "ASE database/log DUMP",
-        "ASE function db_id",
-        "ASE function lct_admin",
-        "ASE function loginfo",
-        "ASE function object_id",
-        "ASE function reserved_pages",
-        "ASE session variable @@error",
-        "ASE session variable @@pagesize",
-        "ASE session variable @@thresh_hysteresis",
-        "dynamic EXEC"
+      "procedures": [
+        "sp_thresholdaction"
       ],
-      "diagnostic": "Requires unavailable ASE services: ASE catalog master.sysdatabases, ASE catalog master.syslogshold, ASE catalog master.sysprocesses, ASE catalog master.syssegments, ASE catalog master.systransactions, ASE database/log DUMP, ASE function db_id, ASE function lct_admin, ASE function loginfo, ASE function object_id, ASE function reserved_pages, ASE session variable @@error, ASE session variable @@pagesize, ASE session variable @@thresh_hysteresis, dynamic EXEC",
-      "wrapper_state": "blocked",
-      "wrapper_rejection_verified": true,
+      "artifact_digest": "a8aafacc74e02be9ce20c1a683911383dfe64afb2e0265751ca706b7880d859f",
+      "wrapper_state": "mocked",
+      "wasm_executed": true,
+      "wrapper_rejection_verified": false,
       "wrapper_checks": [
         {
-          "expected_failure": "Requires unavailable ASE services",
-          "case": "ASE service rejection"
+          "status": 0,
+          "case": "mock threshold status 0 (direct name)",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
+        },
+        {
+          "status": 0,
+          "case": "mock threshold status 1 (direct name)",
+          "row_counts": [],
+          "events": [
+            {
+              "kind": "message",
+              "index": 1
+            }
+          ],
+          "message_count": 1
         }
       ]
     }

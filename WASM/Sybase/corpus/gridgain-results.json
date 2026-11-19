@@ -1,720 +1,995 @@
 {
-  "scope" : "Java wrapper execution on GridGain; not an ASE equivalence test",
-  "blocked" : 7,
-  "failed" : 0,
   "passed" : 30,
+  "adapted" : 3,
+  "scope" : "Java wrapper execution: originals, explicit metadata ports and explicit mocks; not an ASE equivalence test",
+  "mocked" : 1,
   "fixtures" : {
     "DataAction_AseDataAdapterTests_47_765a983d" : {
       "procedure" : "AseDataAdapterTests_Proc1",
       "source_sha256" : "cd813b3d60c0526779950d391fc749cc30f237ae96d1bd4e2fd6c7d07f140ed4",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "28007a374264b1ea719a1988643870c1325e76607871e711662d8ee7ed143f89",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 1 ],
+        "status" : 0,
         "case" : "all parameter families",
-        "status" : 0
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
       } ]
     },
     "DataAction_AseDataReaderQuerySequenceTests_35_f47d6791" : {
       "procedure" : "Test_Select",
       "source_sha256" : "bd8689a92df959ef44af717b72ee6e2c524c9ab024f51177e8ee8f54d6be0e82",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "30b66bc94cced9c6784f6c079f12207929096d5acae8f2e311316ed40abaa7f5",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 1 ],
+        "status" : 0,
         "case" : "statement sequence",
-        "status" : 0
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
       } ]
     },
     "DataAction_AseDataReaderQuerySequenceTests_36_96787bf8" : {
       "procedure" : "Test_Insert",
       "source_sha256" : "8458ed81574699efe629aef7e76f7ccaafa57c566eb9db0a8a19f15baa8791c3",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "1ceca4f968a40cedfbc1e7c3f63220a20d9a0978696e5c5ecd7185519827f64c",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "statement sequence",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_AseDataReaderQuerySequenceTests_37_76bd3444" : {
       "procedure" : "Test_Delete",
       "source_sha256" : "0a5931fb9a8af5b42887aa02704ca454bc593ae7af3e6312d8c09bffe593a761",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "382cb7747fa76b39b46f9d8c04b00e73b5c1b385e3aebff3531006a6ed6a35ef",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "statement sequence",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_AseDataReaderQuerySequenceTests_38_46ae40c9" : {
       "procedure" : "Test_Update",
       "source_sha256" : "89c1826e180efe7301e87b9ff66745b8d85664a45de6dc485de30ea6b73d2b9d",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "fb155a8b877c4acd03fc3893f4f7602578efbfbd5a7ef9e5b47af797f4675d00",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "statement sequence",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_AseDataReaderQuerySequenceTests_39_34b78f0a" : {
       "procedure" : "Test_Select_Insert",
       "source_sha256" : "0e263dedce8b6be501f6156ed640adb46d35890ec53666c3211686046b59dd24",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "f13599d8063fd568b1c3bf7a1e8adf4fce9d09898f0a6729b8c001ae75c0652e",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 1 ],
+        "status" : 0,
         "case" : "statement sequence",
-        "status" : 0
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
       } ]
     },
     "DataAction_AseDataReaderQuerySequenceTests_40_b1cbe9dc" : {
       "procedure" : "Test_Insert_Select",
       "source_sha256" : "ed32aa078f3d22851a1ff25d421443d2b76dfb1ed2f82630a8d93967ec95cf3b",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "2432dd7996368add020c9a12c63dcd875831cdd19343070a744c0b42f7f03438",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 1 ],
+        "status" : 0,
         "case" : "statement sequence",
-        "status" : 0
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
       } ]
     },
     "DataAction_AseDataReaderQuerySequenceTests_41_12515b99" : {
       "procedure" : "Test_Insert_Delete",
       "source_sha256" : "d3729ca6094b34af26bce8114e22f336ce08e270379e6510cfa6fa706574ddd6",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "2e0ca32823e45a4c2d70f12041d6d9d5f1c9222b7c722f7e9640273c3ad64b69",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "statement sequence",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_EchoProcedureTests_18_20d8203b" : {
       "procedure" : "sp_test_echo",
       "source_sha256" : "3a4df5eb70b9bb27d7750993c453a7f8ae56196f41254e7077faed9815f6f541",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "f76279af8ffca2ee976179f2aab1d0ab2bd7db9b09462b342ca287653e52334e",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        }, {
-          "index" : 2,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 1, 1 ],
+        "status" : -17,
         "case" : "signed status and two result sets",
-        "status" : -17
+        "row_counts" : [ 1, 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        }, {
+          "kind" : "result_set",
+          "index" : 2
+        } ],
+        "message_count" : 0
       } ]
     },
     "DataAction_EchoProcedureTests_33_7b9d7a0e" : {
       "procedure" : "sp_test_echo_char",
       "source_sha256" : "2e28576938961044192fc5cc9ed73d731b0357a7be010e14d1cecde561373adc",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "2fb35b2f9f5a7ce8d9edbbae71112ba53eab62954e4664e9956b6d7d944d6c23",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "CHAR output",
-        "status" : 0
-      }, {
-        "message_count" : 0,
-        "events" : [ ],
         "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
         "case" : "empty CHAR",
-        "status" : 0
-      }, {
-        "message_count" : 0,
-        "events" : [ ],
         "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
         "case" : "NULL output",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_EchoProcedureTests_44_a309335c" : {
       "procedure" : "sp_test_echo_string",
       "source_sha256" : "5cbcb6d7a3b97b4faa7fd85482e4c4e8124f5f79d15a2f7161039b86e92dea10",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "614bc625a9290511a61b8115032e1cade445d35f0f67891eaee7b65bc82935bf",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "fixed CHAR padding",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_EchoProcedureTests_55_e0a40847" : {
       "procedure" : "sp_test_echo_binary",
       "source_sha256" : "a35c8f464195d519f3a4a44cbf7c3cef8ef1738ee0415f0126842a2ac115e770",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "fb22344fa42f8558d643d985652877b1b0d7342c9330e4455be58c3ea5a66258",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "fixed binary padding",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_LargeResultSetTests_19_f325282f" : {
       "procedure" : "large-results",
       "source_sha256" : "a20f709a1021ac9efd2b803ef7028ac7d370cb8c3ef1972fc8ef7b94941d9d04",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "7737631020f592426f522613abc78637121557df0e600f4bdf0cdeba846223f2",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 1000 ],
+        "status" : 0,
         "case" : "temporary table and 1000 rows",
-        "status" : 0
-      }, {
-        "message_count" : 0,
+        "row_counts" : [ 1000 ],
         "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
+          "kind" : "result_set",
+          "index" : 1
         } ],
-        "row_counts" : [ 10000 ],
-        "case" : "cross join and 10000 rows",
-        "status" : 0
+        "message_count" : 0
       }, {
-        "expected_failure" : "Buffered row limit exceeded",
-        "case" : "bounded large results"
+        "status" : 0,
+        "case" : "cross join and 10000 rows",
+        "row_counts" : [ 10000 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "case" : "bounded large results",
+        "expected_failure" : "Buffered row limit exceeded"
       } ]
     },
     "DataAction_MessageOrderTests_14_b2687039" : {
       "procedure" : "sp_test_message_order",
       "source_sha256" : "71be1cacf639c167cd059d6850eeaa8bfbba953092ce33ed85287cb4af99c7e4",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "8b382d12f204f826e60c392ade579c28fc88bd8dbc7de8aada46b9baa857ce43",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 5,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "message"
-        }, {
-          "index" : 2,
-          "kind" : "message"
-        }, {
-          "index" : 1,
-          "kind" : "result_set"
-        }, {
-          "index" : 3,
-          "kind" : "message"
-        }, {
-          "index" : 2,
-          "kind" : "result_set"
-        }, {
-          "index" : 4,
-          "kind" : "message"
-        }, {
-          "index" : 3,
-          "kind" : "result_set"
-        }, {
-          "index" : 5,
-          "kind" : "message"
-        } ],
-        "row_counts" : [ 1, 0, 1 ],
+        "status" : 0,
         "case" : "interleaved PRINT/results",
-        "status" : 0
-      }, {
-        "message_count" : 5,
+        "row_counts" : [ 1, 0, 1 ],
         "events" : [ {
-          "index" : 1,
-          "kind" : "message"
+          "kind" : "message",
+          "index" : 1
         }, {
-          "index" : 2,
-          "kind" : "message"
+          "kind" : "message",
+          "index" : 2
         }, {
-          "index" : 3,
-          "kind" : "message"
+          "kind" : "result_set",
+          "index" : 1
         }, {
-          "index" : 4,
-          "kind" : "message"
+          "kind" : "message",
+          "index" : 3
         }, {
-          "index" : 5,
-          "kind" : "message"
+          "kind" : "result_set",
+          "index" : 2
+        }, {
+          "kind" : "message",
+          "index" : 4
+        }, {
+          "kind" : "result_set",
+          "index" : 3
+        }, {
+          "kind" : "message",
+          "index" : 5
         } ],
-        "row_counts" : [ ],
+        "message_count" : 5
+      }, {
+        "status" : 0,
         "case" : "skipped result sets",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "message",
+          "index" : 2
+        }, {
+          "kind" : "message",
+          "index" : 3
+        }, {
+          "kind" : "message",
+          "index" : 4
+        }, {
+          "kind" : "message",
+          "index" : 5
+        } ],
+        "message_count" : 5
       } ]
     },
     "DataAction_MultiTypeEchoProcedureTests_13_c428715a" : {
       "procedure" : "sp_multitype_output",
       "source_sha256" : "d3d7d89d9970e349d29e0cbd98cba818781a621a69da30acde54d0e0bdfe47cf",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "6aaadbcb96e00144269f69b3e411babf02c771f747eac9c205717502319d554d",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "character and binary outputs",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_NamedParamsTests_36_34544be2" : {
       "procedure" : "EchoParameter",
       "source_sha256" : "db2ce54cb5cc23e15a1ca854e9526f61a0713f84a6d893d274921c0b4dc02b48",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "9c2299b75c76aa0d4c79362b7d516d27fae1ef4cce75103607c62f5ac66cd53d",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 1 ],
+        "status" : 0,
         "case" : "named inputs and string plus",
-        "status" : 0
-      }, {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
         "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
         "case" : "NULL concatenation",
-        "status" : 0
-      }, {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
         "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
         "case" : "SQL injection stays data",
-        "status" : 0
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
       } ]
     },
     "DataAction_NamedParamsTests_83_34544be2" : {
       "procedure" : "EchoParameter",
       "source_sha256" : "54c6b8781e5f5065528bfdd9e0e5f9aeda0459abdbc56349434a1f7c4453056a",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "9c2299b75c76aa0d4c79362b7d516d27fae1ef4cce75103607c62f5ac66cd53d",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 1 ],
+        "status" : 0,
         "case" : "named inputs and string plus",
-        "status" : 0
-      }, {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
         "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
         "case" : "NULL concatenation",
-        "status" : 0
-      }, {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
         "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
         "case" : "SQL injection stays data",
-        "status" : 0
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
       } ]
     },
     "DataAction_OutboundParamProcedureTests_12_1833f326" : {
       "procedure" : "sp_test_173",
       "source_sha256" : "00091abde6be7a7b2e4e20acd22956a5c86c4970083b258de7c3b4f7247c25ec",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "824d7e45b672f7f91af5bfcce183ae011eac13eba497321e8e82c460771d3c34",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "exact SET decimal output",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_RaiserrorProcedureTests_11_e321a018" : {
       "procedure" : "sp_test_raiseerror",
       "source_sha256" : "c28f4bc7e6e7e8e1df2d112eade7d618fa662a63322a3e76bbff605068bbde0d",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "77d7896b70ba2fce70cb80d384e89e6f0903d0862651ade8d3a2e7ee6b5dd703",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 2,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "message"
-        }, {
-          "index" : 2,
-          "kind" : "message"
-        } ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "RAISERROR and NULL return contract",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "message",
+          "index" : 2
+        } ],
+        "message_count" : 2
       } ]
     },
     "DataAction_SimpleProcedureTests_11_9db94362" : {
       "procedure" : "sp_test_simple",
       "source_sha256" : "e175400be4e00bf38f2b9380905c92e3881d8e9a0908f63d1351520511df1c09",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "a96f87c8916e6527d8b97767ccd1ecaa27a48bb53b749b3625beab0aac3e8425",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "bare RETURN",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_StreamingTests_21_46370f02" : {
       "procedure" : "stream-messages",
       "source_sha256" : "3a6f84f0585ca2848f03b57a55091da8bf82ee20a3ed09c027393f62056b44cd",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "c10384d7f365c1a8a7e6907acd9a5b49906f7cb5ea263c726f39de73640c884b",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 3,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "message"
-        }, {
-          "index" : 2,
-          "kind" : "message"
-        }, {
-          "index" : 3,
-          "kind" : "message"
-        } ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "buffered PRINT loop",
-        "status" : 0
-      }, {
-        "message_count" : 1,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "message"
-        } ],
         "row_counts" : [ ],
-        "case" : "actual WAITFOR delay",
-        "status" : 0
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "message",
+          "index" : 2
+        }, {
+          "kind" : "message",
+          "index" : 3
+        } ],
+        "message_count" : 3
       }, {
-        "expected_failure" : "WAITFOR budget exceeded",
-        "case" : "bounded WAITFOR"
+        "status" : 0,
+        "case" : "actual WAITFOR delay",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "case" : "bounded WAITFOR",
+        "expected_failure" : "WAITFOR budget exceeded"
       } ]
     },
     "DataAction_TextAllocatorProcedureTests_13_fea1182d" : {
       "procedure" : "sp_test_true_echo_text_locator",
       "source_sha256" : "b7bf92cf5fea80d921a5e476af4e208f1495dfdc25de9e65fdd19ad0ef9dd3b1",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "1de7f5af3135560b46fb9811a63cac432218bd325cd47039453b33885b594af1",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "materialized locator input",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       }, {
-        "expected_failure" : "text_locator requires",
-        "case" : "reject raw ASE locator token"
+        "case" : "reject raw ASE locator token",
+        "expected_failure" : "text_locator requires"
       } ]
     },
     "DataAction_TextEchoProcedureTests_16_fb485e32" : {
       "procedure" : "sp_test_echo_text",
       "source_sha256" : "07f3b8c12f0838c55a7ae3f6203db330a5b02517b854299c0318dd026aabe210",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "359d70b40f5a724284eb9954ecfe13b98979d77db6d376a5840c1d0a881b0488",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "text above 64 KiB",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_TextEchoProcedureTests_31_bd2dd4d5" : {
       "procedure" : "sp_test_echo_text_locator",
       "source_sha256" : "3f69c74cf02d42e6697ef96be373b314a065e685d35a4b9a82928394d6a8b820",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "199d8cbfb403d5f007e3c85446408e39e6c6bb99cac4798ecc19b32879bc8935",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "materialized locator input",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       }, {
-        "expected_failure" : "text_locator requires",
-        "case" : "reject raw ASE locator token"
+        "case" : "reject raw ASE locator token",
+        "expected_failure" : "text_locator requires"
       } ]
     },
     "DataAction_TextEchoProcedureTests_41_5536afcc" : {
       "procedure" : "sp_test_true_echo_text_locator",
       "source_sha256" : "d537d422b6027098bb5bbc161778a21a192879688b3b1ee6ecbb59f9fb5ba214",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "743e2fdbcc4108daf8e44d5eded2688f1ddf90abfbd34093a6a13329e7a6fee8",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "materialized locator input",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       }, {
-        "expected_failure" : "text_locator requires",
-        "case" : "reject raw ASE locator token"
+        "case" : "reject raw ASE locator token",
+        "expected_failure" : "text_locator requires"
       } ]
     },
     "DataAction_TextEchoProcedureTests_57_a5954d15" : {
       "procedure" : "sp_test_text_type_coloumn",
       "source_sha256" : "79844833878af21ef8cf60617201379ef804f356ec775f24161b040f6ebcdb9c",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "bfaa917a69a2c2f7eb7f7348894822b0b0afdbd8d756358dd6711065a76d8c8d",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "text/locator parameters",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_TextEchoProcedureTests_74_cdbbaa7a" : {
       "procedure" : "sp_just_test_echo_text",
       "source_sha256" : "811255b736ca5786aef2ae3d5a7423fcd9a7d075391b20b54da350e517c50fc5",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "361f7849457e6fea2f0f6432c28b6797e1cbfa4014a20e32b09ecc8291a4c835",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "text input",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "DataAction_TextEchoProcedureTests_85_ca314899" : {
       "procedure" : "sp_insert_test_echo_text",
       "source_sha256" : "1e3f89a6eec1b98c6cb97529085b891b71b8509b7080310e415f91bd046fe51e",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "749c2334f8f10bd7f504d788de90152f9f271a79b92106cde741c2d98d388894",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "text INSERT into GridGain",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "Hruodland_sp_#count_9_ff4bfc02" : {
       "procedure" : "sp_#count",
       "source_sha256" : "8c28a42f33eba8ee1394e10cd94326b6cb7086c4b0782e13838705d52e23a5ea",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
-      "artifact_digest" : "",
-      "state" : "blocked",
-      "capabilities" : [ "ASE catalog sysindexes", "ASE catalog sysobjects", "ASE function data_pages", "ASE function db_id", "ASE function object_name", "ASE function row_count", "ASE session variable @@pagesize" ],
-      "executed_wasm" : false,
+      "adaptation" : "sql/metadata/sp_count.sql",
+      "adaptation_kind" : "metadata",
+      "adaptation_sha256" : "bc6b04629bbe657e3f2aa90ba268865369b3f5a21ccaf61a4841d3d2a53fee22",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
+      "artifact_digest" : "36e76a70077a9737010629ab5664af7d7388877939e9b212a94aab675f7824f2",
+      "state" : "adapted",
+      "executed_wasm" : true,
       "checks" : [ {
-        "expected_failure" : "Requires unavailable ASE services",
-        "case" : "ASE service rejection"
+        "status" : 0,
+        "case" : "exact populated/empty counts and NULL sizes (direct name)",
+        "row_counts" : [ 3 ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 0,
+        "case" : "schema-isolated counts",
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 0,
+        "case" : "quote metadata identifiers for COUNT",
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 0,
+        "case" : "fresh count after thin-client write",
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 0,
+        "case" : "empty table filter",
+        "row_counts" : [ 0 ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 0,
+        "case" : "default schema enumeration excludes work tables",
+        "row_counts" : [ 20 ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        }, {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 1
       } ]
     },
     "Hruodland_sp_#ls_9_5cde633a" : {
       "procedure" : "sp_#ls",
       "source_sha256" : "14579d43841185442fd2df9fcbff60936246b1fbfa5491b619b79b1a68057053",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
-      "artifact_digest" : "",
-      "state" : "blocked",
-      "capabilities" : [ "ASE catalog sybsystemprocs.sysobjects", "ASE catalog sysobjects", "ASE function user_name" ],
-      "executed_wasm" : false,
+      "adaptation" : "sql/metadata/sp_ls.sql",
+      "adaptation_kind" : "metadata",
+      "adaptation_sha256" : "10f24f2a49317f3a2aaf272d2f8c5ab3131dcfd2ffcc9880f29004ba31dc3460",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
+      "artifact_digest" : "a8e66d28ceecc49797b1ba19eb47b9ebdbc1cbeca789b920e497e70035ec79c1",
+      "state" : "adapted",
+      "executed_wasm" : true,
       "checks" : [ {
-        "expected_failure" : "Requires unavailable ASE services",
-        "case" : "ASE service rejection"
+        "status" : 0,
+        "case" : "table substring filtering (direct name)",
+        "row_counts" : [ 3 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
+        "case" : "table type and schema filter",
+        "row_counts" : [ 1 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
+        "case" : "GridGain system views",
+        "row_counts" : [ 23 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 1,
+        "case" : "unsupported category D",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 1,
+        "case" : "unsupported category P",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 1,
+        "case" : "unsupported category TR",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 1,
+        "case" : "unsupported category V",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 1,
+        "case" : "unsupported category R",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 1,
+        "case" : "unsupported category SP",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 0,
+        "case" : "object filter stays data",
+        "row_counts" : [ 0 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
+        "case" : "default object pattern",
+        "row_counts" : [ 20 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
       } ]
     },
     "Hruodland_sp_#ps_10_a4417bbb" : {
       "procedure" : "sp_#ps",
       "source_sha256" : "f2b9faad3f9a4c4bab9f6ca23414285a80b46a326c0f71a5735531b2e9c86e18",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "",
       "state" : "blocked",
       "capabilities" : [ "ASE catalog master.spt_values", "ASE catalog master.syslocks", "ASE catalog master.syslogins", "ASE catalog master.sysprocesses", "ASE catalog master.systransactions", "ASE function db_name", "ASE function object_name", "ASE function suser_name", "ASE session variable @@error", "ASE session variable @@spid" ],
       "executed_wasm" : false,
       "checks" : [ {
-        "expected_failure" : "Requires unavailable ASE services",
-        "case" : "ASE service rejection"
+        "case" : "ASE service rejection",
+        "expected_failure" : "Requires unavailable ASE services"
       } ]
     },
     "Hruodland_sp_#quickref_12_be0ecb2d" : {
       "procedure" : "sp_#quickref",
       "source_sha256" : "5c5945f7c2c97528697c9d79ed86924821f7022c9426e0d2850d5fae3ab01d41",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "",
       "state" : "blocked",
       "capabilities" : [ "ASE function db_id", "ASE session variable @@version" ],
       "executed_wasm" : false,
       "checks" : [ {
-        "expected_failure" : "Requires unavailable ASE services",
-        "case" : "ASE service rejection"
+        "case" : "ASE service rejection",
+        "expected_failure" : "Requires unavailable ASE services"
       } ]
     },
     "Hruodland_sp_#select_11_113525f1" : {
       "procedure" : "sp_#select",
       "source_sha256" : "a5b5ccdbd333ffcfee5f82e19c867846c47241205f80f4c87588b8ddaf9cb834",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
-      "artifact_digest" : "",
-      "state" : "blocked",
-      "capabilities" : [ "ASE catalog syscolumns", "ASE function object_id" ],
-      "executed_wasm" : false,
+      "adaptation" : "sql/metadata/sp_select.sql",
+      "adaptation_kind" : "metadata",
+      "adaptation_sha256" : "d99be867c0ac60345897e21434a1f83fd246bce2e792e06a97ade4491113ff38",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
+      "artifact_digest" : "819e9d7b2319204a2f0eaa9ece290d9076a99520970b226366c1f5d3fd10dba4",
+      "state" : "adapted",
+      "executed_wasm" : true,
       "checks" : [ {
-        "expected_failure" : "Requires unavailable ASE services",
-        "case" : "ASE service rejection"
+        "status" : 0,
+        "case" : "alphabetical SELECT command (direct name)",
+        "row_counts" : [ 5 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
+        "case" : "single-column command",
+        "row_counts" : [ 3 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
+        "case" : "schema-qualified command",
+        "row_counts" : [ 4 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 0,
+        "case" : "quoted table and reserved/quoted columns",
+        "row_counts" : [ 5 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
+      }, {
+        "status" : 1,
+        "case" : "missing/literal name DOES_NOT_EXIST",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 1,
+        "case" : "missing/literal name '; DROP TABLE META_TARGET;--",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 1,
+        "case" : "missing/literal name PUBLIC.META_TARGET",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 1,
+        "case" : "NULL table name",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
       } ]
     },
     "Hruodland_sp_#top_11_4c7ab53e" : {
       "procedure" : "sp_#top",
       "source_sha256" : "ba4d0b13ffddd2d3e8d7504b9d19c05f0890879c7cd90698e008d24a15768a5e",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "",
       "state" : "blocked",
-      "capabilities" : [ "ASE DBCC", "ASE catalog master.syslogins", "ASE catalog master.sysprocesses", "ASE function db_name", "ASE function proc_role", "ASE function suser_name" ],
+      "capabilities" : [ "ASE catalog master.syslogins", "ASE catalog master.sysprocesses", "ASE function db_name", "ASE function proc_role", "ASE function suser_name" ],
       "executed_wasm" : false,
       "checks" : [ {
-        "expected_failure" : "Requires unavailable ASE services",
-        "case" : "ASE service rejection"
+        "case" : "ASE service rejection",
+        "expected_failure" : "Requires unavailable ASE services"
       } ]
     },
     "Hruodland_sp_thresholdaction_9_2484538a" : {
       "procedure" : "sp_thresholdaction",
       "source_sha256" : "af88ca1d626a95a1c14fefaeff02b5c1c7b1fcf9efabc2d1e00b8e6602e583b1",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
-      "artifact_digest" : "",
-      "state" : "blocked",
-      "capabilities" : [ "ASE catalog master.sysdatabases", "ASE catalog master.syslogshold", "ASE catalog master.sysprocesses", "ASE catalog master.syssegments", "ASE catalog master.systransactions", "ASE database/log DUMP", "ASE function db_id", "ASE function lct_admin", "ASE function loginfo", "ASE function object_id", "ASE function reserved_pages", "ASE session variable @@error", "ASE session variable @@pagesize", "ASE session variable @@thresh_hysteresis", "dynamic EXEC" ],
-      "executed_wasm" : false,
+      "adaptation" : "sql/metadata/sp_thresholdaction.sql",
+      "adaptation_kind" : "mock",
+      "adaptation_sha256" : "4c6b92585aa9e720c48595147037a1ad96e88512a55c7dbc14caac94d6736508",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
+      "artifact_digest" : "a8aafacc74e02be9ce20c1a683911383dfe64afb2e0265751ca706b7880d859f",
+      "state" : "mocked",
+      "executed_wasm" : true,
       "checks" : [ {
-        "expected_failure" : "Requires unavailable ASE services",
-        "case" : "ASE service rejection"
+        "status" : 0,
+        "case" : "mock threshold status 0 (direct name)",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
+      }, {
+        "status" : 0,
+        "case" : "mock threshold status 1 (direct name)",
+        "row_counts" : [ ],
+        "events" : [ {
+          "kind" : "message",
+          "index" : 1
+        } ],
+        "message_count" : 1
       } ]
     },
     "linq2db_Sybase_258_6e9a3d17" : {
       "procedure" : "AddIssue792Record",
       "source_sha256" : "141718018c3f7b2de8a51b7ec47f7acc8c4e743281af449f5bbf6feb4d57f64b",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "cebce7bf16e01af450eb9428687cab6820596520f8f048e9f357c512461d36dd",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ ],
-        "row_counts" : [ ],
+        "status" : 0,
         "case" : "identity INSERT",
-        "status" : 0
+        "row_counts" : [ ],
+        "events" : [ ],
+        "message_count" : 0
       } ]
     },
     "linq2db_Sybase_264_5c58cc0c" : {
       "procedure" : "Person_SelectAll",
       "source_sha256" : "6b6bcc83ea019793a73b4a420dce4c924a757a18791dfbf69717c0aab6caee13",
-      "runtime_digest" : "d949aeb42d50b587569f1bc67f9d0bfaf6c1329d481a51b4508c0f9dcc33e087",
+      "runtime_digest" : "6687b7a2aa5a571f0c50dc215a16deda0347e1c430ec75034b7336affedc9c33",
       "artifact_digest" : "246f19fdc684a7785eaf548fe3242fb3576fb1d7a84d925664234061ab8498f9",
       "state" : "passed",
       "executed_wasm" : true,
       "checks" : [ {
-        "message_count" : 0,
-        "events" : [ {
-          "index" : 1,
-          "kind" : "result_set"
-        } ],
-        "row_counts" : [ 2 ],
+        "status" : 0,
         "case" : "schema-based SELECT star",
-        "status" : 0
+        "row_counts" : [ 2 ],
+        "events" : [ {
+          "kind" : "result_set",
+          "index" : 1
+        } ],
+        "message_count" : 0
       } ]
     }
-  }
+  },
+  "dbcc_mock" : {
+    "status" : 0,
+    "messages" : [ {
+      "message" : "Mocked success; no administrative action performed.",
+      "procedure" : "dbcc_noop",
+      "kind" : "mock",
+      "operation" : "DBCC CHECKDB"
+    }, {
+      "message" : "Mocked success; no administrative action performed.",
+      "procedure" : "dbcc_noop",
+      "kind" : "mock",
+      "operation" : "DBCC CHECKTABLE"
+    } ],
+    "sql_statements" : 0,
+    "data_unchanged" : true
+  },
+  "blocked" : 3,
+  "failed" : 0
 }

@@ -494,9 +494,9 @@ repository README).
 
 ## Run all 37 downloaded fixtures
 
-The pinned [corpus](../corpus/README.md) contains 37 procedure fixtures. **30 compile
-and execute through the Java wrapper; seven require ASE administration services and
-are rejected explicitly.** This is execution against GridGain, not an ASE parity
+The pinned [corpus](../corpus/README.md) contains 37 procedure fixtures. **30 original fixtures and three explicit metadata adaptations execute real
+GridGain operations. One threshold-action adapter is an explicit success mock;
+three fixtures remain rejected for unavailable ASE services.** This is execution against GridGain, not an ASE parity
 claim. The downloaded SQL bodies remain unchanged.
 
 ```sh
@@ -506,14 +506,15 @@ cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase/GG-9-WASM-Sybase
 
 This runs the inventory and six Customer 360 regressions, all 37 fixture requests,
 and persistent-data checks after a node restart. It creates isolated fixture data
-in GridGain's `aipersist` storage, not Java maps. Tracing defaults to off for this
-run because the large-result test returns about 40 MB of text. Enable `trace: true`
+in GridGain's `aipersist` storage, not Java maps. Bulk fixture tracing defaults to
+off because the large-result test returns about 40 MB of text; the focused
+metadata and DBCC mock checks enable tracing for their small responses. Enable `trace: true`
 on a small individual fixture to inspect its SQL and WASM assignments.
 
 Expected completion:
 
 ```text
-ALL CORPUS CHECKS PASSED (30 executed fixtures; 7 ASE-service rejections verified through the wrapper)
+ALL CORPUS CHECKS PASSED (30 original + 3 metadata adaptations + 1 mock; 3 ASE-service rejections; DBCC no-op verified)
 ALL COMPUTE CHECKS PASSED (Customer 360, corpus and persistent data after restart)
 ```
 
@@ -583,10 +584,10 @@ implement native ASE locator identity or transaction/query lifetime.
 
 ## Remaining corpus limitations
 
-- `sp_#count`, `sp_#ls`, `sp_#ps`, `sp_#quickref`, `sp_#select`, `sp_#top` and
-  `sp_thresholdaction` need ASE catalogs, physical page/process/lock counters, DBCC,
-  DUMP or other ASE services. The compiler lists these dependencies and the wrapper
-  rejects them before SQL execution. They need a separate administration port.
+- `sp_#ps`, `sp_#quickref` and `sp_#top` still require ASE process/lock catalogs,
+  documentation databases or session services. They are rejected before SQL.
+  Mocking DBCC does not supply the other dependencies of `sp_#top`. The three
+  metadata ports and the threshold-action mock are described below.
 - Results/messages are buffered, not TDS streaming. Limits are 10,000 rows per SQL
   result, 64 MiB cumulative accounted payload, 100,000 handles, 20,000 SQL callbacks,
   nesting depth 32 and 60 seconds cumulative WAITFOR. The payload budget is not a
@@ -607,3 +608,103 @@ implement native ASE locator identity or transaction/query lifetime.
 
 The complete per-fixture status and dependency diagnostics are in
 [`../corpus/COVERAGE.md`](../corpus/COVERAGE.md). GridGain product source is unchanged.
+
+## GridGain metadata adaptations and administration mocks
+
+These are explicit adaptations, not an ASE system-catalog emulation. Pinned
+upstream SQL and licenses remain unchanged. `prepare.py` selects the replacement
+sources below and records their paths, kinds and SHA-256 hashes in the corpus
+manifest. Their AST, WAT, WASM and bindings are generated in the corresponding
+fixture directories. Compiling the original ASE sources directly still reports
+unsupported dependencies.
+
+| Procedure / source | GridGain behavior | Difference from ASE |
+| --- | --- | --- |
+| [`sp_#count`](sql/metadata/sp_count.sql) | Enumerate `SYSTEM.TABLES`, then exact `COUNT(*)` for each selected table | No physical page accounting; `DATA_MB`, `INDEX_MB`, `TOTAL_MB` are NULL, with an explanatory message |
+| [`sp_#ls`](sql/metadata/sp_ls.sql) | List tables from `SYSTEM.TABLES`; category `S` lists `SYSTEM.SYSTEM_VIEWS` | Full names, explicit schema, types `TABLE` / `SYSTEM_VIEW`; owner and creation date are NULL |
+| [`sp_#select`](sql/metadata/sp_select.sql) | Read `SYSTEM.TABLE_COLUMNS`; return alphabetically ordered, safely quoted SELECT lines | Explicit schema qualification, no truncation to 30 characters; unknown table returns status 1 and `Table is undefined.` |
+| [`sp_thresholdaction`](sql/metadata/sp_thresholdaction.sql) | Return status 0 and a message beginning `MOCK sp_thresholdaction:` | No dump, backup, log truncation, cleanup or threshold action occurs |
+| [`dbcc_noop`](sql/dbcc_noop.sql) / compiled DBCC statements | Record a `kind: mock` message and `MOCK_ADMIN` trace; continue WASM execution | DBCC command arguments are not evaluated; no SQL call or maintenance occurs |
+
+Metadata field names were checked against the local checkout and GridGain's
+[system-view reference](https://www.gridgain.com/docs/gridgain9/latest/administrators-guide/metrics/system-views).
+The runtime uses public SQL APIs; GridGain product code is unchanged.
+
+Use the existing Java compute descriptor with any of these requests:
+
+```json
+{"procedure":"sp_#count","parameters":{"schema":"PUBLIC","objname":"META%"},"trace":true}
+{"procedure":"sp_#ls","parameters":{"objname":"U","schema":"PUBLIC"},"trace":true}
+{"procedure":"sp_#ls","parameters":{"objname":"S"},"trace":true}
+{"procedure":"sp_#select","parameters":{"table":"META_TARGET","schema":"PUBLIC"},"trace":true}
+{"procedure":"sp_thresholdaction","parameters":{"dbname":"unused","segmentname":"logsegment","space_left":0,"status":1},"trace":true}
+{"procedure":"dbcc_noop","parameters":{"database":"unused"},"trace":true}
+```
+
+`schema` defaults to `PUBLIC`. Table/schema parameters use exact catalog spelling:
+ordinary unquoted names are uppercase, while a mixed-case or quote-containing name
+is passed as its literal name, without SQL identifier delimiters. Schema is a
+separate parameter: `PUBLIC.META_TARGET` is not split into two names. All predicate
+values are bound parameters. Generated identifiers escape embedded double quotes.
+
+`sp_#count`'s optional `objname` is a SQL LIKE pattern, default `%`. Row counts use
+exact SQL scans, not ASE's catalog estimates, so large tables may be expensive;
+use the filter to restrict work. Each count is independently transactional, not a
+single snapshot across the whole schema. Concurrent DDL may fail the call. Size
+NULL means unavailable, not zero. BIGINT row counts are JSON strings, for example:
+
+```json
+{"columns":["SCHEMA_NAME","TABLE_NAME","ROW_COUNT","DATA_MB","INDEX_MB","TOTAL_MB"],
+ "rows":[["PUBLIC","META_TARGET","3",null,null,null]]}
+```
+
+`sp_#ls` accepts `U` for all tables in the chosen schema and `S` for system views in
+`SYSTEM` (the schema parameter is ignored in this mode). Other values search table
+names using `%<objname>%`, retaining SQL LIKE wildcards and case-sensitive matching.
+ASE categories `D`, `P`, `TR`, `V`, `R`, `SP` return status 1 with an explanatory
+message and no result set. Empty matches return an empty result set with status 0.
+These catalogs do not provide ASE owner/creation-date semantics; those fields stay
+NULL. Table enumeration excludes the wrapper's reserved `WASM_TMP_` prefix; other
+real tables, including `id_seq`, are visible.
+
+`sp_#select` returns one `CMD` column, one SQL line per row. Joining rows with a
+newline produces executable SQL; the procedure itself does not execute that SQL.
+For the test table whose declared column order is Z, A, ID, it generates:
+
+```sql
+SELECT
+ "A"
+,"ID"
+,"Z"
+FROM "PUBLIC"."META_TARGET"
+```
+
+It reports actual GridGain columns, including any host-added columns, in alphabetic
+order. Missing names and NULL table input return status 1. Normal wrapper parameter
+type/length validation still applies to all adapters and mocks.
+
+The count adapter's cursor/loop, temporary result table, row-count variable and
+return execute as compiled WASM. The only added intrinsic is
+`SET @rows = GG_ROW_COUNT(@schema, @table)`, requiring string inputs and a BIGINT
+output. Its host callback verifies the bound names in `SYSTEM.TABLES`, issues
+`SELECT COUNT(*) FROM "schema"."table"`, and returns a typed value handle to WASM.
+The other metadata queries use ordinary generated SQL bindings. All callbacks
+participate in the existing SQL, payload and cancellation limits.
+
+DBCC mocking is an explicit policy of the typed GridGain compiler. It clears
+`@@rowcount`, records the mock, and continues; a procedure's later explicit RETURN
+still determines its final status. The bundled DBCC example returns 0 after two
+mock commands and reports `timing.sql_statements: 0`. This does not make raw DBCC
+valid in GridGain SQL or enable other ASE administration commands. The separate
+threshold-action replacement accepts the original four parameters but ignores
+their administrative meaning; its PRINT message uses one scalar SELECT callback.
+
+`run_corpus.sh` tests real populated/empty counts, a fresh write, default and
+schema-filtered listings, system views, unsupported categories, missing objects,
+single-column SELECT generation, and quoted/reserved/injection-shaped names.
+It executes the generated SELECT to check validity. It separately verifies zero
+DBCC SQL calls, explicit mock messages, successful threshold returns for both status
+values, and unchanged fixture rows. Existing application fixtures and persistence
+checks still run. Saved coverage separates **30 original executions, three metadata
+adaptations, one mock and three rejections**; the mock is not counted as a real
+GridGain procedure adaptation.

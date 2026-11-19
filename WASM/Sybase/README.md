@@ -24,8 +24,8 @@ provides upstream fixtures and a parser/compiler coverage report.
 
 ## Downloaded procedures on GridGain 9
 
-The [37-fixture corpus](corpus/README.md) now has **30 procedures compiled and
-executed through the Java wrapper**, plus seven explicitly rejected ASE
+The [37-fixture corpus](corpus/README.md) now has **30 original procedures and three metadata adaptations executed through the
+Java wrapper**, plus one explicit threshold-action mock and three rejected ASE
 administration procedures. The compiler adds SET, quoted names, string operations,
 temporary-table DDL, PRINT, bounded WAITFOR and materialized text-locator values.
 
@@ -37,8 +37,10 @@ cd /Users/oscar/Projects/MariaDB/sybase-cdc/WASM/Sybase/GG-9-WASM-Sybase
 This also runs Customer 360 regressions and verifies persistent GridGain data after
 restart. See the [per-fixture evidence](corpus/COVERAGE.md) and
 [wrapper limitations](GG-9-WASM-Sybase/README.md#remaining-corpus-limitations).
-Native ASE locator semantics, TDS streaming and ASE administration services remain
-unsupported; the corpus was not compared against ASE in this change.
+The [metadata ports and mocks](GG-9-WASM-Sybase/README.md#gridgain-metadata-adaptations-and-administration-mocks)
+use real GridGain table/column metadata. DBCC and `sp_thresholdaction` are explicit
+success no-ops. Native ASE locator semantics, TDS streaming and the remaining ASE
+services are unsupported; the corpus was not compared against ASE in this change.
 
 ## Run the inventory summary and read its results
 

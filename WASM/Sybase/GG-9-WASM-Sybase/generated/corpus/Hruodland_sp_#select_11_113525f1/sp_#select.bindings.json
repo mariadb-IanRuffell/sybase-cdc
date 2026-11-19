@@ -1,0 +1,20 @@
+{
+  "assign_0": "SELECT COUNT(*) FROM \"SYSTEM\".\"TABLES\" WHERE ((\"SCHEMA_NAME\" = CAST(? AS VARCHAR(128))) AND (\"TABLE_NAME\" = CAST(? AS VARCHAR(255))))",
+  "condition_1": "SELECT CASE WHEN (CAST(? AS INT) = 0) THEN 1 ELSE 0 END",
+  "print_2": "SELECT 'Table is undefined.'",
+  "create_temp_3": "CREATE TABLE __WASM_TEMP_0__ (__WASM_ID UUID DEFAULT RAND_UUID PRIMARY KEY, \"POSITION\" INT, \"CMD\" VARCHAR(1024))",
+  "insert_4": "INSERT INTO __WASM_TEMP_0__ (\"POSITION\", \"CMD\") VALUES (0, 'SELECT')",
+  "set_variable_5": "SELECT 1",
+  "open_cursor_6": "SELECT \"COLUMN_NAME\" FROM \"SYSTEM\".\"TABLE_COLUMNS\" WHERE ((\"SCHEMA_NAME\" = CAST(? AS VARCHAR(128))) AND (\"TABLE_NAME\" = CAST(? AS VARCHAR(255)))) ORDER BY \"COLUMN_NAME\"",
+  "condition_8": "SELECT CASE WHEN (CAST(? AS INT) = 0) THEN 1 ELSE 0 END",
+  "set_variable_9": "SELECT (COALESCE((COALESCE('\"', '') || COALESCE(REPLACE(CAST(? AS VARCHAR(255)), '\"', '\"\"'), '')), '') || COALESCE('\"', ''))",
+  "condition_10": "SELECT CASE WHEN (CAST(? AS INT) = 1) THEN 1 ELSE 0 END",
+  "set_variable_11": "SELECT (COALESCE(' ', '') || COALESCE(CAST(? AS VARCHAR(1024)), ''))",
+  "set_variable_12": "SELECT (COALESCE(',', '') || COALESCE(CAST(? AS VARCHAR(1024)), ''))",
+  "insert_13": "INSERT INTO __WASM_TEMP_0__ (\"POSITION\", \"CMD\") VALUES (CAST(? AS INT), CAST(? AS VARCHAR(1024)))",
+  "set_variable_14": "SELECT (CAST(? AS INT) + 1)",
+  "set_variable_18": "SELECT (COALESCE((COALESCE((COALESCE((COALESCE('FROM \"', '') || COALESCE(REPLACE(CAST(? AS VARCHAR(128)), '\"', '\"\"'), '')), '') || COALESCE('\".\"', '')), '') || COALESCE(REPLACE(CAST(? AS VARCHAR(255)), '\"', '\"\"'), '')), '') || COALESCE('\"', ''))",
+  "insert_19": "INSERT INTO __WASM_TEMP_0__ (\"POSITION\", \"CMD\") VALUES (CAST(? AS INT), CAST(? AS VARCHAR(1024)))",
+  "result_set_20": "SELECT \"CMD\" FROM (SELECT \"POSITION\", \"CMD\" FROM __WASM_TEMP_0__) AS \"#LINES\" ORDER BY \"POSITION\"",
+  "drop_temp_21": "DROP TABLE __WASM_TEMP_0__"
+}

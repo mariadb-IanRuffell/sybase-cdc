@@ -1,8 +1,12 @@
 # Sybase WASM / GridGain Java-wrapper checkpoint
 
-Updated 2026-11-18 while preparing the requested commit on `gridgain-9.2.0`.
+Updated 2026-11-19 for the metadata-adapter and explicit administration-mock work on `gridgain-9.2.0`.
 
 ## Current task and branch
+
+Latest user request: adapt `sp_#count`, `sp_#ls`, `sp_#select` to GridGain metadata, test through the Java wrapper, document differences, and keep GG9 unchanged. The user then explicitly requested DBCC and `sp_thresholdaction` to do nothing and return success. This is authorization for those specific mocks, not for fabricating other ASE metadata.
+
+The prior branch-transfer work was committed and pushed as `61ff254`. On 2026-11-19 the user explicitly authorized committing and pushing the metadata adaptations and administration mocks to `gridgain-9.2.0`. Source and artifact hashes were checked against the saved successful integration evidence before committing.
 
 The user requested moving all our work onto the existing 9.2.0 branch and committing it there. The repository is `/Users/oscar/Projects/MariaDB/sybase-cdc`; the exact branch name is **`gridgain-9.2.0`**, tracking `origin/gridgain-9.2.0`.
 
@@ -14,12 +18,12 @@ The original broader task was to extend the compiler for 37 downloaded fixtures,
 
 ## Verified results after the branch merge
 
-- **30/37 fixtures compiled and executed successfully against real GridGain through the deployed Java wrapper.**
-- **7/7 expected ASE-service rejections verified through the wrapper.** Rejected fixtures are not successful WASM executions.
+- **30 original fixtures plus three explicit metadata ports execute real GridGain operations.** One threshold-action adapter executes as a separately identified success mock; 34 targets compile in total.
+- **Three remaining ASE-service rejections** are checked through the wrapper. Mocks and rejections are not counted as real procedure adaptations.
 - All six Customer 360 procedures and original inventory regressions passed; persistence was verified after restarting the node.
-- `WASM/Sybase/.venv/bin/python -m unittest discover -s WASM/Sybase -v`: 14 tests passed.
+- `WASM/Sybase/.venv/bin/python -m unittest discover -s WASM/Sybase -v`: 17 tests passed, including metadata-intrinsic handle semantics, original-source rejection, separate adapter compilation and DBCC no-op WASM execution.
 - `corpus/download.py --verify`: all 64 pinned upstream files passed SHA-256 verification.
-- Full merged-branch integration log: `/tmp/sybase-corpus-gridgain-9.2.0.log`; successful build in 2m 6s.
+- Latest metadata integration log: `/tmp/sybase-metadata-verified.log`. Earlier passes of these adapters are in `/tmp/sybase-metadata-corpus.log` and `/tmp/sybase-metadata-final.log`; use the latest report matching source fingerprints.
 - Traced Customer 360 integration log: `/tmp/sybase-trace-gridgain-9.2.0.log`; 40 client calls passed (34 responses, six expected failures), with persistence after restart.
 - `verify_customer360.py`: 30 WASM calls including one nested call, six expected failures, SQL/count/output/cursor/transaction boundaries verified.
 - `verify_trace.py`: 113 ordered inventory trace events across eight wrapper calls verified.
@@ -29,11 +33,23 @@ The original broader task was to extend the compiler for 37 downloaded fixtures,
 ## Evidence and documentation
 
 - `WASM/Sybase/corpus/gridgain-results.json`: saved per-fixture assertions and execution results from the successful Java harness.
-- `WASM/Sybase/corpus/coverage.json` and `COVERAGE.md`: regenerated report: 37 parsed, 30 compiled, 30 executed, seven verified rejections.
+- `WASM/Sybase/corpus/coverage.json` and `COVERAGE.md`: regenerated report: 37 original sources parsed; 34 selected targets compiled (30 original, three metadata ports, one mock); 33 real executions, one mock, three verified rejections.
 - `corpus/extract_and_audit.py` accepts saved evidence only when the full fixture source hash, newly compiled artifact digest and compiler/wrapper/harness fingerprint match.
 - `GG-9-WASM-Sybase/generated/corpus-manifest.json` holds fixture resource prefixes, source hashes, artifact digests and runtime fingerprints. Identical procedure names in separate upstream fixtures are isolated.
 - READMEs updated in `WASM/Sybase`, its `corpus`, and `GG-9-WASM-Sybase`: run commands, fixture selector, outputs, ordered result/message events and limitations.
 - The SQL bodies and source licenses in `corpus/procedures` / `corpus/upstream` are unchanged.
+
+## Metadata ports and explicit mocks
+
+- Sources: `GG-9-WASM-Sybase/sql/metadata/sp_count.sql`, `sp_ls.sql`, `sp_select.sql`, `sp_thresholdaction.sql`; original SQL and MIT notices remain in corpus/upstream. Explicit selection mapping is `ADAPTATIONS` in `corpus/extract_and_audit.py`.
+- Direct procedure-name requests work for all four; fixture IDs still work. Manifest/evidence include adaptation kind and source hash.
+- `sp_#count`: exact COUNT(*) over selected SYSTEM.TABLES, using a WASM cursor/loop and temporary result table. New SET-only `GG_ROW_COUNT(schema, table)` host intrinsic validates a catalog match and safely quotes identifiers. Data/index/total physical-size fields are NULL with an explanatory PRINT. Default schema PUBLIC, optional SQL LIKE table filter; counts are separate transactions and can scan large tables.
+- `sp_#ls`: tables in chosen schema (U/default name pattern) or SYSTEM.SYSTEM_VIEWS (S). Owner/created date NULL; full names. Unsupported ASE type filters return status 1 with a message.
+- `sp_#select`: alphabetical columns from SYSTEM.TABLE_COLUMNS; returns one CMD line per row. Joining with newlines gives a safely quoted SELECT. It does not execute that query. Missing/NULL table returns status 1 and a message. Table/schema inputs use exact catalog spelling; schema is separate, no parsing dotted names.
+- DBCC lowering emits `mock_admin` callbacks, messages kind=mock and MOCK_ADMIN trace; no SQL calls. Arguments are parsed but not evaluated, including ASE-only functions inside them. @@rowcount clears to zero and WASM continues to its normal RETURN. `dbcc_noop.sql` demonstrates two mocked DBCC commands and status 0.
+- Threshold adapter retains four original parameters, prints an explicit MOCK message and returns 0. No DUMP, log management or database changes. Its PRINT uses one scalar SELECT callback.
+- Corpus tests include 6 count cases, 11 listing cases, 8 SELECT-generation cases, two threshold calls and a separate DBCC zero-SQL/data-unchanged check. Includes empty tables, schema isolation, fresh writes, special/reserved/quote-containing names, injection-shaped values and execution of generated SQL.
+- Saved states are passed/adapted/mocked/blocked. `executed_on_gridgain` excludes mock-only success; `wasm_executed` includes it.
 
 ## Implementation
 
@@ -60,7 +76,7 @@ The original broader task was to extend the compiler for 37 downloaded fixtures,
 
 ## Explicit remaining limitations
 
-- Hruodland's `sp_#count`, `sp_#ls`, `sp_#ps`, `sp_#quickref`, `sp_#select`, `sp_#top` and `sp_thresholdaction` require ASE catalogs, physical counters, process/lock state, DBCC, DUMP or session services. Preflight rejects these before artifact generation; the wrapper rejects their manifest entries before SQL. A separate administration port is needed, not fake catalogs.
+- `sp_#ps`, `sp_#quickref`, `sp_#top` still require ASE process/catalog/documentation/session services. DBCC no-ops do not supply the rest of sp_#top's dependencies. All seven original upstream admin definitions still fail direct compilation; four are explicitly replaced in corpus preparation as documented above. Do not conflate ported or mocked targets with original ASE semantics.
 - Materialized text locators are not native ASE token identity or ASE locator lifetime semantics.
 - PRINT/results are buffered JSON, not TDS streaming. Limits: 10,000 rows/result, 64 MiB cumulative accounted payload, 100,000 handles, 20,000 SQL calls, call depth 32, cumulative WAITFOR 60 seconds.
 - Large fixture tested at 1,000 and 10,000 rows of 4,000 characters; 100,000 rows explicitly fails. The 500,000-row branch also exceeds the row limit.

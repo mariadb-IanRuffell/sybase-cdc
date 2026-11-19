@@ -48,8 +48,9 @@ DENORMALISED = {t: {'column': 'customer_id', 'parent': 'orders', 'via': 'order_i
 repository = HERE.parents[2]
 for name in compile_script(repository / 'sybase/sql/03_procs.sql', output, repository / 'sybase/sql/01_schema.sql', DENORMALISED):
     print(f'Compiled typed GridGain job: {name}')
-for name in compile_script(HERE / 'sql/typed_roundtrip.sql', output):
-    print(f'Compiled typed GridGain job: {name}')
+for source in ('typed_roundtrip.sql', 'dbcc_noop.sql'):
+    for name in compile_script(HERE / 'sql' / source, output):
+        print(f'Compiled typed GridGain job: {name}')
 
 # Disposable demo schema, derived from the source column types/primary keys.
 # Foreign keys, indexes and ASE defaults are not a schema migration feature.
@@ -86,7 +87,7 @@ for table in schema.find_data('create_table'):
 from gg9_compiler import ASECapabilityError, procedure_header
 from gg9_compiler import unqualified_name as typed_name
 import hashlib
-from corpus.extract_and_audit import execution_digest, artifact_digest
+from corpus.extract_and_audit import execution_digest, artifact_digest, fixture_source, ADAPTATIONS
 runtime_digest = execution_digest()
 corpus_manifest = {}
 for fixture in sorted((HERE.parent / 'corpus/procedures').glob('*.sql')):
@@ -96,8 +97,12 @@ for fixture in sorted((HERE.parent / 'corpus/procedures').glob('*.sql')):
     prefix = 'corpus/' + key + '/'
     record = dict(procedure=name, source=fixture.name, sha256=hashlib.sha256(fixture.read_bytes()).hexdigest(),
                   resource_prefix=prefix, compiled=False, runtime_digest=runtime_digest)
+    selected = fixture_source(fixture)
+    if selected != fixture:
+        record.update(adaptation=str(selected.relative_to(HERE)), adaptation_kind=ADAPTATIONS[key][1],
+                      adaptation_sha256=hashlib.sha256(selected.read_bytes()).hexdigest())
     try:
-        compile_script(fixture, output / prefix, HERE / 'sql/corpus_schema.sql')
+        compile_script(selected, output / prefix, HERE / 'sql/corpus_schema.sql')
         record['compiled'] = True
         record['artifact_digest'] = artifact_digest(output / prefix, name)
     except ASECapabilityError as error:

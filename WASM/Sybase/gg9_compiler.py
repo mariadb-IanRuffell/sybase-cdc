@@ -45,21 +45,26 @@ def procedure_header(node):
     return [c for c in node.children if c.data != 'replace_option']
 
 
+SYSTEM_METADATA_VIEWS = {'tables', 'table_columns', 'system_views'}
+
 def ase_capabilities(node):
     """Dependencies with no equivalent ASE service in GridGain; never substitute fake results."""
     capabilities = set()
     functions = {'db_id', 'db_name', 'object_id', 'object_name', 'user_name', 'suser_name',
                  'data_pages', 'reserved_pages', 'row_count', 'lct_admin', 'loginfo', 'proc_role'}
+    ignored = {id(n) for statement in node.find_data('dbcc') for n in statement.iter_subtrees()}
     for n in node.iter_subtrees():
+        if id(n) in ignored: continue # DBCC arguments are not evaluated by the explicit no-op policy.
         if n.data == 'function_call' and n.children[0].data == 'object_name':
             name = str(n.children[0].children[-1]).lower()
             if name in functions: capabilities.add('ASE function ' + name)
         if n.data == 'table_reference':
             parts = [str(x).strip('[]').lower() for x in n.children[0].children if isinstance(x, Token)]
-            if parts and (parts[-1].startswith('sys') or parts[-1] == 'spt_values'):
+            metadata = len(parts) == 2 and parts[0] == 'system' and parts[1] in SYSTEM_METADATA_VIEWS
+            if not metadata and parts and (parts[-1].startswith('sys') or parts[-1] == 'spt_values'):
                 capabilities.add('ASE catalog ' + '.'.join(parts))
-        if n.data in ('dbcc', 'dump_statement', 'execute_string'):
-            capabilities.add({'dbcc': 'ASE DBCC', 'dump_statement': 'ASE database/log DUMP',
+        if n.data in ('dump_statement', 'execute_string'):
+            capabilities.add({'dump_statement': 'ASE database/log DUMP',
                               'execute_string': 'dynamic EXEC'}[n.data])
         if n.data == 'system_variable' and str(n.children[0]).lower() not in ('@@rowcount', '@@sqlstatus', '@@identity'):
             capabilities.add('ASE session variable ' + str(n.children[0]).lower())
@@ -172,6 +177,9 @@ class Sql:
         self.arguments = []
 
     def table(self, node):
+        parts = [identifier(p).lower() for p in node.children]
+        if len(parts) == 2 and parts[0] == 'system' and parts[1] in SYSTEM_METADATA_VIEWS:
+            return '.'.join(sql_identifier(p) for p in node.children)
         name = unqualified_name(node).lower()
         if name.startswith('#'):
             if name not in self.temporaries: raise UnsupportedSQL(node, 'a declared temporary table')
@@ -182,7 +190,7 @@ class Sql:
         if node.data == 'string': return True
         if node.data == 'local_var': return self.types.get(str(node.children[0]).lower(), {}).get('kind') in ('string', 'text_locator')
         if node.data in ('add', 'concatenate'): return any(self.string_expression(c) for c in node.children)
-        if node.data == 'function_call': return unqualified_name(node.children[0]).lower() in ('replicate', 'rtrim', 'substring')
+        if node.data == 'function_call': return unqualified_name(node.children[0]).lower() in ('replicate', 'rtrim', 'substring', 'str_replace')
         return False
 
     def is_bit(self, node):
@@ -207,7 +215,7 @@ class Sql:
         if k == 'object_name': return '.'.join(sql_identifier(x) for x in c)
         if k == 'table_reference':
             if any(x.data != 'alias' for x in c[1:]): raise UnsupportedSQL(node, 'a table with an optional alias')
-            name = unqualified_name(c[0]).lower()
+            name = identifier(c[0].children[-1]).lower()
             source = self.table(c[0])
             if name in self.temporaries:
                 columns = ', '.join(sql_identifier(x) for x in self.temporaries[name]['columns'])
@@ -232,6 +240,10 @@ class Sql:
             op = r(c[1])
             if op not in ('=', '<>', '!=', '<', '>', '<=', '>='): raise UnsupportedSQL(node, 'an ANSI comparison')
             return f'({self.bit_literal(c[0], c[2])} {op} {self.bit_literal(c[2], c[0])})'
+        if k in ('like', 'not_like'):
+            left, right = r(c[0]), r(c[1])
+            escaped = ' ESCAPE ' + r(c[2].children[0]) if len(c) == 3 else ''
+            return f'({left} {"NOT LIKE" if k == "not_like" else "LIKE"} {right}{escaped})'
         if k in ('is_null', 'is_not_null'): return f'({r(c[0])} IS {"NOT " if k == "is_not_null" else ""}NULL)'
         if k == 'exists': return 'EXISTS (' + r(c[0]) + ')'
         if k == 'scalar_subquery': return '(' + r(c[0]) + ')'
@@ -249,7 +261,7 @@ class Sql:
                 if args[0].data != 'column' or unqualified_name(args[0].children[0]).lower() != 'text_locator':
                     raise UnsupportedSQL(node, 'CREATE_LOCATOR(text_locator, text expression)')
                 return r(args[1])
-            functions = {'replicate': 'REPEAT', 'rtrim': 'RTRIM', 'substring': 'SUBSTRING', 'isnull': 'COALESCE', 'sum': 'SUM', 'count': 'COUNT', 'avg': 'AVG', 'min': 'MIN', 'max': 'MAX'}
+            functions = {'str_replace': 'REPLACE', 'replicate': 'REPEAT', 'rtrim': 'RTRIM', 'substring': 'SUBSTRING', 'isnull': 'COALESCE', 'sum': 'SUM', 'count': 'COUNT', 'avg': 'AVG', 'min': 'MIN', 'max': 'MAX'}
             if name not in functions: raise UnsupportedSQL(node, 'a supported SQL function')
             return functions[name] + '(' + ', '.join(r(x) for x in args) + ')'
         if k in ('convert_expr', 'cast_expr'):
@@ -373,6 +385,16 @@ class Compiler:
         if k == 'set_variable':
             dest = str(c[0].children[0]).lower()
             if dest not in self.types: raise UnsupportedSQL(node, 'a declared SET target')
+            expression = c[1]
+            if expression.data == 'function_call' and unqualified_name(expression.children[0]).lower() == 'gg_row_count':
+                arguments = expression.children[1].children if len(expression.children) == 2 else []
+                if len(arguments) != 2 or any(a.data != 'local_var' for a in arguments):
+                    raise UnsupportedSQL(node, 'GG_ROW_COUNT with schema/table local variables')
+                keys = [str(a.children[0]).lower() for a in arguments]
+                if any(self.types.get(key, {}).get('kind') != 'string' for key in keys) or self.types[dest]['ase'] != 'bigint':
+                    raise UnsupportedSQL(node, 'GG_ROW_COUNT string inputs and a BIGINT destination')
+                return [*self.call('metadata_count', arguments=keys, destinations=[dest]),
+                        f'local.set ${self.local(dest)}', 'i32.const 0', 'local.set $@@rowcount']
             renderer = Sql(self.types, self.temporaries, self.tables, self.bits)
             sql = 'SELECT ' + renderer.render(c[1])
             return [*self.call('set_variable', sql, renderer.arguments, destinations=[dest]),
@@ -472,6 +494,10 @@ class Compiler:
                     *(['local.set $@@identity'] if identity else []), 'local.set $@@rowcount']
         if k in ('begin_transaction', 'commit_transaction', 'rollback_transaction'):
             return [*self.call(k, results=0, name=str(c[0]) if c else ''), 'i32.const 0', 'local.set $@@rowcount']
+        if k == 'dbcc':
+            # User-requested GridGain policy: visible success, no ASE maintenance is attempted.
+            return [*self.call('mock_admin', results=0, operation='DBCC ' + identifier(c[0]).upper()),
+                    'i32.const 0', 'local.set $@@rowcount']
         if k == 'raise_error':
             if len(c) != 2: raise UnsupportedSQL(node, 'RAISERROR number and literal message')
             return [*self.call('raise_error', results=0, number=literal(c[0]), message=literal(c[1])),

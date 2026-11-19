@@ -1,0 +1,30 @@
+procedure
+  replace_option
+  object_name	sp_thresholdaction
+  parameters
+    parameter_decl
+      @dbname
+      datatype
+        object_name	varchar
+        type_args	30
+    parameter_decl
+      @segmentname
+      datatype
+        object_name	varchar
+        type_args	30
+    parameter_decl
+      @space_left
+      datatype
+        object_name	int
+    parameter_decl
+      @status
+      datatype
+        object_name	int
+  statements
+    block
+      statements
+        print_statement
+          expr_list
+            string	'MOCK sp_thresholdaction: no dump, cleanup, or log-management action performed.'
+        return_status
+          integer	0

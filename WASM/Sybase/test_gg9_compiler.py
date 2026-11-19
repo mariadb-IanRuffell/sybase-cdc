@@ -130,4 +130,59 @@ class GridGainCompilerTests(unittest.TestCase):
             with self.assertRaises(ValueError): compile_script(source,temp)
 
 
+    def test_metadata_ports_and_explicit_mock_compile_separately(self):
+        from corpus.extract_and_audit import ADAPTATIONS, fixture_source
+        with TemporaryDirectory() as temp:
+            for fixture, (_, kind) in ADAPTATIONS.items():
+                original=ROOT/'corpus/procedures'/f'{fixture}.sql'
+                with self.assertRaises(ASECapabilityError): compile_script(original,temp)
+                name,=compile_script(fixture_source(original),temp)
+                abi=json.loads((Path(temp)/f'{name}.abi.json').read_text())
+                bindings=json.loads((Path(temp)/f'{name}.bindings.json').read_text())
+                if kind=='metadata':
+                    self.assertTrue(any('"SYSTEM".' in sql for sql in bindings.values()))
+                if name=='sp_#count':
+                    self.assertTrue(any(op['kind']=='metadata_count' for op in abi['operations'].values()))
+                if kind=='mock':
+                    self.assertEqual({op['kind'] for op in abi['operations'].values()},{'print'})
+
+    def test_dbcc_is_visible_noop_in_wasm(self):
+        with TemporaryDirectory() as temp:
+            source=ROOT/'GG-9-WASM-Sybase/sql/dbcc_noop.sql'
+            compile_script(source,temp)
+            abi=json.loads((Path(temp)/'dbcc_noop.abi.json').read_text())
+            self.assertEqual(json.loads((Path(temp)/'dbcc_noop.bindings.json').read_text()),{})
+            engine=Engine(); store=Store(engine); linker=Linker(engine)
+            module=Module(engine,(Path(temp)/'dbcc_noop.wasm').read_bytes())
+            calls=[]
+            for name,op in abi['operations'].items():
+                self.assertEqual(op['kind'],'mock_admin')
+                self.assertEqual(op['arguments'],[])
+                fn=Func(store,FuncType([],[]),lambda operation=op['operation']: calls.append(operation))
+                linker.define(store,'ignite',name,fn)
+            self.assertEqual(linker.instantiate(store,module).exports(store)['dbcc_noop'](store,123),0)
+            self.assertEqual(calls,['DBCC CHECKDB','DBCC CHECKTABLE'])
+
+    def test_metadata_count_returns_handle_and_resets_rowcount(self):
+        with TemporaryDirectory() as temp:
+            source=Path(temp)/'count.sql'
+            source.write_text("create proc c @s varchar(128), @t varchar(255), @n bigint output as begin set @n=GG_ROW_COUNT(@s,@t) return @@rowcount end")
+            compile_script(source,temp)
+            abi=json.loads((Path(temp)/'c.abi.json').read_text())
+            engine=Engine(); store=Store(engine); linker=Linker(engine)
+            module=Module(engine,(Path(temp)/'c.wasm').read_bytes())
+            for name,op in abi['operations'].items():
+                def callback(*args, kind=op['kind']):
+                    if kind=='metadata_count':
+                        self.assertEqual(args,(11,22)); return 777 # BIGINT handle, never raw row count
+                    self.assertEqual(args,(0,)); return 0
+                fn=Func(store,FuncType([ValType.i32()]*len(op['arguments']),[ValType.i32()]*op['results']),callback)
+                linker.define(store,'ignite',name,fn)
+            self.assertEqual(linker.instantiate(store,module).exports(store)['c'](store,11,22,0),[0,777])
+            source.write_text("create proc bad @s varchar(128), @n int output as set @n=GG_ROW_COUNT(@s,@s)")
+            with self.assertRaises(ValueError): compile_script(source,temp)
+            source.write_text("create proc bad @s varchar(128) as waitfor delay GG_ROW_COUNT(@s,@s)")
+            with self.assertRaises(ValueError): compile_script(source,temp)
+
+
 if __name__=='__main__': unittest.main()

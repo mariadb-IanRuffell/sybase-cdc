@@ -1,0 +1,241 @@
+procedure
+  replace_option
+  object_name	sp_#select
+  parameters
+    parameter_decl
+      @table
+      datatype
+        object_name	varchar
+        type_args	255
+    parameter_decl
+      @schema
+      datatype
+        object_name	varchar
+        type_args	128
+      default_argument
+        string	'PUBLIC'
+  statements
+    block
+      statements
+        set_options
+          nocount
+          on_off	on
+        declare_variables
+          variable_decl
+            @found
+            datatype
+              object_name	int
+          variable_decl
+            @column
+            datatype
+              object_name	varchar
+              type_args	255
+          variable_decl
+            @line
+            datatype
+              object_name	varchar
+              type_args	1024
+          variable_decl
+            @position
+            datatype
+              object_name	int
+        query
+          select_core
+            select_list
+              variable_assignment
+                local_var	@found
+                function_call
+                  object_name	count
+                  star_arg
+            from_clause
+              joined_table
+                table_reference
+                  object_name
+                    SYSTEM
+                    TABLES
+            where_clause
+              logical_and
+                comparison
+                  column
+                    object_name	schema_name
+                  comparison_op	=
+                  local_var	@schema
+                comparison
+                  column
+                    object_name	table_name
+                  comparison_op	=
+                  local_var	@table
+        if_statement
+          comparison
+            local_var	@found
+            comparison_op	=
+            integer	0
+          block
+            statements
+              print_statement
+                expr_list
+                  string	'Table is undefined.'
+              return_status
+                integer	1
+        declare_cursor
+          columns_cursor
+          query
+            select_core
+              select_list
+                select_item
+                  column
+                    object_name	column_name
+              from_clause
+                joined_table
+                  table_reference
+                    object_name
+                      SYSTEM
+                      TABLE_COLUMNS
+              where_clause
+                logical_and
+                  comparison
+                    column
+                      object_name	schema_name
+                    comparison_op	=
+                    local_var	@schema
+                  comparison
+                    column
+                      object_name	table_name
+                    comparison_op	=
+                    local_var	@table
+            order_by
+              order_item
+                column
+                  object_name	column_name
+        create_table
+          object_name	#lines
+          column_def
+            position
+            datatype
+              object_name	int
+          column_def
+            cmd
+            datatype
+              object_name	varchar
+              type_args	1024
+        insert
+          object_name	#lines
+          column_list
+            name_list
+              position
+              cmd
+          values
+            value_row
+              integer	0
+              string	'SELECT'
+        set_variable
+          local_var	@position
+          integer	1
+        open_cursor	columns_cursor
+        fetch_cursor
+          columns_cursor
+          local_var	@column
+        while_statement
+          comparison
+            system_variable	@@sqlstatus
+            comparison_op	=
+            integer	0
+          block
+            statements
+              set_variable
+                local_var	@line
+                add
+                  add
+                    string	'"'
+                    function_call
+                      object_name	str_replace
+                      expr_list
+                        local_var	@column
+                        string	'"'
+                        string	'""'
+                  string	'"'
+              if_statement
+                comparison
+                  local_var	@position
+                  comparison_op	=
+                  integer	1
+                set_variable
+                  local_var	@line
+                  add
+                    string	' '
+                    local_var	@line
+                set_variable
+                  local_var	@line
+                  add
+                    string	','
+                    local_var	@line
+              insert
+                object_name	#lines
+                column_list
+                  name_list
+                    position
+                    cmd
+                values
+                  value_row
+                    local_var	@position
+                    local_var	@line
+              set_variable
+                local_var	@position
+                add
+                  local_var	@position
+                  integer	1
+              fetch_cursor
+                columns_cursor
+                local_var	@column
+        close_cursor	columns_cursor
+        deallocate_cursor	columns_cursor
+        set_variable
+          local_var	@line
+          add
+            add
+              add
+                add
+                  string	'FROM "'
+                  function_call
+                    object_name	str_replace
+                    expr_list
+                      local_var	@schema
+                      string	'"'
+                      string	'""'
+                string	'"."'
+              function_call
+                object_name	str_replace
+                expr_list
+                  local_var	@table
+                  string	'"'
+                  string	'""'
+            string	'"'
+        insert
+          object_name	#lines
+          column_list
+            name_list
+              position
+              cmd
+          values
+            value_row
+              local_var	@position
+              local_var	@line
+        query
+          select_core
+            select_list
+              select_item
+                column
+                  object_name	cmd
+            from_clause
+              joined_table
+                table_reference
+                  object_name	#lines
+          order_by
+            order_item
+              column
+                object_name	position
+        drop_object
+          object_kind	table
+          object_name	#lines
+        return_status
+          integer	0

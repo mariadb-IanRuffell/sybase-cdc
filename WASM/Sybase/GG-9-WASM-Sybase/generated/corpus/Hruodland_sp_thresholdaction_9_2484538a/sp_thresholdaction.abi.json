@@ -1,0 +1,71 @@
+{
+  "version": 2,
+  "name": "sp_thresholdaction",
+  "parameters": [
+    "dbname",
+    "segmentname",
+    "space_left",
+    "status"
+  ],
+  "outputs": [],
+  "defaults": {},
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@dbname": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(30)",
+      "length": 30,
+      "fixed": false
+    },
+    "@segmentname": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(30)",
+      "length": 30,
+      "fixed": false
+    },
+    "@space_left": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@status": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    }
+  },
+  "operations": {
+    "print_0": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

@@ -1,0 +1,162 @@
+{
+  "version": 2,
+  "name": "sp_#count",
+  "parameters": [
+    "schema",
+    "objname"
+  ],
+  "outputs": [],
+  "defaults": {
+    "schema": "PUBLIC",
+    "objname": "%"
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@schema": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(128)",
+      "length": 128,
+      "fixed": false
+    },
+    "@objname": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(255)",
+      "length": 255,
+      "fixed": false
+    },
+    "@table": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(255)",
+      "length": 255,
+      "fixed": false
+    },
+    "@rows": {
+      "ase": "bigint",
+      "kind": "integer",
+      "sql": "BIGINT",
+      "minimum": "-9223372036854775808",
+      "maximum": "9223372036854775807"
+    }
+  },
+  "operations": {
+    "open_cursor_0": {
+      "kind": "open_cursor",
+      "arguments": [
+        "@schema",
+        "@objname"
+      ],
+      "results": 1,
+      "cursor": "tables_cursor"
+    },
+    "create_temp_1": {
+      "kind": "create_temp",
+      "arguments": [],
+      "results": 0,
+      "temporary": "__WASM_TEMP_0__"
+    },
+    "fetch_cursor_2": {
+      "kind": "fetch_cursor",
+      "arguments": [
+        "@table"
+      ],
+      "results": 3,
+      "cursor": "tables_cursor",
+      "destinations": [
+        "@table"
+      ]
+    },
+    "condition_3": {
+      "kind": "condition",
+      "arguments": [
+        "@@sqlstatus"
+      ],
+      "results": 1
+    },
+    "metadata_count_4": {
+      "kind": "metadata_count",
+      "arguments": [
+        "@schema",
+        "@table"
+      ],
+      "results": 1,
+      "destinations": [
+        "@rows"
+      ]
+    },
+    "insert_5": {
+      "kind": "insert",
+      "arguments": [
+        "@schema",
+        "@table",
+        "@rows"
+      ],
+      "results": 1,
+      "table": "#counts",
+      "identity": null,
+      "counter": null
+    },
+    "fetch_cursor_6": {
+      "kind": "fetch_cursor",
+      "arguments": [
+        "@table"
+      ],
+      "results": 3,
+      "cursor": "tables_cursor",
+      "destinations": [
+        "@table"
+      ]
+    },
+    "close_cursor_7": {
+      "kind": "close_cursor",
+      "arguments": [],
+      "results": 0,
+      "cursor": "tables_cursor"
+    },
+    "deallocate_cursor_8": {
+      "kind": "deallocate_cursor",
+      "arguments": [],
+      "results": 0,
+      "cursor": "tables_cursor"
+    },
+    "print_9": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    },
+    "result_set_10": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "drop_temp_11": {
+      "kind": "drop_temp",
+      "arguments": [],
+      "results": 0,
+      "temporary": "__WASM_TEMP_0__"
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

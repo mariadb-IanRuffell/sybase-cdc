@@ -1,0 +1,105 @@
+{
+  "version": 2,
+  "name": "sp_#ls",
+  "parameters": [
+    "objname",
+    "schema"
+  ],
+  "outputs": [],
+  "defaults": {
+    "objname": "%",
+    "schema": "PUBLIC"
+  },
+  "types": {
+    "@@rowcount": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@sqlstatus": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@@identity": {
+      "ase": "int",
+      "kind": "integer",
+      "sql": "INT",
+      "minimum": "-2147483648",
+      "maximum": "2147483647"
+    },
+    "@objname": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(255)",
+      "length": 255,
+      "fixed": false
+    },
+    "@schema": {
+      "ase": "varchar",
+      "kind": "string",
+      "sql": "VARCHAR(128)",
+      "length": 128,
+      "fixed": false
+    }
+  },
+  "operations": {
+    "condition_0": {
+      "kind": "condition",
+      "arguments": [
+        "@objname",
+        "@objname",
+        "@objname",
+        "@objname",
+        "@objname",
+        "@objname"
+      ],
+      "results": 1
+    },
+    "print_1": {
+      "kind": "print",
+      "arguments": [],
+      "results": 0
+    },
+    "condition_2": {
+      "kind": "condition",
+      "arguments": [
+        "@objname"
+      ],
+      "results": 1
+    },
+    "result_set_3": {
+      "kind": "result_set",
+      "arguments": [],
+      "results": 1
+    },
+    "condition_4": {
+      "kind": "condition",
+      "arguments": [
+        "@objname"
+      ],
+      "results": 1
+    },
+    "set_variable_5": {
+      "kind": "set_variable",
+      "arguments": [],
+      "results": 1,
+      "destinations": [
+        "@objname"
+      ]
+    },
+    "result_set_6": {
+      "kind": "result_set",
+      "arguments": [
+        "@schema",
+        "@objname"
+      ],
+      "results": 1
+    }
+  },
+  "representation": "i32-handles-null-zero"
+}

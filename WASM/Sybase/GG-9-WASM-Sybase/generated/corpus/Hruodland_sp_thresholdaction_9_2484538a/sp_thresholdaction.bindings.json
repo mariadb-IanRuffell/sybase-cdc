@@ -1,0 +1,3 @@
+{
+  "print_0": "SELECT 'MOCK sp_thresholdaction: no dump, cleanup, or log-management action performed.'"
+}

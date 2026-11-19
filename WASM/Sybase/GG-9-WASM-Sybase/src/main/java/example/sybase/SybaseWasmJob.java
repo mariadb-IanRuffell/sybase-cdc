@@ -33,7 +33,9 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
             .enable(com.fasterxml.jackson.databind.DeserializationFeature.USE_BIG_DECIMAL_FOR_FLOATS);
     private static final Set<String> PROCEDURES = Set.of("restock", "inventory_summary", "inventory_results",
             "sp_recalc_loyalty_tier", "sp_customer_360", "sp_create_order",
-            "sp_add_order_item", "sp_complete_order", "sp_score_customers", "typed_roundtrip");
+            "sp_add_order_item", "sp_complete_order", "sp_score_customers", "typed_roundtrip", "dbcc_noop");
+
+    private static final Set<String> ADAPTED_PROCEDURES = Set.of("sp_#count", "sp_#ls", "sp_#select", "sp_thresholdaction");
 
     @Override
     public CompletableFuture<String> executeAsync(JobExecutionContext context, String argument) {
@@ -53,9 +55,19 @@ public class SybaseWasmJob implements ComputeJob<String, String> {
             trace.enabled = request.path("trace").asBoolean(false);
             trace.procedure = name;
             trace.node = context.ignite().name();
-            if (request.has("fixture")) {
-                String fixture = request.get("fixture").asText();
+            if (request.has("fixture") || ADAPTED_PROCEDURES.contains(name)) {
+                String fixture = request.path("fixture").asText();
                 JsonNode manifest = JSON.readTree(resource("corpus-manifest.json"));
+                if (!request.has("fixture")) {
+                    var entries = manifest.fields();
+                    while (entries.hasNext()) {
+                        var entry = entries.next();
+                        if (entry.getValue().has("adaptation") && entry.getValue().path("procedure").asText().equals(name)) {
+                            fixture = entry.getKey();
+                            break;
+                        }
+                    }
+                }
                 JsonNode bundled = manifest.path(fixture);
                 if (bundled.isMissingNode()) throw new IllegalArgumentException("Unknown corpus fixture " + fixture);
                 trace.procedure = bundled.get("procedure").asText();

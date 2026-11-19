@@ -1,0 +1,184 @@
+procedure
+  replace_option
+  object_name	sp_#ls
+  parameters
+    parameter_decl
+      @objname
+      datatype
+        object_name	varchar
+        type_args	255
+      default_argument
+        string	'%'
+    parameter_decl
+      @schema
+      datatype
+        object_name	varchar
+        type_args	128
+      default_argument
+        string	'PUBLIC'
+  statements
+    block
+      statements
+        set_options
+          nocount
+          on_off	on
+        if_statement
+          logical_or
+            logical_or
+              logical_or
+                logical_or
+                  logical_or
+                    comparison
+                      local_var	@objname
+                      comparison_op	=
+                      string	'D'
+                    comparison
+                      local_var	@objname
+                      comparison_op	=
+                      string	'P'
+                  comparison
+                    local_var	@objname
+                    comparison_op	=
+                    string	'TR'
+                comparison
+                  local_var	@objname
+                  comparison_op	=
+                  string	'V'
+              comparison
+                local_var	@objname
+                comparison_op	=
+                string	'R'
+            comparison
+              local_var	@objname
+              comparison_op	=
+              string	'SP'
+          block
+            statements
+              print_statement
+                expr_list
+                  string	'Unsupported ASE object category. Use U for tables or S for GridGain system views.'
+              return_status
+                integer	1
+        if_statement
+          comparison
+            local_var	@objname
+            comparison_op	=
+            string	'S'
+          block
+            statements
+              query
+                select_core
+                  select_list
+                    select_item
+                      column
+                        object_name	view_name
+                      column_alias	object_name
+                    select_item
+                      string	'SYSTEM_VIEW'
+                      column_alias	object_type
+                    select_item
+                      column
+                        object_name	schema_name
+                    select_item
+                      cast_expr
+                        null
+                        datatype
+                          object_name	varchar
+                          type_args	128
+                      column_alias	owner
+                    select_item
+                      cast_expr
+                        null
+                        datatype
+                          object_name	datetime
+                      column_alias	created_date
+                  from_clause
+                    joined_table
+                      table_reference
+                        object_name
+                          SYSTEM
+                          SYSTEM_VIEWS
+                  where_clause
+                    comparison
+                      column
+                        object_name	schema_name
+                      comparison_op	=
+                      string	'SYSTEM'
+                order_by
+                  order_item
+                    column
+                      object_name	view_name
+              return_status
+                integer	0
+        if_statement
+          comparison
+            local_var	@objname
+            comparison_op	=
+            string	'U'
+          set_variable
+            local_var	@objname
+            string	'%'
+        query
+          select_core
+            select_list
+              select_item
+                column
+                  object_name	table_name
+                column_alias	object_name
+              select_item
+                string	'TABLE'
+                column_alias	object_type
+              select_item
+                column
+                  object_name	schema_name
+              select_item
+                cast_expr
+                  null
+                  datatype
+                    object_name	varchar
+                    type_args	128
+                column_alias	owner
+              select_item
+                cast_expr
+                  null
+                  datatype
+                    object_name	datetime
+                column_alias	created_date
+            from_clause
+              joined_table
+                table_reference
+                  object_name
+                    SYSTEM
+                    TABLES
+            where_clause
+              logical_and
+                logical_and
+                  comparison
+                    column
+                      object_name	schema_name
+                    comparison_op	=
+                    local_var	@schema
+                  like
+                    column
+                      object_name	table_name
+                    add
+                      add
+                        string	'%'
+                        local_var	@objname
+                      string	'%'
+                comparison
+                  function_call
+                    object_name	substring
+                    expr_list
+                      column
+                        object_name	table_name
+                      integer	1
+                      integer	9
+                  comparison_op	<>
+                  string	'WASM_TMP_'
+          order_by
+            order_item
+              column
+                object_name	table_name
+        return_status
+          integer	0

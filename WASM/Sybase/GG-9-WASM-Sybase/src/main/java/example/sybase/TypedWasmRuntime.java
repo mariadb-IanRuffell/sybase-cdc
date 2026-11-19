@@ -244,6 +244,19 @@ final class TypedWasmRuntime {
             long[] raw, Map<String, Cursor> cursors, SybaseWasmJob.Trace trace) throws Exception {
         String kind = op.get("kind").asText();
         switch (kind) {
+            case "metadata_count": {
+                // Names are data until the catalog confirms one table; identifiers are then quoted, never pasted raw.
+                if (args.size() != 2 || !(args.get(0) instanceof String schema) || !(args.get(1) instanceof String table)) {
+                    throw new IllegalArgumentException("GG_ROW_COUNT requires schema/table strings");
+                }
+                Rows found = sql("SELECT TABLE_NAME FROM SYSTEM.TABLES WHERE SCHEMA_NAME = ? AND TABLE_NAME = ?",
+                        args, transaction, trace, name + "_lookup");
+                if (found.rows().size() != 1) throw new IllegalArgumentException("GG_ROW_COUNT table is undefined");
+                String qualified = quoteIdentifier(schema) + "." + quoteIdentifier(table);
+                Rows counted = sql("SELECT COUNT(*) FROM " + qualified, List.of(), transaction, trace, name);
+                return new long[] {handle(convert(counted.rows().getFirst().getFirst(),
+                        abi.path("types").get(op.get("destinations").get(0).asText()), false))};
+            }
             case "begin_transaction":
                 if (implicitTransaction) {
                     if (explicitBegun) throw new IllegalStateException("Nested BEGIN TRAN is not supported");
@@ -280,6 +293,13 @@ final class TypedWasmRuntime {
                 transaction = null;
                 trace.event("TRANSACTION", Map.of("action", kind, "name", transactionName));
                 return new long[0];
+            case "mock_admin": {
+                Map<String, Object> mocked = Map.of("procedure", trace.procedure, "kind", "mock",
+                        "operation", op.get("operation").asText(), "message", "Mocked success; no administrative action performed.");
+                addMessage(mocked);
+                trace.event("MOCK_ADMIN", mocked);
+                return new long[0];
+            }
             case "raise_error":
                 Map<String, Object> message = Map.of("procedure", trace.procedure,
                         "number", op.get("number").asInt(), "message", op.get("message").asText());
@@ -486,6 +506,10 @@ final class TypedWasmRuntime {
             trace.event("SQL_ERROR", Map.of("sql_call", call, "message", String.valueOf(error.getMessage())));
             throw error;
         }
+    }
+
+    private static String quoteIdentifier(String name) {
+        return "\"" + name.replace("\"", "\"\"") + "\"";
     }
 
     private String expandTemporaries(String sql) {
