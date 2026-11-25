@@ -6,6 +6,7 @@ dependencies {
     implementation project(':ignite-api')
     implementation project(':ignite-client')
     implementation project(':ignite-runner')
+    implementation project(':ignite-jdbc')
     implementation rootProject.libs.chicory.runtime
     implementation platform(rootProject.libs.jackson.bom)
     implementation rootProject.libs.jackson.databind

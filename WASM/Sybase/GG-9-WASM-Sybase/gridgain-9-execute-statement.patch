@@ -1,0 +1,1021 @@
+diff --git a/modules/client-handler/src/main/java/org/apache/ignite/client/handler/JdbcHandlerBase.java b/modules/client-handler/src/main/java/org/apache/ignite/client/handler/JdbcHandlerBase.java
+index a77c9754e0..eb745a8071 100644
+--- a/modules/client-handler/src/main/java/org/apache/ignite/client/handler/JdbcHandlerBase.java
++++ b/modules/client-handler/src/main/java/org/apache/ignite/client/handler/JdbcHandlerBase.java
+@@ -50,7 +50,9 @@ abstract class JdbcHandlerBase {
+             SqlQueryType.EXPLAIN,
+             SqlQueryType.SHOW,
+             // COPY returns a single row result set that holds the number of read/inserted rows.
+-            SqlQueryType.COPY
++            SqlQueryType.COPY,
++            // EXECUTE returns a single row result set with the job result.
++            SqlQueryType.EXECUTE
+     );
+ 
+     /** {@link SqlQueryType}s types that return 0 in executeUpdate and execute / getUpdateCount. **/
+diff --git a/modules/client-handler/src/test/java/org/apache/ignite/client/handler/SqlQueryTypeInJdbcTest.java b/modules/client-handler/src/test/java/org/apache/ignite/client/handler/SqlQueryTypeInJdbcTest.java
+index 3f5fc96516..6445e78fdd 100644
+--- a/modules/client-handler/src/test/java/org/apache/ignite/client/handler/SqlQueryTypeInJdbcTest.java
++++ b/modules/client-handler/src/test/java/org/apache/ignite/client/handler/SqlQueryTypeInJdbcTest.java
+@@ -27,7 +27,8 @@ public class SqlQueryTypeInJdbcTest extends BaseIgniteAbstractTest {
+                 SqlQueryType.QUERY,
+                 SqlQueryType.EXPLAIN,
+                 SqlQueryType.SHOW,
+-                SqlQueryType.COPY
++                SqlQueryType.COPY,
++                SqlQueryType.EXECUTE
+         );
+ 
+         assertEquals(types, JdbcQueryEventHandlerImpl.SELECT_STATEMENT_QUERIES);
+diff --git a/modules/runner/src/main/java/org/apache/ignite/internal/app/IgniteImpl.java b/modules/runner/src/main/java/org/apache/ignite/internal/app/IgniteImpl.java
+index afc65e22e0..c25ff121ed 100644
+--- a/modules/runner/src/main/java/org/apache/ignite/internal/app/IgniteImpl.java
++++ b/modules/runner/src/main/java/org/apache/ignite/internal/app/IgniteImpl.java
+@@ -57,6 +57,7 @@ import java.util.function.BiPredicate;
+ import java.util.function.IntSupplier;
+ import java.util.function.LongSupplier;
+ import java.util.function.Supplier;
++import java.util.stream.Collectors;
+ import org.apache.ignite.Ignite;
+ import org.apache.ignite.IgniteServer;
+ import org.apache.ignite.cache.manager.IgniteCaches;
+@@ -67,11 +68,14 @@ import org.apache.ignite.client.handler.ClusterInfo;
+ import org.apache.ignite.client.handler.configuration.ClientConnectorConfiguration;
+ import org.apache.ignite.client.handler.configuration.ClientConnectorExtensionConfiguration;
+ import org.apache.ignite.compute.IgniteCompute;
++import org.apache.ignite.compute.JobDescriptor;
++import org.apache.ignite.compute.JobTarget;
+ import org.apache.ignite.configuration.ConfigurationDynamicDefaultsPatcher;
+ import org.apache.ignite.configuration.ConfigurationModule;
+ import org.apache.ignite.configuration.validation.ConfigurationValidationException;
+ import org.apache.ignite.configuration.validation.ValidationIssue;
+ import org.apache.ignite.configuration.validation.Validator;
++import org.apache.ignite.deployment.DeploymentUnit;
+ import org.apache.ignite.internal.catalog.CatalogManager;
+ import org.apache.ignite.internal.catalog.CatalogManagerImpl;
+ import org.apache.ignite.internal.catalog.DataNodesAwarePartitionCountCalculator;
+@@ -305,6 +309,7 @@ import org.apache.ignite.internal.sql.engine.api.expressions.ExpressionFactory;
+ import org.apache.ignite.internal.sql.engine.api.kill.CancellableOperationType;
+ import org.apache.ignite.internal.sql.engine.api.kill.OperationKillHandler;
+ import org.apache.ignite.internal.sql.engine.exec.SqlRowHandler;
++import org.apache.ignite.internal.sql.engine.exec.execute.ExecuteHandler;
+ import org.apache.ignite.internal.sql.engine.exec.exp.SqlExpressionFactory;
+ import org.apache.ignite.internal.sql.engine.exec.exp.SqlExpressionFactoryImpl;
+ import org.apache.ignite.internal.sql.engine.exec.kill.KillCommandHandler;
+@@ -376,6 +381,7 @@ import org.apache.ignite.internal.version.DefaultIgniteProductVersionSource;
+ import org.apache.ignite.internal.worker.CriticalWorkerWatchdog;
+ import org.apache.ignite.internal.worker.ThreadAssertions;
+ import org.apache.ignite.lang.IgniteException;
++import org.apache.ignite.network.ClusterNode;
+ import org.apache.ignite.network.IgniteCluster;
+ import org.apache.ignite.network.NetworkAddress;
+ import org.apache.ignite.network.NodeMetadata;
+@@ -2001,6 +2007,7 @@ public class IgniteImpl implements Ignite {
+                 licenseFeatureChecker);
+ 
+         killCommandHandler.register(computeKillHandler(compute));
++        qryEngine.setExecuteHandler(computeExecuteHandler(compute, this::clusterNodes));
+ 
+         authenticationManager = createAuthenticationManager();
+ 
+@@ -3218,6 +3225,33 @@ public class IgniteImpl implements Ignite {
+         eventLog.log(evt);
+     }
+ 
++    /**
++     * Returns the handler of the SQL {@code EXECUTE} statement: submits the named job to any node, with a string argument and a string
++     * result, through the same (secured, licensed) compute facade the public API uses.
++     */
++    private static ExecuteHandler computeExecuteHandler(IgniteCompute compute, Supplier<Collection<ClusterNode>> nodes) {
++        return command -> {
++            List<DeploymentUnit> units = command.units().stream()
++                    .map(unit -> {
++                        int sep = unit.lastIndexOf(':');
++
++                        if (sep <= 0 || sep == unit.length() - 1) {
++                            throw new IllegalArgumentException("Deployment unit must be 'name:version': " + unit);
++                        }
++
++                        return new DeploymentUnit(unit.substring(0, sep), unit.substring(sep + 1));
++                    })
++                    .collect(Collectors.toList());
++
++            JobDescriptor<String, String> descriptor = JobDescriptor.<String, String>builder(command.jobClassName())
++                    .units(units)
++                    .resultClass(String.class)
++                    .build();
++
++            return compute.executeAsync(JobTarget.anyNode(nodes.get()), descriptor, command.args());
++        };
++    }
++
+     /** Returns a {@link OperationKillHandler kill handler} for the compute job. */
+     private static OperationKillHandler computeKillHandler(IgniteComputeInternal compute) {
+         return new OperationKillHandler() {
+diff --git a/modules/sql-engine-api/src/main/java/org/apache/ignite/internal/sql/engine/SqlQueryType.java b/modules/sql-engine-api/src/main/java/org/apache/ignite/internal/sql/engine/SqlQueryType.java
+index f7932e0cd0..5750a69546 100644
+--- a/modules/sql-engine-api/src/main/java/org/apache/ignite/internal/sql/engine/SqlQueryType.java
++++ b/modules/sql-engine-api/src/main/java/org/apache/ignite/internal/sql/engine/SqlQueryType.java
+@@ -56,6 +56,9 @@ public enum SqlQueryType {
+      */
+     DCL,
+ 
++    /** Compute job statement ({@code EXECUTE 'job.class' ...}). */
++    EXECUTE,
++
+     ;
+ 
+     /** A set of statement types that can run only in single statement mode. **/
+@@ -98,6 +101,7 @@ public enum SqlQueryType {
+             case REFRESH_STATISTICS:
+             case SHOW:
+             case COPY:
++            case EXECUTE:
+                 return false;
+             default:
+                 throw unexpectedSqlQueryType(this);
+@@ -121,6 +125,7 @@ public enum SqlQueryType {
+             case REFRESH_STATISTICS:
+             case SHOW:
+             case COPY:
++            case EXECUTE:
+                 return false;
+             default:
+                 throw unexpectedSqlQueryType(this);
+@@ -142,6 +147,7 @@ public enum SqlQueryType {
+             case KILL:
+             case REFRESH_STATISTICS:
+             case COPY:
++            case EXECUTE:
+                 return true;
+             case TX_CONTROL:
+                 return false;
+@@ -167,6 +173,7 @@ public enum SqlQueryType {
+             case REFRESH_STATISTICS:
+             case SHOW:
+             case COPY:
++            case EXECUTE:
+                 return false;
+             default:
+                 throw unexpectedSqlQueryType(this);
+@@ -185,6 +192,7 @@ public enum SqlQueryType {
+             case REFRESH_STATISTICS:
+             case SHOW:
+             case COPY:
++            case EXECUTE:
+             case EXPLAIN:
+                 return true;
+             case DDL:
+@@ -216,6 +224,7 @@ public enum SqlQueryType {
+             case REFRESH_STATISTICS:
+             case SHOW:
+             case COPY:
++            case EXECUTE:
+                 throw new UnsupportedOperationException(this + " does not support requesting transaction mode.");
+             default:
+                 throw unexpectedSqlQueryType(this);
+@@ -231,6 +240,7 @@ public enum SqlQueryType {
+             case EXPLAIN:
+             case SHOW:
+             case COPY:
++            case EXECUTE:
+                 return true;
+             case DML:
+             case DDL:
+@@ -258,6 +268,7 @@ public enum SqlQueryType {
+             case REFRESH_STATISTICS:
+             case SHOW:
+             case COPY:
++            case EXECUTE:
+                 return false;
+             case DML:
+                 return true;
+@@ -277,6 +288,7 @@ public enum SqlQueryType {
+             case TX_CONTROL:
+             case SHOW:
+             case COPY:
++            case EXECUTE:
+                 return false;
+             case DDL:
+             case DCL:
+@@ -311,6 +323,8 @@ public enum SqlQueryType {
+                 return "Show";
+             case COPY:
+                 return "Copy";
++            case EXECUTE:
++                return "Execute";
+             default:
+                 throw unexpectedSqlQueryType(this);
+         }
+diff --git a/modules/sql-engine/src/integrationTest/java/org/apache/ignite/internal/sql/engine/execute/ItSqlExecuteTest.java b/modules/sql-engine/src/integrationTest/java/org/apache/ignite/internal/sql/engine/execute/ItSqlExecuteTest.java
+new file mode 100644
+index 0000000000..dee3d2e65c
+--- /dev/null
++++ b/modules/sql-engine/src/integrationTest/java/org/apache/ignite/internal/sql/engine/execute/ItSqlExecuteTest.java
+@@ -0,0 +1,69 @@
++/*
++ *  Copyright (C) GridGain Systems. All Rights Reserved.
++ *  _________        _____ __________________        _____
++ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
++ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
++ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
++ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
++ */
++
++package org.apache.ignite.internal.sql.engine.execute;
++
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertThrows;
++
++import java.util.List;
++import org.apache.ignite.compute.ComputeJob;
++import org.apache.ignite.compute.JobExecutionContext;
++import org.apache.ignite.internal.sql.BaseSqlIntegrationTest;
++import org.jetbrains.annotations.Nullable;
++import org.junit.jupiter.api.Test;
++
++/** End-to-end tests of the SQL {@code EXECUTE} statement, which runs a compute job. */
++public class ItSqlExecuteTest extends BaseSqlIntegrationTest {
++    @Override
++    protected int initialNodes() {
++        return 3;
++    }
++
++    @Test
++    void executeReturnsJobResult() {
++        List<List<Object>> rows = sql("EXECUTE '" + EchoJob.class.getName() + "' ARGS 'hello'");
++
++        assertEquals(List.of(List.of("echo:hello")), rows);
++    }
++
++    @Test
++    void executeWithoutArgs() {
++        List<List<Object>> rows = sql("EXECUTE '" + EchoJob.class.getName() + "'");
++
++        assertEquals(List.of(List.of("echo:null")), rows);
++    }
++
++    @Test
++    void executeFromAnyEntryNode() {
++        for (int node = 0; node < initialNodes(); node++) {
++            List<List<Object>> rows = sql(node, null, "EXECUTE '" + EchoJob.class.getName() + "' ARGS 'x'", new Object[0]);
++
++            assertEquals(List.of(List.of("echo:x")), rows);
++        }
++    }
++
++    @Test
++    void unknownJobClassFails() {
++        assertThrows(Exception.class, () -> sql("EXECUTE 'no.such.Job'"));
++    }
++
++    @Test
++    void badUnitFormatFails() {
++        assertThrows(Exception.class, () -> sql("EXECUTE '" + EchoJob.class.getName() + "' UNITS 'oops'"));
++    }
++
++    /** Job that echoes its argument. */
++    public static class EchoJob implements ComputeJob<String, String> {
++        @Override
++        public @Nullable java.util.concurrent.CompletableFuture<String> executeAsync(JobExecutionContext context, @Nullable String arg) {
++            return java.util.concurrent.CompletableFuture.completedFuture("echo:" + arg);
++        }
++    }
++}
+diff --git a/modules/sql-engine/src/main/codegen/config.fmpp b/modules/sql-engine/src/main/codegen/config.fmpp
+index 35cc69e64d..d223796add 100644
+--- a/modules/sql-engine/src/main/codegen/config.fmpp
++++ b/modules/sql-engine/src/main/codegen/config.fmpp
+@@ -67,6 +67,7 @@ data: {
+       "org.apache.ignite.internal.sql.engine.sql.IgniteSqlAlterZoneRenameTo",
+       "org.apache.ignite.internal.sql.engine.sql.IgniteSqlAlterZoneSetDefault",
+       "org.apache.ignite.internal.sql.engine.sql.IgniteSqlDelete",
++      "org.apache.ignite.internal.sql.engine.sql.IgniteSqlExecute",
+       "org.apache.ignite.internal.sql.engine.sql.IgniteSqlKill",
+       "org.apache.ignite.internal.sql.engine.sql.IgniteSqlKillObjectType",
+       "org.apache.ignite.internal.sql.engine.sql.dcl.GridgainSqlCreateUser",
+@@ -148,6 +149,8 @@ data: {
+       "KILL"
+       "QUERY"
+       "COMPUTE"
++      "UNITS"
++      "ARGS"
+       "MAPPING"
+       "WAIT"
+       "STALE"
+@@ -199,6 +202,8 @@ data: {
+       "HASH"
+       "QUERY"
+       "COMPUTE"
++      "UNITS"
++      "ARGS"
+       "MAPPING"
+       "WAIT"
+       "KILL"
+@@ -442,6 +447,7 @@ data: {
+       "SqlStartTransaction()",
+       "SqlCommitTransaction()",
+       "SqlKill()",
++      "SqlExecute()",
+       "SqlRefreshStatistics()",
+       "SqlAlterStatistics()",
+     ]
+diff --git a/modules/sql-engine/src/main/codegen/includes/parserImpls.ftl b/modules/sql-engine/src/main/codegen/includes/parserImpls.ftl
+index c74262ddc1..f8c451b95c 100644
+--- a/modules/sql-engine/src/main/codegen/includes/parserImpls.ftl
++++ b/modules/sql-engine/src/main/codegen/includes/parserImpls.ftl
+@@ -1082,6 +1082,34 @@ SqlNode SqlCommitTransaction() :
+     }
+ }
+ 
++/**
++ * EXECUTE 'job.class.Name' [UNITS 'unit:version' [, ...]] [ARGS 'argument']
++ *
++ * Runs a compute job on a cluster node and returns its result as a string.
++ */
++SqlNode SqlExecute() :
++{
++    final Span s;
++    final SqlNode jobClass;
++    final List<SqlNode> units = new ArrayList<SqlNode>();
++    SqlNode unit;
++    SqlNode args = null;
++}
++{
++    <EXECUTE> { s = span(); }
++    jobClass = StringLiteral()
++    [
++        <UNITS> unit = StringLiteral() { units.add(unit); }
++        ( <COMMA> unit = StringLiteral() { units.add(unit); } )*
++    ]
++    [
++        <ARGS> args = StringLiteral()
++    ]
++    {
++        return new IgniteSqlExecute(s.end(this), (SqlLiteral) jobClass, new SqlNodeList(units, s.pos()), (SqlLiteral) args);
++    }
++}
++
+ SqlNode SqlKill() :
+ {
+     final Span s;
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/SqlQueryProcessor.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/SqlQueryProcessor.java
+index 1971e05e53..ccb309228a 100644
+--- a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/SqlQueryProcessor.java
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/SqlQueryProcessor.java
+@@ -76,6 +76,7 @@ import org.apache.ignite.internal.sql.engine.exec.SqlRowHandler;
+ import org.apache.ignite.internal.sql.engine.exec.SqlRowHandler.RowWrapper;
+ import org.apache.ignite.internal.sql.engine.exec.TransactionalOperationTracker;
+ import org.apache.ignite.internal.sql.engine.exec.ddl.SecuredDdlCommandHandler;
++import org.apache.ignite.internal.sql.engine.exec.execute.ExecuteHandler;
+ import org.apache.ignite.internal.sql.engine.exec.exp.SqlExpressionFactory;
+ import org.apache.ignite.internal.sql.engine.exec.exp.func.TableFunctionRegistryImpl;
+ import org.apache.ignite.internal.sql.engine.exec.fsm.ExecutionPhase;
+@@ -208,6 +209,8 @@ public class SqlQueryProcessor implements QueryProcessor, SystemViewProvider {
+ 
+     private volatile ExecutionServiceImpl<?> executionSvc;
+ 
++    private volatile @Nullable ExecuteHandler executeHandler;
++
+     /** Clock. */
+     private final ClockService clockService;
+ 
+@@ -523,6 +526,12 @@ public class SqlQueryProcessor implements QueryProcessor, SystemViewProvider {
+                 () -> clusterCfg.allowFollowerReads().value()
+         ));
+ 
++        ExecuteHandler pendingExecuteHandler = executeHandler;
++
++        if (pendingExecuteHandler != null) {
++            executionSvc.setExecuteHandler(pendingExecuteHandler);
++        }
++
+         queryExecutor = registerService(new QueryExecutor(
+                 nodeName,
+                 CACHE_FACTORY,
+@@ -779,6 +788,18 @@ public class SqlQueryProcessor implements QueryProcessor, SystemViewProvider {
+         return executor.runningQueries();
+     }
+ 
++    /** Registers the handler that runs the compute jobs of {@code EXECUTE} statements. */
++    public void setExecuteHandler(ExecuteHandler executeHandler) {
++        this.executeHandler = executeHandler;
++
++        // The execution service is created on start; the handler is passed on then if it is registered earlier.
++        ExecutionServiceImpl<?> svc = executionSvc;
++
++        if (svc != null) {
++            svc.setExecuteHandler(executeHandler);
++        }
++    }
++
+     /** Returns the fragments of the query with the given id that run on this node. */
+     @TestOnly
+     public List<AbstractNode<?>> localFragments(UUID queryId) {
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/ExecutionServiceImpl.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/ExecutionServiceImpl.java
+index 8e78b0549b..7ffb8c0e66 100644
+--- a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/ExecutionServiceImpl.java
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/ExecutionServiceImpl.java
+@@ -94,6 +94,7 @@ import org.apache.ignite.internal.sql.engine.SqlQueryType;
+ import org.apache.ignite.internal.sql.engine.api.expressions.RowFactoryFactory;
+ import org.apache.ignite.internal.sql.engine.exec.AsyncDataCursor.CancellationReason;
+ import org.apache.ignite.internal.sql.engine.exec.ddl.DdlCommandHandler;
++import org.apache.ignite.internal.sql.engine.exec.execute.ExecuteHandler;
+ import org.apache.ignite.internal.sql.engine.exec.exp.SqlExpressionFactory;
+ import org.apache.ignite.internal.sql.engine.exec.exp.func.TableFunctionRegistry;
+ import org.apache.ignite.internal.sql.engine.exec.kill.KillCommand;
+@@ -134,6 +135,7 @@ import org.apache.ignite.internal.sql.engine.message.UnknownNodeException;
+ import org.apache.ignite.internal.sql.engine.prepare.CopyPlan;
+ import org.apache.ignite.internal.sql.engine.prepare.DclPlan;
+ import org.apache.ignite.internal.sql.engine.prepare.DdlPlan;
++import org.apache.ignite.internal.sql.engine.prepare.ExecutePlan;
+ import org.apache.ignite.internal.sql.engine.prepare.ExplainPlan;
+ import org.apache.ignite.internal.sql.engine.prepare.Fragment;
+ import org.apache.ignite.internal.sql.engine.prepare.KeyValueModifyPlan;
+@@ -223,6 +225,8 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService, LogicalTopo
+ 
+     private final KillCommandHandler killCommandHandler;
+ 
++    private volatile @Nullable ExecuteHandler executeHandler;
++
+     private final Supplier<MemoryContextFactory<RowT>> memoryContextFactorySupplier;
+ 
+     private final SqlExpressionFactory sqlExpressionFactory;
+@@ -579,6 +583,8 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService, LogicalTopo
+                 return completedFuture(executeDcl((DclPlan) plan));
+             case KILL:
+                 return completedFuture(executeKill((KillPlan) plan));
++            case EXECUTE:
++                return completedFuture(executeJob((ExecutePlan) plan));
+             case REFRESH_STATISTICS:
+                 return completedFuture(executeRefreshStatistics((RefreshStatisticsPlan) plan));
+             case SHOW:
+@@ -751,6 +757,25 @@ public class ExecutionServiceImpl<RowT> implements ExecutionService, LogicalTopo
+         return new SingleRowDataCursor<>(ret);
+     }
+ 
++    private AsyncDataCursor<InternalSqlRow> executeJob(ExecutePlan plan) {
++        ExecuteHandler handler = executeHandler;
++
++        if (handler == null) {
++            return new SingleRowDataCursor<>(CompletableFuture.failedFuture(
++                    new IgniteInternalException(INTERNAL_ERR, "EXECUTE is not available: no compute handler is registered")));
++        }
++
++        CompletableFuture<InternalSqlRow> ret = handler.execute(plan.command())
++                .thenApply(result -> (InternalSqlRow) new InternalSqlRowSingleString(result == null ? "" : result));
++
++        return new SingleRowDataCursor<>(ret);
++    }
++
++    /** Registers the handler that runs the jobs of {@code EXECUTE} statements. */
++    public void setExecuteHandler(ExecuteHandler executeHandler) {
++        this.executeHandler = executeHandler;
++    }
++
+     private AsyncDataCursor<InternalSqlRow> executeKill(
+             KillPlan plan
+     ) {
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/SecuredExecutionService.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/SecuredExecutionService.java
+index 0fc5d54e69..fa5dfd6375 100644
+--- a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/SecuredExecutionService.java
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/SecuredExecutionService.java
+@@ -87,6 +87,8 @@ public class SecuredExecutionService implements ExecutionService {
+             }
+             case DDL, DCL, SHOW -> executionService.executePlan(plan, ctx);
+             case KILL -> doExecuteKillPlan((KillPlan) plan, ctx);
++            // The job is submitted through the secured compute facade, which authorizes the caller itself.
++            case EXECUTE -> executionService.executePlan(plan, ctx);
+             case REFRESH_STATISTICS -> doExecuteRefreshStatisticsPlan((RefreshStatisticsPlan) plan, ctx);
+             default -> throw new AssertionError("Unexpected query type: " + queryType);
+         };
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/execute/ExecuteCommand.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/execute/ExecuteCommand.java
+new file mode 100644
+index 0000000000..15553e1b57
+--- /dev/null
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/execute/ExecuteCommand.java
+@@ -0,0 +1,64 @@
++/*
++ *  Copyright (C) GridGain Systems. All Rights Reserved.
++ *  _________        _____ __________________        _____
++ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
++ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
++ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
++ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
++ */
++
++package org.apache.ignite.internal.sql.engine.exec.execute;
++
++import java.util.List;
++import org.apache.ignite.internal.sql.engine.sql.IgniteSqlExecute;
++import org.apache.ignite.internal.tostring.S;
++import org.jetbrains.annotations.Nullable;
++
++/**
++ * SQL {@code EXECUTE} command: run a compute job and return its result.
++ */
++public class ExecuteCommand {
++    private final String jobClassName;
++
++    private final List<String> units;
++
++    private final @Nullable String args;
++
++    /** Constructor. */
++    public ExecuteCommand(String jobClassName, List<String> units, @Nullable String args) {
++        this.jobClassName = jobClassName;
++        this.units = List.copyOf(units);
++        this.args = args;
++    }
++
++    /** Creates the command from the AST node. */
++    public static ExecuteCommand fromSqlCall(IgniteSqlExecute sqlExecute) {
++        String jobClass = sqlExecute.jobClass().getValueAs(String.class);
++
++        assert jobClass != null;
++
++        return new ExecuteCommand(
++                jobClass,
++                sqlExecute.units(),
++                sqlExecute.args() == null ? null : sqlExecute.args().getValueAs(String.class)
++        );
++    }
++
++    public String jobClassName() {
++        return jobClassName;
++    }
++
++    /** Deployment units, each as {@code name:version}. */
++    public List<String> units() {
++        return units;
++    }
++
++    public @Nullable String args() {
++        return args;
++    }
++
++    @Override
++    public String toString() {
++        return S.toString(ExecuteCommand.class, this);
++    }
++}
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/execute/ExecuteHandler.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/execute/ExecuteHandler.java
+new file mode 100644
+index 0000000000..194295fd29
+--- /dev/null
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/exec/execute/ExecuteHandler.java
+@@ -0,0 +1,28 @@
++/*
++ *  Copyright (C) GridGain Systems. All Rights Reserved.
++ *  _________        _____ __________________        _____
++ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
++ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
++ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
++ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
++ */
++
++package org.apache.ignite.internal.sql.engine.exec.execute;
++
++import java.util.concurrent.CompletableFuture;
++import org.jetbrains.annotations.Nullable;
++
++/**
++ * Runs the compute job named by an SQL {@code EXECUTE} statement.
++ *
++ * <p>The SQL engine cannot depend on the compute module (compute depends on SQL), so the node registers an implementation on start.
++ */
++public interface ExecuteHandler {
++    /**
++     * Runs the job on a cluster node and completes with its result rendered as a string.
++     *
++     * @param command The command.
++     * @return Job result as a string, or {@code null} if the job returned {@code null}.
++     */
++    CompletableFuture<@Nullable String> execute(ExecuteCommand command);
++}
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/prepare/ExecutePlan.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/prepare/ExecutePlan.java
+new file mode 100644
+index 0000000000..05bd779553
+--- /dev/null
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/prepare/ExecutePlan.java
+@@ -0,0 +1,82 @@
++/*
++ *  Copyright (C) GridGain Systems. All Rights Reserved.
++ *  _________        _____ __________________        _____
++ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
++ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
++ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
++ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
++ */
++
++package org.apache.ignite.internal.sql.engine.prepare;
++
++import java.util.Collections;
++import java.util.List;
++import org.apache.ignite.internal.sql.ColumnMetadataImpl;
++import org.apache.ignite.internal.sql.ResultSetMetadataImpl;
++import org.apache.ignite.internal.sql.engine.SqlQueryType;
++import org.apache.ignite.internal.sql.engine.exec.execute.ExecuteCommand;
++import org.apache.ignite.internal.sql.engine.prepare.partitionawareness.PartitionAwarenessMetadata;
++import org.apache.ignite.internal.sql.engine.prepare.pruning.PartitionPruningMetadata;
++import org.apache.ignite.sql.ColumnMetadata;
++import org.apache.ignite.sql.ColumnType;
++import org.apache.ignite.sql.ResultSetMetadata;
++import org.jetbrains.annotations.Nullable;
++
++/**
++ * EXECUTE command execution plan.
++ */
++public class ExecutePlan implements QueryPlan {
++    private static final ResultSetMetadata EXECUTE_METADATA = new ResultSetMetadataImpl(List.of(
++            new ColumnMetadataImpl("RESULT", ColumnType.STRING,
++                    ColumnMetadata.UNDEFINED_PRECISION, ColumnMetadata.UNDEFINED_SCALE, true, null)));
++
++    private static final ParameterMetadata EMPTY_PARAMETERS = new ParameterMetadata(Collections.emptyList());
++
++    private final PlanId id;
++
++    private final ExecuteCommand cmd;
++
++    ExecutePlan(PlanId id, ExecuteCommand cmd) {
++        this.id = id;
++        this.cmd = cmd;
++    }
++
++    public ExecuteCommand command() {
++        return cmd;
++    }
++
++    @Override
++    public PlanId id() {
++        return id;
++    }
++
++    @Override
++    public SqlQueryType type() {
++        return SqlQueryType.EXECUTE;
++    }
++
++    @Override
++    public ResultSetMetadata metadata() {
++        return EXECUTE_METADATA;
++    }
++
++    @Override
++    public ParameterMetadata parameterMetadata() {
++        return EMPTY_PARAMETERS;
++    }
++
++    @Override
++    public @Nullable PartitionAwarenessMetadata partitionAwarenessMetadata() {
++        return null;
++    }
++
++    @Override
++    public @Nullable PartitionPruningMetadata partitionPruningMetadata() {
++        return null;
++    }
++
++    @Override
++    public int numSources() {
++        return 0;
++    }
++}
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/prepare/PrepareServiceImpl.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/prepare/PrepareServiceImpl.java
+index 93ef14259f..3d5373bd4c 100644
+--- a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/prepare/PrepareServiceImpl.java
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/prepare/PrepareServiceImpl.java
+@@ -82,6 +82,7 @@ import org.apache.ignite.internal.sql.configuration.distributed.SqlDistributedCo
+ import org.apache.ignite.internal.sql.configuration.local.SqlLocalConfiguration;
+ import org.apache.ignite.internal.sql.engine.SqlOperationContext;
+ import org.apache.ignite.internal.sql.engine.SqlQueryType;
++import org.apache.ignite.internal.sql.engine.exec.execute.ExecuteCommand;
+ import org.apache.ignite.internal.sql.engine.exec.kill.KillCommand;
+ import org.apache.ignite.internal.sql.engine.prepare.copy.CopyLocationSelect;
+ import org.apache.ignite.internal.sql.engine.prepare.copy.CopySqlToCommandConverter;
+@@ -105,6 +106,7 @@ import org.apache.ignite.internal.sql.engine.schema.IgniteDataSource;
+ import org.apache.ignite.internal.sql.engine.schema.IgniteSchemas;
+ import org.apache.ignite.internal.sql.engine.schema.IgniteTable;
+ import org.apache.ignite.internal.sql.engine.schema.SqlSchemaManager;
++import org.apache.ignite.internal.sql.engine.sql.IgniteSqlExecute;
+ import org.apache.ignite.internal.sql.engine.sql.IgniteSqlExplain;
+ import org.apache.ignite.internal.sql.engine.sql.IgniteSqlExplainMode;
+ import org.apache.ignite.internal.sql.engine.sql.IgniteSqlKill;
+@@ -497,6 +499,8 @@ public class PrepareServiceImpl implements PrepareService {
+                 return prepareDcl(parsedResult, planningContext);
+             case KILL:
+                 return prepareKill(parsedResult);
++            case EXECUTE:
++                return prepareExecute(parsedResult);
+             case REFRESH_STATISTICS:
+                 return prepareRefreshStatistics(parsedResult, planningContext);
+             case DML:
+@@ -604,6 +608,14 @@ public class PrepareServiceImpl implements PrepareService {
+                 new DclPlan(nextPlanId(), dclConverter.convert((GridgainSqlDcl) sqlNode, ctx.query())));
+     }
+ 
++    private CompletableFuture<QueryPlan> prepareExecute(ParsedResult parsedResult) {
++        SqlNode sqlNode = parsedResult.parsedTree();
++
++        assert sqlNode instanceof IgniteSqlExecute : sqlNode == null ? "null" : sqlNode.getClass().getName();
++
++        return CompletableFuture.completedFuture(new ExecutePlan(nextPlanId(), ExecuteCommand.fromSqlCall((IgniteSqlExecute) sqlNode)));
++    }
++
+     private CompletableFuture<QueryPlan> prepareKill(ParsedResult parsedResult) {
+         SqlNode sqlNode = parsedResult.parsedTree();
+ 
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/sql/IgniteSqlExecute.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/sql/IgniteSqlExecute.java
+new file mode 100644
+index 0000000000..c279155956
+--- /dev/null
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/sql/IgniteSqlExecute.java
+@@ -0,0 +1,124 @@
++/*
++ *  Copyright (C) GridGain Systems. All Rights Reserved.
++ *  _________        _____ __________________        _____
++ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
++ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
++ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
++ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
++ */
++
++package org.apache.ignite.internal.sql.engine.sql;
++
++import java.util.ArrayList;
++import java.util.List;
++import java.util.Objects;
++import org.apache.calcite.sql.SqlCall;
++import org.apache.calcite.sql.SqlKind;
++import org.apache.calcite.sql.SqlLiteral;
++import org.apache.calcite.sql.SqlNode;
++import org.apache.calcite.sql.SqlNodeList;
++import org.apache.calcite.sql.SqlOperator;
++import org.apache.calcite.sql.SqlWriter;
++import org.apache.calcite.sql.parser.SqlParserPos;
++import org.jetbrains.annotations.Nullable;
++
++/**
++ * Parse tree for {@code EXECUTE 'job.class' [UNITS 'unit:version', ...] [ARGS 'argument']} statement.
++ */
++public class IgniteSqlExecute extends SqlCall {
++    /** EXECUTE operator. */
++    protected static class Operator extends IgniteSqlSpecialOperator {
++        protected Operator() {
++            super("EXECUTE", SqlKind.OTHER);
++        }
++
++        /** {@inheritDoc} */
++        @Override
++        public SqlCall createCall(@Nullable SqlLiteral functionQualifier, SqlParserPos pos, @Nullable SqlNode... operands) {
++            return new IgniteSqlExecute(pos, (SqlLiteral) operands[0], (SqlNodeList) operands[1], (SqlLiteral) operands[2]);
++        }
++    }
++
++    private static final Operator OPERATOR = new Operator();
++
++    private final SqlLiteral jobClass;
++
++    private final SqlNodeList units;
++
++    private final @Nullable SqlLiteral args;
++
++    /** Constructor. */
++    public IgniteSqlExecute(SqlParserPos pos, SqlLiteral jobClass, SqlNodeList units, @Nullable SqlLiteral args) {
++        super(pos);
++
++        this.jobClass = Objects.requireNonNull(jobClass, "jobClass");
++        this.units = Objects.requireNonNull(units, "units");
++        this.args = args;
++    }
++
++    /** Job class name. */
++    public SqlLiteral jobClass() {
++        return jobClass;
++    }
++
++    /** Deployment units, each as {@code name:version}. */
++    public List<String> units() {
++        List<String> res = new ArrayList<>(units.size());
++
++        for (SqlNode unit : units) {
++            res.add(((SqlLiteral) unit).getValueAs(String.class));
++        }
++
++        return res;
++    }
++
++    /** Job argument, or {@code null}. */
++    public @Nullable SqlLiteral args() {
++        return args;
++    }
++
++    /** {@inheritDoc} */
++    @Override
++    public SqlOperator getOperator() {
++        return OPERATOR;
++    }
++
++    /** {@inheritDoc} */
++    @Override
++    public List<SqlNode> getOperandList() {
++        List<SqlNode> res = new ArrayList<>(3);
++
++        res.add(jobClass);
++        res.add(units);
++        res.add(args);
++
++        return res;
++    }
++
++    /** {@inheritDoc} */
++    @Override
++    public void unparse(SqlWriter writer, int leftPrec, int rightPrec) {
++        writer.keyword("EXECUTE");
++
++        jobClass.unparse(writer, leftPrec, rightPrec);
++
++        if (units.size() > 0) {
++            writer.keyword("UNITS");
++
++            SqlWriter.Frame frame = writer.startList("", "");
++
++            for (SqlNode unit : units) {
++                writer.sep(",");
++                unit.unparse(writer, leftPrec, rightPrec);
++            }
++
++            writer.endList(frame);
++        }
++
++        if (args != null) {
++            writer.keyword("ARGS");
++
++            args.unparse(writer, leftPrec, rightPrec);
++        }
++    }
++}
+diff --git a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/util/Commons.java b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/util/Commons.java
+index 14d51a0b6d..3f8346ee89 100644
+--- a/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/util/Commons.java
++++ b/modules/sql-engine/src/main/java/org/apache/ignite/internal/sql/engine/util/Commons.java
+@@ -105,6 +105,7 @@ import org.apache.ignite.internal.sql.engine.rel.IgniteProject;
+ import org.apache.ignite.internal.sql.engine.schema.IgniteTable;
+ import org.apache.ignite.internal.sql.engine.sql.IgniteSqlCommitTransaction;
+ import org.apache.ignite.internal.sql.engine.sql.IgniteSqlConformance;
++import org.apache.ignite.internal.sql.engine.sql.IgniteSqlExecute;
+ import org.apache.ignite.internal.sql.engine.sql.IgniteSqlKill;
+ import org.apache.ignite.internal.sql.engine.sql.IgniteSqlParser;
+ import org.apache.ignite.internal.sql.engine.sql.IgniteSqlStartTransaction;
+@@ -707,6 +708,10 @@ public final class Commons {
+             return SqlQueryType.KILL;
+         }
+ 
++        if (sqlNode instanceof IgniteSqlExecute) {
++            return SqlQueryType.EXECUTE;
++        }
++
+         if (sqlNode instanceof GridgainSqlRefreshStatistics) {
+             return SqlQueryType.REFRESH_STATISTICS;
+         }
+diff --git a/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/SqlQueryTypeSelfTest.java b/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/SqlQueryTypeSelfTest.java
+index de4c8ed371..dc75afe440 100644
+--- a/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/SqlQueryTypeSelfTest.java
++++ b/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/SqlQueryTypeSelfTest.java
+@@ -55,7 +55,8 @@ public class SqlQueryTypeSelfTest extends BaseIgniteAbstractTest {
+                 SqlQueryType.KILL,
+                 SqlQueryType.REFRESH_STATISTICS,
+                 SqlQueryType.SHOW,
+-                SqlQueryType.COPY
++                SqlQueryType.COPY,
++                SqlQueryType.EXECUTE
+         );
+         assertEquals(types.contains(queryType), queryType.supportsExplicitTransactions(), queryType.name());
+     }
+@@ -86,7 +87,8 @@ public class SqlQueryTypeSelfTest extends BaseIgniteAbstractTest {
+                 SqlQueryType.KILL,
+                 SqlQueryType.REFRESH_STATISTICS,
+                 SqlQueryType.SHOW,
+-                SqlQueryType.COPY
++                SqlQueryType.COPY,
++                SqlQueryType.EXECUTE
+         );
+         assertEquals(types.contains(queryType), queryType.supportsIndependentExecution(), queryType.name());
+ 
+@@ -125,7 +127,8 @@ public class SqlQueryTypeSelfTest extends BaseIgniteAbstractTest {
+                 SqlQueryType.QUERY,
+                 SqlQueryType.EXPLAIN,
+                 SqlQueryType.SHOW,
+-                SqlQueryType.COPY
++                SqlQueryType.COPY,
++                SqlQueryType.EXECUTE
+         );
+         assertEquals(types.contains(queryType), queryType.hasRowSet(), queryType.name());
+     }
+diff --git a/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/ParserServiceImplTest.java b/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/ParserServiceImplTest.java
+index 4762ade020..2154c43ef5 100644
+--- a/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/ParserServiceImplTest.java
++++ b/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/ParserServiceImplTest.java
+@@ -49,7 +49,8 @@ public class ParserServiceImplTest {
+         TX_CONTROL("COMMIT", SqlQueryType.TX_CONTROL),
+         KILL("KILL QUERY 'abc'", SqlQueryType.KILL),
+         REFRESH_STATISTICS("REFRESH ALL STATISTICS", SqlQueryType.REFRESH_STATISTICS),
+-        DCL("CREATE ROLE TEST_ROLE", SqlQueryType.DCL);
++        DCL("CREATE ROLE TEST_ROLE", SqlQueryType.DCL),
++        EXECUTE("EXECUTE 'org.example.Job' UNITS 'unit:1.0.0' ARGS 'arg'", SqlQueryType.EXECUTE);
+ 
+         private final String text;
+         private final SqlQueryType type;
+diff --git a/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/SqlExecuteParserTest.java b/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/SqlExecuteParserTest.java
+new file mode 100644
+index 0000000000..b9aadbc0a7
+--- /dev/null
++++ b/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/SqlExecuteParserTest.java
+@@ -0,0 +1,67 @@
++/*
++ *  Copyright (C) GridGain Systems. All Rights Reserved.
++ *  _________        _____ __________________        _____
++ *  __  ____/___________(_)______  /__  ____/______ ____(_)_______
++ *  _  / __  __  ___/__  / _  __  / _  / __  _  __ `/__  / __  __ \
++ *  / /_/ /  _  /    _  /  / /_/ /  / /_/ /  / /_/ / _  /  _  / / /
++ *  \____/   /_/     /_/   \_,__/   \____/   \__,_/  /_/   /_/ /_/
++ */
++
++package org.apache.ignite.internal.sql.engine.sql;
++
++import static org.apache.ignite.internal.sql.engine.util.SqlTestUtils.assertThrowsSqlException;
++import static org.junit.jupiter.api.Assertions.assertEquals;
++import static org.junit.jupiter.api.Assertions.assertInstanceOf;
++import static org.junit.jupiter.api.Assertions.assertNull;
++
++import java.util.List;
++import org.apache.calcite.sql.SqlNode;
++import org.apache.ignite.internal.sql.engine.SqlQueryType;
++import org.apache.ignite.internal.sql.engine.util.Commons;
++import org.apache.ignite.lang.ErrorGroups.Sql;
++import org.junit.jupiter.api.Test;
++import org.junit.jupiter.params.ParameterizedTest;
++import org.junit.jupiter.params.provider.ValueSource;
++
++/** Tests for EXECUTE SQL statement. */
++public class SqlExecuteParserTest extends AbstractParserTest {
++    @Test
++    public void jobClassOnly() {
++        String stmt = "EXECUTE 'org.example.MyJob'";
++
++        IgniteSqlExecute execute = assertInstanceOf(IgniteSqlExecute.class, parse(stmt));
++
++        assertEquals("org.example.MyJob", execute.jobClass().toValue());
++        assertEquals(List.of(), execute.units());
++        assertNull(execute.args());
++        assertEquals(SqlQueryType.EXECUTE, Commons.getQueryType(execute));
++
++        expectUnparsed(execute, stmt);
++    }
++
++    @Test
++    public void unitsAndArgs() {
++        String stmt = "EXECUTE 'org.example.MyJob' UNITS 'a:1.0.0', 'b:2.0.0' ARGS '{\"x\":1}'";
++
++        SqlNode node = parse(stmt);
++
++        IgniteSqlExecute execute = assertInstanceOf(IgniteSqlExecute.class, node);
++
++        assertEquals(List.of("a:1.0.0", "b:2.0.0"), execute.units());
++        assertEquals("{\"x\":1}", execute.args().toValue());
++
++        expectUnparsed(execute, "EXECUTE 'org.example.MyJob' UNITS 'a:1.0.0', 'b:2.0.0' ARGS '{\"x\":1}'");
++    }
++
++    @ParameterizedTest
++    @ValueSource(strings = {
++            "EXECUTE",
++            "EXECUTE 1",
++            "EXECUTE 'job' UNITS",
++            "EXECUTE 'job' ARGS 1",
++            "EXECUTE 'job' ARGS 'a' UNITS 'u:1'",
++    })
++    public void invalid(String stmt) {
++        assertThrowsSqlException(Sql.STMT_PARSE_ERR, "Failed to parse query", () -> parse(stmt));
++    }
++}
+diff --git a/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/SqlReservedWordsTest.java b/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/SqlReservedWordsTest.java
+index dc390e1b28..39eea2afe9 100644
+--- a/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/SqlReservedWordsTest.java
++++ b/modules/sql-engine/src/test/java/org/apache/ignite/internal/sql/engine/sql/SqlReservedWordsTest.java
+@@ -244,6 +244,7 @@ public class SqlReservedWordsTest extends AbstractParserTest {
+             "ALWAYS",
+             "APPLY",
+             "ARE",
++            "ARGS",
+             "ARRAY_AGG",
+             "ARRAY_CONCAT_AGG",
+             "ASC",
+@@ -751,6 +752,7 @@ public class SqlReservedWordsTest extends AbstractParserTest {
+             "UNCONDITIONAL",
+             "UNDER",
+             "UNIQUE",
++            "UNITS",
+             "UNNAMED",
+             "UNNEST",
+             "UNPIVOT",
