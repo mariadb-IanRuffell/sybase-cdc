@@ -31,6 +31,8 @@ if object_id('trg_cdc_customer') is not null drop trigger trg_cdc_customer
 go
 create trigger trg_cdc_customer on customer for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'customer', 'I', convert(varchar(30), i.customer_id) from inserted i
      where not exists (select 1 from deleted d where d.customer_id = i.customer_id)
@@ -47,6 +49,8 @@ if object_id('trg_cdc_address') is not null drop trigger trg_cdc_address
 go
 create trigger trg_cdc_address on address for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'address', 'I', convert(varchar(30), i.address_id) from inserted i
      where not exists (select 1 from deleted d where d.address_id = i.address_id)
@@ -63,6 +67,8 @@ if object_id('trg_cdc_product') is not null drop trigger trg_cdc_product
 go
 create trigger trg_cdc_product on product for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'product', 'I', convert(varchar(30), i.product_id) from inserted i
      where not exists (select 1 from deleted d where d.product_id = i.product_id)
@@ -79,6 +85,8 @@ if object_id('trg_cdc_orders') is not null drop trigger trg_cdc_orders
 go
 create trigger trg_cdc_orders on orders for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'orders', 'I', convert(varchar(30), i.order_id) from inserted i
      where not exists (select 1 from deleted d where d.order_id = i.order_id)
@@ -95,6 +103,8 @@ if object_id('trg_cdc_order_item') is not null drop trigger trg_cdc_order_item
 go
 create trigger trg_cdc_order_item on order_item for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'order_item', 'I', convert(varchar(30), i.order_item_id) from inserted i
      where not exists (select 1 from deleted d where d.order_item_id = i.order_item_id)
@@ -111,6 +121,8 @@ if object_id('trg_cdc_payment') is not null drop trigger trg_cdc_payment
 go
 create trigger trg_cdc_payment on payment for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'payment', 'I', convert(varchar(30), i.payment_id) from inserted i
      where not exists (select 1 from deleted d where d.payment_id = i.payment_id)
@@ -127,6 +139,8 @@ if object_id('trg_cdc_interaction') is not null drop trigger trg_cdc_interaction
 go
 create trigger trg_cdc_interaction on interaction for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'interaction', 'I', convert(varchar(30), i.interaction_id) from inserted i
      where not exists (select 1 from deleted d where d.interaction_id = i.interaction_id)
@@ -143,6 +157,8 @@ if object_id('trg_cdc_loyalty_txn') is not null drop trigger trg_cdc_loyalty_txn
 go
 create trigger trg_cdc_loyalty_txn on loyalty_txn for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'loyalty_txn', 'I', convert(varchar(30), i.txn_id) from inserted i
      where not exists (select 1 from deleted d where d.txn_id = i.txn_id)
@@ -159,6 +175,8 @@ if object_id('trg_cdc_customer_score') is not null drop trigger trg_cdc_customer
 go
 create trigger trg_cdc_customer_score on customer_score for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'customer_score', 'I', convert(varchar(30), i.customer_id) from inserted i
      where not exists (select 1 from deleted d where d.customer_id = i.customer_id)
@@ -175,6 +193,8 @@ if object_id('trg_cdc_loyalty_tier_rule') is not null drop trigger trg_cdc_loyal
 go
 create trigger trg_cdc_loyalty_tier_rule on loyalty_tier_rule for insert, update, delete as
 begin
+    -- changes applied by the GridGain write-through must not echo back through the forward CDC reader
+    if exists (select 1 from master..sysprocesses where spid = @@spid and program_name = 'gg-writethrough') return
     insert cdc_change_log (table_name, op, pk_value)
     select 'loyalty_tier_rule', 'I', convert(varchar(30), i.tier) from inserted i
      where not exists (select 1 from deleted d where d.tier = i.tier)

@@ -89,6 +89,48 @@ changes made while the reader was stopped are applied on restart.
 - Writes to GridGain are not transactional across tables, so readers may briefly see a partial batch.
 - `cdc_change_log` is never purged; add a retention job before running this for long.
 
+## Write-through: GridGain back to Sybase (`cdc/writethrough.sh`)
+
+The reverse of Phase 1, for running with Sybase kept as a downstream copy while applications write to GridGain. It is
+asynchronous (typically a couple of seconds behind) and covers every writer: compute jobs, REST, SQL clients.
+
+GridGain 9 has no row-level change feed and no triggers, and the JDBC cache store has no Sybase dialect and only sees writes
+made through the cache key-value API, so changes are found by diffing:
+
+```
+GridGain tables --sweep (read, hash rows)--> compare with wt_shadow --> write the differences to Sybase --> update wt_shadow
+```
+
+- `wt_shadow` (GridGain, persistent) holds the hash of every row as last applied to Sybase. **The diff is the queue**: a
+  Sybase outage or a rejected row leaves the difference in place and the next sweep retries it, so nothing is lost across
+  outages or restarts of the writer.
+- A failing row backs off exponentially (1 s up to 60 s). `wt_retry` and `writethrough.sh status` show attempts and the last error.
+- Parents are written before children and children deleted before parents (the foreign keys hold); a row that still fails is retried.
+- Before writing a row it is compared with the current Sybase row and skipped when equal, so the first sweep only builds the
+  shadow, and changes that arrived from Sybase through the forward reader are not written back.
+- **Loop suppression:** the Sybase connection is named `gg-writethrough` and the CDC triggers skip that application
+  (`sybase/sql/04b_cdc_triggers.sql`), so write-through does not feed `cdc_change_log` and the forward reader never sees its own echo.
+- Safety: a sweep that would delete more than half of a table (over 100 rows), e.g. because the GridGain table was reset, is
+  refused unless `WT_ALLOW_MASS_DELETE=true`.
+
+```bash
+cd sybase && ./isql.sh -f sql/04b_cdc_triggers.sql   # once, on an existing database (deploy.sh does it for new ones). It drops and
+                                                     # recreates the 10 triggers: check "select count(*) from sysobjects where name like 'trg_cdc%'" = 10
+cd ../cdc
+./writethrough.sh run      # continuous (WT_POLL_MS, default 2000)
+./writethrough.sh once     # one sweep: inserted / updated / deleted / unchanged / failed / backed-off / blocked
+./writethrough.sh status   # rows per table, shadow, pending differences, rows in retry
+./writethrough.sh verify   # compare every column of every row; exit 1 on any difference
+```
+
+Verified on the 3-node cluster against ASE on llama: inserts across five FK-linked tables, updates and deletes reach Sybase;
+`cdc_change_log` does not grow (no echo); with ASE stopped the writer keeps retrying and a change made meanwhile is applied
+when ASE returns; a Sybase-side change flows to GridGain through the forward reader without being written back.
+
+Limits: it is a full diff, so cost grows with table size (fine for this data set; a larger one needs a per-table change
+marker); a row changed on both sides between sweeps ends with the GridGain value; ASE `datetime` keeps 1/300 s, so timestamps are
+compared with a 4 ms tolerance. Writing to Sybase with explicit ids uses `SET IDENTITY_INSERT` (8 tables have identity keys).
+
 ## Phase 2 (done): stored procedures as GridGain compute jobs
 
 All six procedures now exist as Java compute jobs in `phase2/`, deployed to the cluster as one deployment unit (`customer360-jobs`) and
